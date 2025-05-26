@@ -100,10 +100,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       }
     }
 
+    const user = session.user as any // 扩展类型以访问额外字段
+
     return {
-      name: session.user.name || "未知用户",
-      email: session.user.email || "unknown@example.com",
-      avatar: session.user.image || "/avatars/default.svg",
+      name: user.name || "未知用户",
+      nickname: user.nickname || null, // 传递昵称字段
+      email: user.email || "unknown@example.com",
+      avatar: user.image || "/avatars/default.svg",
     }
   }, [session, isPending])
 

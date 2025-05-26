@@ -9,21 +9,24 @@ datasource db {
 
 model User {
   id            String    @id
-  name          String    @db.VarChar(255)      // 显示名称（Linux Do为username，邮箱注册为用户输入的name）
+  name          String    @db.VarChar(255)    // 显示名称（Linux Do为username，邮箱注册为用户输入的name）
+  nickname      String?   @db.VarChar(255)    // 昵称
   email         String
   emailVerified Boolean
-  source        String    @default("signup")    // 注册来源: "linuxdo", "signup"
+  source        String    @default("signup")  // 注册来源: "linuxdo", "signup"
   image         String?   @db.Text
   createdAt     DateTime
   updatedAt     DateTime
   banned        Boolean   @default(false)
   banReason     String?   @db.Text
-  trustLevel    Int?                            // Linux Do 信任等级
+  trustLevel    Int?                          // Linux Do 信任等级
+  autoupdate    Boolean   @default(false)     // 是否启用自动更新信息
   sessions      Session[]
   accounts      Account[]
 
+  // 用户名唯一
   @@unique([email])
-  @@unique([name])                              // 用户名唯一
+  @@unique([name])
   @@map("user")
 }
 

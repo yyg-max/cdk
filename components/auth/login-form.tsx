@@ -29,12 +29,12 @@ export function LoginForm({
     }
   }, [initialError]);
 
-  // 统一错误自动消失功能：3秒后自动消失
+  // 统一错误自动消失功能：5秒后自动消失
   useEffect(() => {
     if (error) {
       const timer = setTimeout(() => {
         setError(null);
-      }, 3000);
+      }, 5000);
 
       return () => clearTimeout(timer);
     }
@@ -127,84 +127,95 @@ export function LoginForm({
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <form onSubmit={handleSubmit}>
-        <div className="flex flex-col gap-6">
-          <div className="flex flex-col items-center gap-2">
-            <Link
-              href="/"
-              className="flex flex-col items-center gap-2 font-medium"
-            >
-              <div className="flex h-8 w-8 items-center justify-center rounded-md">
-                <GalleryVerticalEnd className="size-6" />
-              </div>
-            </Link>
-            <h1 className="text-xl font-bold">欢迎使用 FastShare</h1>
+      {/* 标题部分 */}
+      <div className="flex flex-col items-center gap-2">
+        <Link
+          href="/"
+          className="flex flex-col items-center gap-2 font-medium"
+        >
+          <div className="flex h-8 w-8 items-center justify-center rounded-md">
+            <GalleryVerticalEnd className="size-6" />
           </div>
+        </Link>
+        <h1 className="text-xl font-bold">欢迎使用 FastShare</h1>
+      </div>
 
-          <div className="grid gap-4">
-            <Button variant="outline" className="w-full" asChild>
-              <Link 
-                href="/api/auth/linuxdo"
-                onClick={() => {
-                  if (error) setError(null); // 清除错误
-                }}
-              >
-                <Image src="/linuxdo.png" alt="Linux Do" width={20} height={20} />
-                使用 Linux Do 登陆
-              </Link>
-            </Button>
-          </div>
-          
-          <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
-            <span className="relative z-10 bg-background px-2 text-muted-foreground">
-              Or
-            </span>
-          </div>
+      {/* 第三方登录按钮 - 移到表单外面 */}
+      <div className="grid gap-4">
+        <Button 
+          type="button"
+          variant="outline" 
+          className="w-full" 
+          onClick={async (e) => {
+            e.preventDefault(); // 阻止默认行为
+            e.stopPropagation(); // 阻止事件冒泡
+            if (error) setError(null); // 清除错误
+            try {
+              const result = await authClient.signIn.oauth2({
+                providerId: "linuxdo",
+                callbackURL: "/dashboard?sync=true", // 添加同步参数
+              });
+            } catch (err) {
+              console.error('Linux Do 登录失败:', err);
+              setError('Linux Do 登录失败，请重试');
+            }
+          }}
+        >
+          <Image src="/linuxdo.png" alt="Linux Do" width={20} height={20} />
+          使用 Linux Do 登陆
+        </Button>
+      </div>
+      
+      <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
+        <span className="relative z-10 bg-background px-2 text-muted-foreground">
+          Or
+        </span>
+      </div>
 
-          <div className="flex flex-col gap-6">
-            <div className="grid gap-2">
-              <Label htmlFor="email">邮箱</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="m@example.com"
-                required
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  if (error) setError(null); // 清除错误
-                }}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="password">密码</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="****************"
-                required
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  if (error) setError(null); // 清除错误
-                }}
-              />
-            </div>
-            <Button type="submit" disabled={loading} className="w-full">
-              {loading ? '登录中...' : '登录'}
-            </Button>
-            
-            {/* 错误提示容器 - 固定高度避免布局跳动 */}
-            <div className={`transition-all duration-300 ease-in-out overflow-hidden ${
-              error ? 'max-h-20 opacity-100' : 'max-h-0 opacity-0'
-            }`}>
-              <div className="p-2 bg-red-100 border border-red-200 text-red-700 rounded text-xs font-bold text-center flex items-center justify-center gap-1">
-                <AlertTriangle className="h-4 w-4" /> {error || ''}
-              </div>
-            </div>
+      {/* 邮箱密码表单 */}
+      <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+        <div className="grid gap-2">
+          <Label htmlFor="email">邮箱</Label>
+          <Input
+            id="email"
+            type="email"
+            placeholder="m@example.com"
+            required
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              if (error) setError(null); // 清除错误
+            }}
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="password">密码</Label>
+          <Input
+            id="password"
+            type="password"
+            placeholder="****************"
+            required
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              if (error) setError(null); // 清除错误
+            }}
+          />
+        </div>
+        <Button type="submit" disabled={loading} className="w-full">
+          {loading ? '登录中...' : '登录'}
+        </Button>
+        
+        {/* 错误提示容器 - 固定高度避免布局跳动 */}
+        <div className={`transition-all duration-300 ease-in-out overflow-hidden ${
+          error ? 'max-h-20 opacity-100' : 'max-h-0 opacity-0'
+        }`}>
+          <div className="p-2 bg-red-100 border border-red-200 text-red-700 rounded text-xs font-bold text-center flex items-center justify-center gap-1">
+            <AlertTriangle className="h-4 w-4" /> {error || ''}
           </div>
         </div>
       </form>
+
       <div className="text-balance text-center text-xs text-muted-foreground [&_a]:underline [&_a]:underline-offset-4 hover:[&_a]:text-primary  ">
         登陆即表示您同意 FastShare 平台的 <a href="#">服务条款</a>{" "}
         和 <a href="#">隐私政策</a>
