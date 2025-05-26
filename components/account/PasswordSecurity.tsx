@@ -187,7 +187,7 @@ export function PasswordSecurity({ user }: PasswordSecurityProps) {
         </Button>
       </div>
 
-      <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm rounded-xl border border-slate-200/50 dark:border-slate-700/50 p-6">
+      <div className="space-y-6">
         {passwordStatus.isThirdPartyUser && (
           <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200/50 dark:border-blue-700/50">
             <p className="text-sm text-blue-800 dark:text-blue-200">

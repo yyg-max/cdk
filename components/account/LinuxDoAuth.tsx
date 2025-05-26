@@ -239,7 +239,7 @@ export function LinuxDoAuth({ user, onUpdateSuccess }: LinuxDoAuthProps) {
         </Button>
       </div>
 
-      <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm rounded-xl border border-slate-200/50 dark:border-slate-700/50 p-6">
+      <div className="space-y-6">
         {/* Linux Do 账户信息 */}
         <div className="flex items-center gap-4 mb-6 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200/50 dark:border-orange-700/50">
           <div className="flex-shrink-0">

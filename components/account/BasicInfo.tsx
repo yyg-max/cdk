@@ -223,7 +223,7 @@ export function BasicInfo({ user, onUpdateSuccess }: BasicInfoProps) {
         </Button>
       </div>
 
-      <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm rounded-xl border border-slate-200/50 dark:border-slate-700/50 p-6">
+      <div className="space-y-6">
         {/* 头像和基本信息 */}
         <div className="flex items-start gap-6 mb-6">
           <div className="relative group">
