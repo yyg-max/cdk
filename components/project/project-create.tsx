@@ -9,36 +9,21 @@ import { toast } from "sonner"
 import { BasicInfo } from "./create/basic-info"
 import { DistributionContent } from "./create/distribution-content"
 import { ClaimRestrictions } from "./create/claim-restrictions"
+import { 
+  ProjectFormData, 
+  CreateProjectRequest, 
+  CreateProjectResponse, 
+  DistributionModeType 
+} from "./create/types"
 
-interface ProjectFormData {
-  // 基本信息
-  name?: string
-  description?: string
-  category?: string
-  selectedTags?: string[]
-  usageUrl?: string
-  totalQuota?: number
-  tutorial?: string
-  
-  // 分发内容
-  distributionMode?: string
-  isPublic?: boolean
-  claimPassword?: string
-  inviteCodes?: string[]
-  singleInviteCode?: string
-  question1?: string
-  question2?: string
-  
-  // 领取限制
-  startTime?: Date
-  endTime?: Date | null
-  requireLinuxdo?: boolean
-  minTrustLevel?: number
-  minRiskThreshold?: number
+interface TabOption {
+  id: string
+  title: string
+  icon: React.ElementType
 }
 
 export function ProjectCreate() {
-  const [activeTab, setActiveTab] = useState("basic")
+  const [activeTab, setActiveTab] = useState<string>("basic")
   const [formData, setFormData] = useState<ProjectFormData>({
     category: "AI",
     totalQuota: 10,
@@ -51,7 +36,7 @@ export function ProjectCreate() {
     minRiskThreshold: 80
   })
 
-  const tabs = [
+  const tabs: TabOption[] = [
     {
       id: "basic",
       title: "基本信息",
@@ -70,32 +55,34 @@ export function ProjectCreate() {
   ]
 
   // 验证各个配置部分
-  const validateBasicInfo = () => {
+  const validateBasicInfo = (): boolean => {
     return !!(formData.name && formData.category && formData.totalQuota && formData.totalQuota > 0)
   }
 
-  const validateDistribution = () => {
-    if (formData.distributionMode === "SINGLE") {
+  const validateDistribution = (): boolean => {
+    const mode = formData.distributionMode as DistributionModeType
+    
+    if (mode === "SINGLE") {
       return !!(formData.inviteCodes && formData.inviteCodes.length === formData.totalQuota)
-    } else if (formData.distributionMode === "MULTI") {
+    } else if (mode === "MULTI") {
       return !!formData.singleInviteCode
-    } else if (formData.distributionMode === "MANUAL") {
+    } else if (mode === "MANUAL") {
       return !!formData.question1
     }
     return false
   }
 
-  const validateRestrictions = () => {
+  const validateRestrictions = (): boolean => {
     return !!(formData.startTime && formData.minRiskThreshold)
   }
 
   // 验证表单数据
-  const validateForm = () => {
+  const validateForm = (): boolean => {
     return validateBasicInfo() && validateDistribution() && validateRestrictions()
   }
 
   // 获取缺失的数据信息
-  const getMissingData = () => {
+  const getMissingData = (): string[] => {
     const missing: string[] = []
     
     // 检查基本信息
@@ -104,15 +91,17 @@ export function ProjectCreate() {
     if (!formData.totalQuota || formData.totalQuota <= 0) missing.push("分配名额")
     
     // 检查分发内容
-    if (formData.distributionMode === "SINGLE") {
+    const mode = formData.distributionMode as DistributionModeType
+    
+    if (mode === "SINGLE") {
       if (!formData.inviteCodes || formData.inviteCodes.length === 0) {
         missing.push("邀请码/链接")
       } else if (formData.inviteCodes.length !== formData.totalQuota) {
         missing.push(`邀请码数量不匹配（需要${formData.totalQuota}个，当前${formData.inviteCodes.length}个）`)
       }
-    } else if (formData.distributionMode === "MULTI") {
+    } else if (mode === "MULTI") {
       if (!formData.singleInviteCode) missing.push("邀请码/链接")
-    } else if (formData.distributionMode === "MANUAL") {
+    } else if (mode === "MANUAL") {
       if (!formData.question1) missing.push("问题1")
     }
     
@@ -124,7 +113,7 @@ export function ProjectCreate() {
   }
 
   // 获取配置状态
-  const getTabStatus = (tabId: string) => {
+  const getTabStatus = (tabId: string): boolean => {
     switch (tabId) {
       case "basic":
         return validateBasicInfo()
@@ -137,7 +126,7 @@ export function ProjectCreate() {
     }
   }
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (): Promise<void> => {
     if (!validateForm()) {
       const missingItems = getMissingData()
       toast.error("请完成所有必填项", {
@@ -148,20 +137,26 @@ export function ProjectCreate() {
     }
 
     try {
+      // 检查必填字段
+      if (!formData.name || !formData.category || !formData.distributionMode || 
+          !formData.totalQuota || !formData.startTime) {
+        throw new Error("缺少必填字段")
+      }
+
       // 准备API请求数据
-      const requestData = {
+      const requestData: CreateProjectRequest = {
         // 基本信息
-        name: formData.name!,
+        name: formData.name,
         description: formData.description,
-        category: formData.category!,
+        category: formData.category,
         selectedTags: formData.selectedTags,
         usageUrl: formData.usageUrl,
-        totalQuota: formData.totalQuota!,
+        totalQuota: formData.totalQuota,
         tutorial: formData.tutorial,
         
         // 分发内容
-        distributionMode: formData.distributionMode!,
-        isPublic: formData.isPublic!,
+        distributionMode: formData.distributionMode as DistributionModeType,
+        isPublic: formData.isPublic ?? true,
         claimPassword: formData.claimPassword,
         inviteCodes: formData.inviteCodes,
         singleInviteCode: formData.singleInviteCode,
@@ -169,11 +164,11 @@ export function ProjectCreate() {
         question2: formData.question2,
         
         // 领取限制
-        startTime: formData.startTime!.toISOString(),
+        startTime: formData.startTime.toISOString(),
         endTime: formData.endTime?.toISOString() || null,
-        requireLinuxdo: formData.requireLinuxdo!,
-        minTrustLevel: formData.minTrustLevel!,
-        minRiskThreshold: formData.minRiskThreshold!
+        requireLinuxdo: formData.requireLinuxdo ?? true,
+        minTrustLevel: formData.minTrustLevel ?? 2,
+        minRiskThreshold: formData.minRiskThreshold ?? 80
       }
 
       console.log("提交表单数据:", requestData)
@@ -187,7 +182,7 @@ export function ProjectCreate() {
         body: JSON.stringify(requestData),
       })
 
-      const result = await response.json()
+      const result = await response.json() as CreateProjectResponse
 
       if (!response.ok) {
         throw new Error(result.error || result.details || "创建失败")
@@ -254,18 +249,18 @@ export function ProjectCreate() {
               const StatusIcon = isCompleted ? Check : X
               
               return (
-                              <ToggleGroupItem 
-                key={tab.id} 
-                value={tab.id}
-                className={`flex items-center space-x-1 px-3 py-2 ${
-                  isCompleted 
-                    ? "bg-green-100 text-green-800 hover:bg-green-200 data-[state=on]:bg-green-200" 
-                    : "bg-red-100 text-red-800 hover:bg-red-200 data-[state=on]:bg-red-200"
-                }`}
-              >
-                <StatusIcon className="w-4 h-4" />
-                <span>{tab.title}</span>
-              </ToggleGroupItem>
+                <ToggleGroupItem 
+                  key={tab.id} 
+                  value={tab.id}
+                  className={`flex items-center space-x-1 px-3 py-2 ${
+                    isCompleted 
+                      ? "bg-green-100 text-green-800 hover:bg-green-200 data-[state=on]:bg-green-200" 
+                      : "bg-red-100 text-red-800 hover:bg-red-200 data-[state=on]:bg-red-200"
+                  }`}
+                >
+                  <StatusIcon className="w-4 h-4" />
+                  <span>{tab.title}</span>
+                </ToggleGroupItem>
               )
             })}
           </ToggleGroup>

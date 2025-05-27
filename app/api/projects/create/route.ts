@@ -4,6 +4,7 @@ import crypto from "crypto"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import type { ProjectCategory, DistributionMode, Prisma } from "@prisma/client"
+import { CreateProjectRequest, CreateProjectResponse } from "@/components/project/create/types"
 
 // 定义 Prisma 查询结果类型
 type ProjectWithIncludes = Prisma.ShareProjectGetPayload<{
@@ -19,32 +20,12 @@ type ProjectWithIncludes = Prisma.ShareProjectGetPayload<{
   }
 }>
 
-// 请求数据类型定义
-interface CreateProjectRequest {
-  // 基本信息
-  name: string
-  description?: string
-  category: string
-  selectedTags?: string[]
-  usageUrl?: string
-  totalQuota: number
-  tutorial?: string
-  
-  // 分发内容
-  distributionMode: "SINGLE" | "MULTI" | "MANUAL"
-  isPublic: boolean
-  claimPassword?: string
-  inviteCodes?: string[]
-  singleInviteCode?: string
-  question1?: string
-  question2?: string
-  
-  // 领取限制
-  startTime: string // ISO 8601 格式
-  endTime?: string | null
-  requireLinuxdo: boolean
-  minTrustLevel: number
-  minRiskThreshold: number
+// 单个邀请码记录类型
+interface SingleCodeData {
+  content: string
+  contentHash: string
+  projectId: string
+  isClaimed: boolean
 }
 
 // 生成邀请码哈希值
@@ -53,10 +34,10 @@ function generateContentHash(content: string): string {
 }
 
 // 批量创建一码一用记录（优化版本）
-async function createSingleCodeClaimsOptimized(projectId: string, inviteCodes: string[]) {
+async function createSingleCodeClaimsOptimized(projectId: string, inviteCodes: string[]): Promise<number> {
   // 预处理：生成哈希值和去重
   const uniqueCodes = [...new Set(inviteCodes)]
-  const codeData = uniqueCodes.map(code => ({
+  const codeData: SingleCodeData[] = uniqueCodes.map(code => ({
     content: code,
     contentHash: generateContentHash(code),
     projectId: projectId,
@@ -98,18 +79,26 @@ export async function POST(request: NextRequest) {
     // 数据验证
     const validationError = validateProjectData(body)
     if (validationError) {
-      return NextResponse.json(
-        { error: "数据验证失败", details: validationError },
+      return NextResponse.json<CreateProjectResponse>(
+        { 
+          success: false,
+          message: "数据验证失败",
+          error: "数据验证失败", 
+          details: validationError 
+        },
         { status: 400 }
       )
     }
 
-    // 获取当前用户ID (这里需要根据你的认证系统调整)
-    // 临时使用固定用户ID，实际应该从session或token中获取
+    // 获取当前用户ID
     const creatorId = await getCurrentUserId(request)
     if (!creatorId) {
-      return NextResponse.json(
-        { error: "用户未登录或认证失败" },
+      return NextResponse.json<CreateProjectResponse>(
+        { 
+          success: false,
+          message: "用户未登录或认证失败",
+          error: "用户未登录或认证失败" 
+        },
         { status: 401 }
       )
     }
@@ -200,7 +189,7 @@ export async function POST(request: NextRequest) {
     // 一码多用模式：邀请码存储在项目的inviteCodes字段中，用户领取时才创建MultiCodeClaim记录
     // 手动邀请模式：用户申请时才创建ManualApplication记录
 
-    return NextResponse.json({
+    return NextResponse.json<CreateProjectResponse>({
       success: true,
       message: "项目创建成功",
       data: {
@@ -211,9 +200,16 @@ export async function POST(request: NextRequest) {
         distributionMode: project.distributionMode,
         totalQuota: project.totalQuota,
         isPublic: project.isPublic,
-        createdAt: project.createdAt,
-        tag: project.tag,
-        creator: project.creator
+        createdAt: project.createdAt.toISOString(),
+        tag: project.tag ? {
+          id: project.tag.id,
+          name: project.tag.name
+        } : undefined,
+        creator: {
+          id: project.creator.id,
+          name: project.creator.name,
+          email: project.creator.email
+        }
       }
     })
 
@@ -223,15 +219,23 @@ export async function POST(request: NextRequest) {
     // 处理Prisma错误
     if (error instanceof Error) {
       if (error.message.includes("Unique constraint")) {
-        return NextResponse.json(
-          { error: "项目名称已存在，请使用其他名称" },
+        return NextResponse.json<CreateProjectResponse>(
+          { 
+            success: false,
+            message: "项目名称已存在，请使用其他名称",
+            error: "项目名称已存在，请使用其他名称" 
+          },
           { status: 409 }
         )
       }
     }
 
-    return NextResponse.json(
-      { error: "服务器内部错误，请稍后重试" },
+    return NextResponse.json<CreateProjectResponse>(
+      { 
+        success: false,
+        message: "服务器内部错误，请稍后重试",
+        error: "服务器内部错误，请稍后重试" 
+      },
       { status: 500 }
     )
   }

@@ -10,19 +10,7 @@ import { Button } from "@/components/ui/button"
 import { CalendarIcon } from "lucide-react"
 import { format } from "date-fns"
 import { zhCN } from "date-fns/locale"
-
-interface ClaimRestrictionsFormData {
-  startTime?: Date
-  endTime?: Date | null
-  requireLinuxdo?: boolean
-  minTrustLevel?: number
-  minRiskThreshold?: number
-}
-
-interface ClaimRestrictionsProps {
-  formData: ClaimRestrictionsFormData
-  setFormData: (data: ClaimRestrictionsFormData) => void
-}
+import { ClaimRestrictionsProps, TrustLevel } from "./types"
 
 export function ClaimRestrictions({ formData, setFormData }: ClaimRestrictionsProps) {
   const updateFormData = (field: string, value: Date | boolean | number | null) => {
@@ -36,7 +24,7 @@ export function ClaimRestrictions({ formData, setFormData }: ClaimRestrictionsPr
     return chinaTime
   }
 
-  const trustLevels = [
+  const trustLevels: TrustLevel[] = [
     { value: 0, label: "0级 - 新用户" },
     { value: 1, label: "1级 - 基本用户" },
     { value: 2, label: "2级 - 成员" },
@@ -76,7 +64,7 @@ export function ClaimRestrictions({ formData, setFormData }: ClaimRestrictionsPr
     }
   }
 
-  const getRiskSliderStyle = (value: number) => {
+  const getRiskSliderStyle = () => {
     return {
       background: `linear-gradient(to right, 
         #8B0000 0%,    /* 深红 30 */
@@ -88,6 +76,10 @@ export function ClaimRestrictions({ formData, setFormData }: ClaimRestrictionsPr
       backgroundSize: '100% 100%'
     }
   }
+
+  // 默认风控阈值
+  const defaultRiskThreshold = 80
+  const currentRiskThreshold = formData.minRiskThreshold || defaultRiskThreshold
 
   return (
     <div className="space-y-4">
@@ -250,9 +242,9 @@ export function ClaimRestrictions({ formData, setFormData }: ClaimRestrictionsPr
           </Label>
           <div 
             className="text-sm font-medium"
-            style={{ color: getRiskLevelColor(formData.minRiskThreshold || 80) }}
+            style={{ color: getRiskLevelColor(currentRiskThreshold) }}
           >
-            {formData.minRiskThreshold || 80} - {getRiskLevelText(formData.minRiskThreshold || 80)}
+            {currentRiskThreshold} - {getRiskLevelText(currentRiskThreshold)}
           </div>
         </div>
         
@@ -261,7 +253,7 @@ export function ClaimRestrictions({ formData, setFormData }: ClaimRestrictionsPr
             {/* 渐变背景条 */}
             <div 
               className="absolute inset-0 h-2 rounded-full top-1/2 transform -translate-y-1/2"
-              style={getRiskSliderStyle(formData.minRiskThreshold || 80)}
+              style={getRiskSliderStyle()}
             />
             <input
               id="minRiskThreshold"
@@ -269,7 +261,7 @@ export function ClaimRestrictions({ formData, setFormData }: ClaimRestrictionsPr
               min="30"
               max="90"
               step="1"
-              value={formData.minRiskThreshold || 80}
+              value={currentRiskThreshold}
               onChange={(e) => updateFormData("minRiskThreshold", parseInt(e.target.value))}
               className="w-full relative z-10 bg-transparent appearance-none h-2 rounded-full outline-none"
               style={{
@@ -283,7 +275,7 @@ export function ClaimRestrictions({ formData, setFormData }: ClaimRestrictionsPr
                 width: 20px;
                 height: 20px;
                 border-radius: 50%;
-                background: ${getRiskLevelColor(formData.minRiskThreshold || 80)};
+                background: ${getRiskLevelColor(currentRiskThreshold)};
                 cursor: pointer;
                 border: 2px solid white;
                 box-shadow: 0 2px 4px rgba(0,0,0,0.2);
@@ -293,7 +285,7 @@ export function ClaimRestrictions({ formData, setFormData }: ClaimRestrictionsPr
                 width: 20px;
                 height: 20px;
                 border-radius: 50%;
-                background: ${getRiskLevelColor(formData.minRiskThreshold || 80)};
+                background: ${getRiskLevelColor(currentRiskThreshold)};
                 cursor: pointer;
                 border: 2px solid white;
                 box-shadow: 0 2px 4px rgba(0,0,0,0.2);

@@ -7,66 +7,128 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { ScrollArea } from "@/components/ui/scroll-area"
 
-import { X, Plus, Lock, Users, UserCheck } from "lucide-react"
-import { getDistributionModeOptions, DISTRIBUTION_MODE_DISPLAY } from "@/lib/constants"
-
-interface DistributionFormData {
-  distributionMode?: string
-  isPublic?: boolean
-  claimPassword?: string
-  inviteCodes?: string[]
-  singleInviteCode?: string
-  question1?: string
-  question2?: string
-}
-
-interface DistributionContentProps {
-  formData: DistributionFormData
-  setFormData: (data: DistributionFormData) => void
-  totalQuota: number
-}
+import { X, Plus, Lock, Users, UserCheck, AlertCircle } from "lucide-react"
+import { getDistributionModeOptions } from "@/lib/constants"
+import { DistributionContentProps, DistributionModeType, DistributionModeOption } from "./types"
+import { toast } from "sonner"
 
 export function DistributionContent({ formData, setFormData, totalQuota }: DistributionContentProps) {
   const [codeInput, setCodeInput] = useState("")
   const [batchInput, setBatchInput] = useState("")
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   const updateFormData = (field: string, value: string | boolean | string[]) => {
     setFormData({ ...formData, [field]: value })
   }
 
+  // 检查是否超过配额
+  const checkQuotaLimit = (codes: string[]): boolean => {
+    return codes.length <= totalQuota
+  }
+
+  // 添加单个邀请码
   const addInviteCode = () => {
-    if (codeInput.trim()) {
-      const newCodes = [...(formData.inviteCodes || []), codeInput.trim()]
-      updateFormData("inviteCodes", newCodes)
-      setCodeInput("")
+    if (!codeInput.trim()) return
+    
+    const newCode = codeInput.trim()
+    const existingCodes = formData.inviteCodes || []
+    
+    // 检查是否已存在
+    if (existingCodes.includes(newCode)) {
+      setErrorMsg("该邀请码已存在")
+      return
+    }
+    
+    // 检查是否超过配额
+    if (existingCodes.length >= totalQuota) {
+      setErrorMsg(`已达到最大配额 ${totalQuota}，无法添加更多邀请码`)
+      return
+    }
+    
+    const newCodes = [...existingCodes, newCode]
+    updateFormData("inviteCodes", newCodes)
+    setCodeInput("")
+    setErrorMsg(null)
+    
+    // 如果已经达到配额，显示提示
+    if (newCodes.length === totalQuota) {
+      toast.success(`已添加 ${totalQuota} 个邀请码，已达到配额上限`)
     }
   }
 
+  // 移除邀请码
   const removeInviteCode = (index: number) => {
     const newCodes = formData.inviteCodes?.filter((_, i) => i !== index) || []
     updateFormData("inviteCodes", newCodes)
+    setErrorMsg(null) // 移除错误信息
   }
 
+  // 从文本解析邀请码（批量导入）
   const parseCodesFromText = (text: string) => {
-    const newCodes = text.split(/[,，\n]/).map(code => code.trim()).filter(code => code)
-    const existingCodes = formData.inviteCodes || []
-    // 去重：只添加不存在的邀请码
-    const uniqueNewCodes = newCodes.filter(code => !existingCodes.includes(code))
-    const allCodes = [...existingCodes, ...uniqueNewCodes]
-    updateFormData("inviteCodes", allCodes)
+    if (!text.trim()) return
     
-    // 可以在这里添加提示信息
-    if (uniqueNewCodes.length > 0) {
-      console.log(`成功导入 ${uniqueNewCodes.length} 个邀请码`)
+    // 分割并清理邀请码
+    const inputCodes = text.split(/[,，\n]/).map(code => code.trim()).filter(code => code)
+    const existingCodes = formData.inviteCodes || []
+    
+    // 去重：只添加不存在的邀请码
+    const uniqueNewCodes = inputCodes.filter(code => !existingCodes.includes(code))
+    
+    // 检查导入后是否超过配额
+    const willExceedQuota = existingCodes.length + uniqueNewCodes.length > totalQuota
+    
+    let allCodes: string[]
+    
+    if (willExceedQuota) {
+      // 如果会超过配额，只取能填满配额的部分
+      const remainingSlots = totalQuota - existingCodes.length
+      const limitedNewCodes = uniqueNewCodes.slice(0, remainingSlots)
+      allCodes = [...existingCodes, ...limitedNewCodes]
+      
+      toast.warning(`只导入了 ${limitedNewCodes.length} 个邀请码，已达到配额上限 ${totalQuota}`)
+    } else {
+      // 不超过配额，全部添加
+      allCodes = [...existingCodes, ...uniqueNewCodes]
+      
+      // 显示导入结果提示
+      if (uniqueNewCodes.length > 0) {
+        toast.success(`成功导入 ${uniqueNewCodes.length} 个邀请码`)
+      }
     }
-    if (newCodes.length > uniqueNewCodes.length) {
-      console.log(`跳过 ${newCodes.length - uniqueNewCodes.length} 个重复邀请码`)
+    
+    // 显示重复提示
+    const duplicateCount = inputCodes.length - uniqueNewCodes.length
+    if (duplicateCount > 0) {
+      toast.info(`跳过 ${duplicateCount} 个重复邀请码`)
+    }
+    
+    updateFormData("inviteCodes", allCodes)
+    setBatchInput("")
+    setErrorMsg(null)
+    
+    // 如果填满了配额，显示特别提示
+    if (allCodes.length === totalQuota) {
+      toast.success(`邀请码数量已达到配额 ${totalQuota}`)
     }
   }
 
+  // 获取当前分发模式
+  const currentDistributionMode = formData.distributionMode as DistributionModeType || "SINGLE"
+  
+  // 计算已添加邀请码数量和剩余配额
+  const inviteCodesCount = formData.inviteCodes?.length || 0
+  const remainingQuota = totalQuota - inviteCodesCount
+  const isQuotaFull = remainingQuota <= 0
+  
   // 从常量文件获取分发模式选项，并添加图标和颜色
-  const distributionModes = getDistributionModeOptions().map((mode) => ({
+  type ExtendedDistributionModeOption = DistributionModeOption & {
+    icon: React.ElementType
+    color: string
+  }
+
+  const distributionModes: ExtendedDistributionModeOption[] = getDistributionModeOptions().map((mode) => ({
     ...mode,
     icon: mode.value === "SINGLE" ? UserCheck : mode.value === "MULTI" ? Users : Lock,
     color: mode.value === "SINGLE" 
@@ -86,7 +148,7 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
         <div className="grid gap-3 sm:grid-cols-3">
           {distributionModes.map((mode) => {
             const Icon = mode.icon
-            const isSelected = formData.distributionMode === mode.value
+            const isSelected = currentDistributionMode === mode.value
             return (
               <div
                 key={mode.value}
@@ -134,7 +196,7 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
       </div>
 
       {/* 一码一用模式 */}
-      {formData.distributionMode === "SINGLE" && (
+      {currentDistributionMode === "SINGLE" && (
         <div className="space-y-3">
           {/* 邀请码管理 */}
           <div className="space-y-3 p-3 rounded-lg border border-dashed bg-muted/30">
@@ -154,7 +216,7 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
             <div className="flex items-center justify-between">
               <Label className="text-sm font-medium">邀请码/链接 <span className="text-red-500">*</span></Label>
               <div className="flex items-center gap-2">
-                {(formData.inviteCodes?.length ?? 0) > 0 && (
+                {inviteCodesCount > 0 && (
                   <Button
                     type="button"
                     variant="ghost"
@@ -165,55 +227,63 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
                     清空全部
                   </Button>
                 )}
-                <Badge variant="outline" className="text-xs">
-                  {formData.inviteCodes?.length || 0} / {totalQuota}
+                <Badge 
+                  variant={isQuotaFull ? "default" : "outline"} 
+                  className={`text-xs ${isQuotaFull ? "bg-green-600" : ""}`}
+                >
+                  {inviteCodesCount} / {totalQuota}
                 </Badge>
               </div>
             </div>
-
-            {/* 当前邀请码列表 */}
-            {(formData.inviteCodes?.length ?? 0) > 0 && (
-              <div className="space-y-2 max-h-32 overflow-y-auto">
-                {formData.inviteCodes?.map((code, index) => (
-                  <div key={index} className="flex items-center gap-3 p-2 bg-muted/50 rounded">
-                    <code className="flex-1 text-sm font-mono truncate">{code}</code>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeInviteCode(index)}
-                      className="h-8 w-8 p-0 hover:bg-destructive hover:text-destructive-foreground"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
+            
+            {/* 添加邀请码表单 */}
+            <div className="space-y-2">
+              {/* 错误信息显示 */}
+              {errorMsg && (
+                <div className="flex items-center gap-2 text-xs text-destructive">
+                  <AlertCircle className="h-3.5 w-3.5" />
+                  <span>{errorMsg}</span>
+                </div>
+              )}
+              
+              {/* 单个邀请码输入 */}
+              <div className="flex gap-2">
+                <Input
+                  placeholder="输入邀请码或链接"
+                  value={codeInput}
+                  onChange={(e) => {
+                    setCodeInput(e.target.value)
+                    setErrorMsg(null) // 清除错误信息
+                  }}
+                  disabled={isQuotaFull}
+                  className="h-10 shadow-none"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      addInviteCode()
+                    }
+                  }}
+                />
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={addInviteCode}
+                  disabled={!codeInput.trim() || isQuotaFull}
+                  className="h-10 w-10 px-4 shadow-none"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
               </div>
-            )}
 
-            {/* 添加邀请码 */}
-            <div className="flex gap-2">
-              <Input
-                placeholder="输入邀请码或链接"
-                value={codeInput}
-                onChange={(e) => setCodeInput(e.target.value)}
-                className="h-10 shadow-none"
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    addInviteCode()
-                  }
-                }}
-              />
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={addInviteCode}
-                disabled={!codeInput.trim()}
-                className="h-10 w-10 px-4 shadow-none"
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
+              {/* 配额显示 */}
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>已添加 {inviteCodesCount} 个邀请码</span>
+                <span>
+                  {isQuotaFull 
+                    ? "已达到配额上限" 
+                    : `还需添加 ${remainingQuota} 个邀请码`}
+                </span>
+              </div>
             </div>
 
             {/* 批量导入 */}
@@ -222,10 +292,16 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
               <div className="space-y-2">
                 <Textarea
                   id="batchCodes"
-                  placeholder="支持多种快速导入格式：code1,code2,code3 或 每行一个邀请码"
+                  placeholder={isQuotaFull 
+                    ? "已达到配额上限，无法继续导入" 
+                    : "支持多种快速导入格式：code1,code2,code3 或 每行一个邀请码"}
                   rows={3}
                   value={batchInput}
-                  onChange={(e) => setBatchInput(e.target.value)}
+                  onChange={(e) => {
+                    setBatchInput(e.target.value)
+                    setErrorMsg(null) // 清除错误信息
+                  }}
+                  disabled={isQuotaFull}
                   className="resize-none text-sm shadow-none"
                 />
                 <div className="flex gap-2">
@@ -236,10 +312,9 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
                     onClick={() => {
                       if (batchInput.trim()) {
                         parseCodesFromText(batchInput)
-                        setBatchInput("")
                       }
                     }}
-                    disabled={!batchInput.trim()}
+                    disabled={!batchInput.trim() || isQuotaFull}
                     className="h-8 shadow-none"
                   >
                     导入
@@ -257,12 +332,40 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
                 </div>
               </div>
             </div>
+
+            {/* 当前邀请码列表 - 移动到底部 */}
+            {inviteCodesCount > 0 && (
+              <div className="mt-4">
+                <div className="flex items-center justify-between mb-2">
+                  <Label className="text-xs text-muted-foreground">已添加的邀请码</Label>
+                  <span className="text-xs text-muted-foreground">{inviteCodesCount}个</span>
+                </div>
+                <ScrollArea className="h-44 rounded border border-input bg-muted/50 px-1">
+                  <div className="space-y-2 p-2">
+                    {formData.inviteCodes?.map((code, index) => (
+                      <div key={index} className="flex items-center gap-3 p-2 bg-card rounded">
+                        <code className="flex-1 text-sm font-mono truncate">{code}</code>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeInviteCode(index)}
+                          className="h-8 w-8 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
+            )}
           </div>
         </div>
       )}
 
       {/* 一码多用模式 */}
-      {formData.distributionMode === "MULTI" && (
+      {currentDistributionMode === "MULTI" && (
         <div className="space-y-3 p-3 rounded-lg border border-dashed bg-muted/30">
           {/* 领取密码 */}
           <div className="space-y-2">
@@ -300,7 +403,7 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
       )}
 
       {/* 手动邀请模式 */}
-      {formData.distributionMode === "MANUAL" && (
+      {currentDistributionMode === "MANUAL" && (
         <div className="space-y-3 p-3 rounded-lg border border-dashed bg-muted/30">
             {/* 问题1 */}
             <div className="space-y-2">
