@@ -38,7 +38,7 @@ export function BasicInfo({ formData, setFormData }: BasicInfoProps) {
     field: keyof typeof formData, 
     value: T
   ) => {
-    updateFormData({ [field]: value } as any)
+    updateFormData({ [field]: value } as Partial<typeof formData>)
   }
 
   // 从数据库获取所有标签

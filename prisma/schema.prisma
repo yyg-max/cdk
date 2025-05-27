@@ -124,12 +124,23 @@ model Verification {
 
 // 项目标签表
 model ProjectTag {
-  id        String         @id @default(cuid())
-  name      String         @unique @db.VarChar(20) // 标签名称
-  createdAt DateTime       @default(now())
-  projects  ShareProject[]
+  id        String                @id @default(cuid())
+  name      String                @unique @db.VarChar(20) // 标签名称
+  createdAt DateTime              @default(now())
+  projects  ProjectsOnTags[]
 
   @@map("project_tag")
+}
+
+// 项目与标签的多对多关系表
+model ProjectsOnTags {
+  projectId String
+  project   ShareProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tagId     String
+  tag       ProjectTag   @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  
+  @@id([projectId, tagId])
+  @@map("projects_on_tags")
 }
 
 // 分享项目主表
@@ -140,8 +151,7 @@ model ShareProject {
   name         String          @db.VarChar(16) // 项目名称
   description  String          @db.VarChar(64) // 项目描述
   category     ProjectCategory @default(AI) // 项目分类
-  tagId        String? // 项目标签ID
-  tag          ProjectTag?     @relation(fields: [tagId], references: [id])
+  tags         ProjectsOnTags[] // 项目标签（多对多关系）
   usageUrl     String?         @db.Text // 使用地址
   totalQuota   Int             @default(10) // 名额数量
   claimedCount Int             @default(0) // 已领取数量（冗余字段，提高查询性能）

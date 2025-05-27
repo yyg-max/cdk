@@ -111,10 +111,10 @@ export interface CreateProjectResponse {
     totalQuota: number
     isPublic: boolean
     createdAt: string
-    tag?: {
+    tags: {
       id: string
       name: string
-    }
+    }[]
     creator: {
       id: string
       name: string

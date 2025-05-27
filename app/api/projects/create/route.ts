@@ -3,22 +3,8 @@ import bcrypt from "bcryptjs"
 import crypto from "crypto"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import type { ProjectCategory, DistributionMode, Prisma } from "@prisma/client"
+import type { ProjectCategory, DistributionMode } from "@prisma/client"
 import { CreateProjectRequest, CreateProjectResponse } from "@/components/project/create/types"
-
-// 定义 Prisma 查询结果类型
-type ProjectWithIncludes = Prisma.ShareProjectGetPayload<{
-  include: {
-    tag: true
-    creator: {
-      select: {
-        id: true
-        name: true
-        email: true
-      }
-    }
-  }
-}>
 
 // 单个邀请码记录类型
 interface SingleCodeData {
@@ -103,24 +89,24 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 处理标签
-    let tagId: string | null = null
+    // 处理多个标签
+    const tagIds: string[] = []
     if (body.selectedTags && body.selectedTags.length > 0) {
-      // 使用第一个标签，如果有多个标签可以考虑其他处理方式
-      const tagName = body.selectedTags[0]
-      
-      // 查找或创建标签
-      let tag = await prisma.projectTag.findUnique({
-        where: { name: tagName }
-      })
-      
-      if (!tag) {
-        tag = await prisma.projectTag.create({
-          data: { name: tagName }
+      // 处理所有选择的标签
+      for (const tagName of body.selectedTags) {
+        // 查找或创建每个标签
+        let tag = await prisma.projectTag.findUnique({
+          where: { name: tagName }
         })
+        
+        if (!tag) {
+          tag = await prisma.projectTag.create({
+            data: { name: tagName }
+          })
+        }
+        
+        tagIds.push(tag.id)
       }
-      
-      tagId = tag.id
     }
 
     // 处理密码加密
@@ -139,13 +125,13 @@ export async function POST(request: NextRequest) {
     }
 
     // 创建项目
-    const project: ProjectWithIncludes = await prisma.shareProject.create({
+    const project = await prisma.shareProject.create({
       data: {
         // 基本信息
         name: body.name,
         description: body.description || "",
         category: body.category as ProjectCategory,
-        tagId: tagId,
+        // 标签关系会在后面创建
         usageUrl: body.usageUrl,
         totalQuota: body.totalQuota,
         tutorial: body.tutorial,
@@ -169,7 +155,11 @@ export async function POST(request: NextRequest) {
         creatorId: creatorId
       },
       include: {
-        tag: true,
+        tags: {
+          include: {
+            tag: true
+          }
+        },
         creator: {
           select: {
             id: true,
@@ -179,6 +169,43 @@ export async function POST(request: NextRequest) {
         }
       }
     })
+    
+    // 创建项目与标签的关联关系
+    if (tagIds.length > 0) {
+      await Promise.all(
+        tagIds.map(tagId => 
+          prisma.projectsOnTags.create({
+            data: {
+              projectId: project.id,
+              tagId: tagId
+            }
+          })
+        )
+      )
+      
+      // 重新查询项目以获取最新的标签关系
+      const updatedProject = await prisma.shareProject.findUnique({
+        where: { id: project.id },
+        include: {
+          tags: {
+            include: {
+              tag: true
+            }
+          },
+          creator: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
+          }
+        }
+      })
+      
+      if (updatedProject) {
+        Object.assign(project, updatedProject)
+      }
+    }
 
     // 根据分发模式创建相应的记录
     if (body.distributionMode === "SINGLE" && body.inviteCodes) {
@@ -201,10 +228,10 @@ export async function POST(request: NextRequest) {
         totalQuota: project.totalQuota,
         isPublic: project.isPublic,
         createdAt: project.createdAt.toISOString(),
-        tag: project.tag ? {
-          id: project.tag.id,
-          name: project.tag.name
-        } : undefined,
+        tags: project.tags.map(tagRelation => ({
+          id: tagRelation.tag.id,
+          name: tagRelation.tag.name
+        })),
         creator: {
           id: project.creator.id,
           name: project.creator.name,

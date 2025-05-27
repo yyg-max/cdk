@@ -2,12 +2,16 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { APPLICATION_STATUS, PROJECT_STATUS } from "@/lib/constants"
-import type { Prisma } from "@prisma/client"
+import type { Prisma, ProjectCategory, DistributionMode, ProjectStatus } from "@prisma/client"
 
 // 定义 Prisma 查询结果类型
 type ProjectWithIncludes = Prisma.ShareProjectGetPayload<{
   include: {
-    tag: true
+    tags: {
+      include: {
+        tag: true
+      }
+    }
     creator: {
       select: {
         id: true
@@ -99,7 +103,7 @@ export async function GET(request: NextRequest) {
             { status: 401 }
           )
         }
-      } catch (error) {
+      } catch {
         return NextResponse.json(
           { error: "认证失败" },
           { status: 401 }
@@ -108,19 +112,19 @@ export async function GET(request: NextRequest) {
     }
 
     // 构建查询条件
-    const where: any = {}
+    const where: Prisma.ShareProjectWhereInput = {}
 
     // 基础筛选条件
     if (params.category) {
-      where.category = params.category
+      where.category = params.category as ProjectCategory
     }
     
     if (params.distributionMode) {
-      where.distributionMode = params.distributionMode
+      where.distributionMode = params.distributionMode as DistributionMode
     }
     
     if (params.status) {
-      where.status = params.status
+      where.status = params.status as ProjectStatus
     }
     
     if (params.isPublic !== undefined) {
@@ -132,7 +136,11 @@ export async function GET(request: NextRequest) {
     }
     
     if (params.tagId) {
-      where.tagId = params.tagId
+      where.tags = {
+        some: {
+          tagId: params.tagId
+        }
+      }
     }
 
     // 关键词搜索
@@ -172,7 +180,7 @@ export async function GET(request: NextRequest) {
           manualApplications: {
             some: {
               applicantId: currentUserId,
-              status: 'approved'
+              status: APPLICATION_STATUS.APPROVED
             }
           }
         }
@@ -194,7 +202,11 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit,
         include: {
-          tag: true,
+          tags: {
+            include: {
+              tag: true
+            }
+          },
           creator: {
             select: {
               id: true,
@@ -247,7 +259,10 @@ export async function GET(request: NextRequest) {
         name: project.name,
         description: project.description,
         category: project.category,
-        tag: project.tag,
+        tags: project.tags.map(tagRelation => ({
+          id: tagRelation.tag.id,
+          name: tagRelation.tag.name
+        })),
         usageUrl: project.usageUrl,
         totalQuota: project.totalQuota,
         claimedCount: actualClaimedCount,
@@ -269,6 +284,7 @@ export async function GET(request: NextRequest) {
       }
     })
 
+    // 使用与CreateProjectResponse一致的结构返回
     return NextResponse.json({
       success: true,
       data: {

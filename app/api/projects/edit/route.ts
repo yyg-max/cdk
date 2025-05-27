@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 import crypto from "crypto"
+import type { Prisma, ProjectCategory, DistributionMode, ProjectStatus } from "@prisma/client"
 
 // 编辑项目请求类型
 interface EditProjectRequest {
@@ -128,13 +129,13 @@ export async function PUT(request: NextRequest) {
     }
     
     // 构建更新数据
-    const updateData: any = {}
+    const updateData: Prisma.ShareProjectUpdateInput = {}
     
     // 基本信息
     if (body.name !== undefined) updateData.name = body.name
     if (body.description !== undefined) updateData.description = body.description
-    if (body.category !== undefined) updateData.category = body.category
-    if (body.tagId !== undefined) updateData.tagId = body.tagId === "" ? null : body.tagId
+    if (body.category !== undefined) updateData.category = body.category as ProjectCategory
+    // tagId已经改为多对多关系，需要单独处理
     if (body.usageUrl !== undefined) updateData.usageUrl = body.usageUrl || null
     if (body.tutorial !== undefined) updateData.tutorial = body.tutorial || null
     
@@ -215,7 +216,7 @@ export async function PUT(request: NextRequest) {
           { status: 400 }
         )
       }
-      updateData.distributionMode = body.distributionMode
+      updateData.distributionMode = body.distributionMode as DistributionMode
     }
     
     // 可见性和密码
@@ -252,14 +253,18 @@ export async function PUT(request: NextRequest) {
     if (body.minRiskThreshold !== undefined) updateData.minRiskThreshold = body.minRiskThreshold
     
     // 状态
-    if (body.status !== undefined) updateData.status = body.status
+    if (body.status !== undefined) updateData.status = body.status as ProjectStatus
     
     // 更新项目
     const updatedProject = await prisma.shareProject.update({
       where: { id: body.id },
       data: updateData,
       include: {
-        tag: true,
+        tags: {
+          include: {
+            tag: true
+          }
+        },
         creator: {
           select: {
             id: true,
@@ -327,7 +332,11 @@ export async function GET(request: NextRequest) {
     const project = await prisma.shareProject.findUnique({
       where: { id: projectId },
       include: {
-        tag: true,
+        tags: {
+          include: {
+            tag: true
+          }
+        },
         creator: {
           select: {
             id: true,
@@ -374,7 +383,10 @@ export async function GET(request: NextRequest) {
       name: project.name,
       description: project.description,
       category: project.category,
-      tag: project.tag,
+      tags: project.tags.map(tagRelation => ({
+        id: tagRelation.tag.id,
+        name: tagRelation.tag.name
+      })),
       usageUrl: project.usageUrl,
       totalQuota: project.totalQuota,
       claimedCount: actualClaimedCount,

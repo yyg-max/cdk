@@ -1,6 +1,6 @@
 import { ProjectCreate } from "@/components/project/project-create"
-import ProjectList from "@/components/project/project-list"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import ProjectList from "@/components/project/read/project-list"
+import { Tabs, TabsContent, TabsList, TabsTrigger, TabsContents } from "@/components/animate-ui/components/tabs"
 
 export default function CreateProjectPage() {
   return (
@@ -16,20 +16,22 @@ export default function CreateProjectPage() {
           </p>
         </div>
 
-        {/* Tab 导航 */}
+        {/* Tab 导航 - 使用animate-ui的Tabs结构 */}
         <Tabs defaultValue="all-projects" className="space-y-6">
           <TabsList className="grid w-full grid-cols-2 max-w-md">
             <TabsTrigger value="all-projects">所有项目</TabsTrigger>
             <TabsTrigger value="create-project">新建项目</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="all-projects" className="space-y-6">
-            <ProjectList />
-          </TabsContent>
-          
-          <TabsContent value="create-project" className="space-y-6">
-            <ProjectCreate />
-          </TabsContent>
+          <TabsContents>
+            <TabsContent value="all-projects">
+              <ProjectList />
+            </TabsContent>
+            
+            <TabsContent value="create-project">
+              <ProjectCreate />
+            </TabsContent>
+          </TabsContents>
         </Tabs>
       </div>
     </div>

@@ -27,6 +27,23 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { useSession } from "@/lib/auth-client"
+import { RollingText } from '@/components/animate-ui/text/rolling';
+
+// 定义扩展的用户类型接口
+interface ExtendedUser {
+  name?: string;
+  email?: string;
+  image?: string;
+  nickname?: string;
+}
+
+// 匹配NavUser组件期望的类型
+interface UserData {
+  name: string;
+  nickname?: string;
+  email: string;
+  avatar: string;
+}
 
 const data = {
   navMain: [
@@ -100,15 +117,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       }
     }
 
-    const user = session.user as any // 扩展类型以访问额外字段
+    const user = session.user as ExtendedUser
 
     return {
       name: user.name || "未知用户",
-      nickname: user.nickname || null, // 传递昵称字段
+      nickname: user.nickname,
       email: user.email || "unknown@example.com",
       avatar: user.image || "/avatars/default.svg",
     }
-  }, [session, isPending])
+  }, [session, isPending]) as UserData
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>
@@ -117,12 +134,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
-              className="data-[slot=sidebar-menu-button]:!p-1.5"
+              className="data-[slot=sidebar-menu-button]:!p-1.5 p-0"
             >
               <a href="#">
                 <SquareArrowUpRight className="h-5 w-5" />
-                <span className="text-base font-semibold">FastShare</span>
-                <span className="text-xs text-muted-foreground">v.0.0.1</span>
+                <RollingText 
+                  className="text-base font-semibold" 
+                  text="FastShare" 
+                  loop={true} 
+                  loopDelay={6000}
+                  inViewOnce={false}
+                  transition={{ duration: 0.5, delay: 0.1, ease: 'easeOut' }}
+                />
+                <span className="text-xs text-muted-foreground mr-2">v.0.0.1</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>

@@ -23,11 +23,6 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
     setFormData({ ...formData, [field]: value })
   }
 
-  // 检查是否超过配额
-  const checkQuotaLimit = (codes: string[]): boolean => {
-    return codes.length <= totalQuota
-  }
-
   // 添加单个邀请码
   const addInviteCode = () => {
     if (!codeInput.trim()) return
@@ -73,8 +68,12 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
     const inputCodes = text.split(/[,，\n]/).map(code => code.trim()).filter(code => code)
     const existingCodes = formData.inviteCodes || []
     
+    // 检测输入中的重复项
+    const uniqueInputCodes = [...new Set(inputCodes)]
+    const inputDuplicateCount = inputCodes.length - uniqueInputCodes.length
+    
     // 去重：只添加不存在的邀请码
-    const uniqueNewCodes = inputCodes.filter(code => !existingCodes.includes(code))
+    const uniqueNewCodes = uniqueInputCodes.filter(code => !existingCodes.includes(code))
     
     // 检查导入后是否超过配额
     const willExceedQuota = existingCodes.length + uniqueNewCodes.length > totalQuota
@@ -98,10 +97,16 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
       }
     }
     
+    // 显示与已有邀请码重复的提示
+    const existingDuplicateCount = uniqueInputCodes.length - uniqueNewCodes.length
+    
     // 显示重复提示
-    const duplicateCount = inputCodes.length - uniqueNewCodes.length
-    if (duplicateCount > 0) {
-      toast.info(`跳过 ${duplicateCount} 个重复邀请码`)
+    if (inputDuplicateCount > 0) {
+      toast.info(`输入中包含 ${inputDuplicateCount} 个重复邀请码，已自动去重`)
+    }
+    
+    if (existingDuplicateCount > 0) {
+      toast.info(`跳过 ${existingDuplicateCount} 个已存在的邀请码`)
     }
     
     updateFormData("inviteCodes", allCodes)
@@ -213,27 +218,8 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
               className="h-10 shadow-none"
             />
           </div>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center">
               <Label className="text-sm font-medium">邀请码/链接 <span className="text-red-500">*</span></Label>
-              <div className="flex items-center gap-2">
-                {inviteCodesCount > 0 && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => updateFormData("inviteCodes", [])}
-                    className="h-6 px-2 text-xs text-muted-foreground hover:text-destructive"
-                  >
-                    清空全部
-                  </Button>
-                )}
-                <Badge 
-                  variant={isQuotaFull ? "default" : "outline"} 
-                  className={`text-xs ${isQuotaFull ? "bg-green-600" : ""}`}
-                >
-                  {inviteCodesCount} / {totalQuota}
-                </Badge>
-              </div>
             </div>
             
             {/* 添加邀请码表单 */}
@@ -273,16 +259,6 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
                 >
                   <Plus className="h-4 w-4" />
                 </Button>
-              </div>
-
-              {/* 配额显示 */}
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>已添加 {inviteCodesCount} 个邀请码</span>
-                <span>
-                  {isQuotaFull 
-                    ? "已达到配额上限" 
-                    : `还需添加 ${remainingQuota} 个邀请码`}
-                </span>
               </div>
             </div>
 
@@ -336,21 +312,45 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
             {/* 当前邀请码列表 - 移动到底部 */}
             {inviteCodesCount > 0 && (
               <div className="mt-4">
-                <div className="flex items-center justify-between mb-2">
-                  <Label className="text-xs text-muted-foreground">已添加的邀请码</Label>
-                  <span className="text-xs text-muted-foreground">{inviteCodesCount}个</span>
+                {/* 配额显示 */}
+                <div className="flex justify-between text-xs text-muted-foreground mb-2">
+                  <span>已添加 {inviteCodesCount} 个邀请码，                   
+                    {isQuotaFull 
+                      ? "已达到配额上限" 
+                      : `还需添加 ${remainingQuota} 个邀请码`}
+                  </span>
+
+                  <div className="flex items-center gap-2">
+                    {inviteCodesCount > 0 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => updateFormData("inviteCodes", [])}
+                        className="h-2 px-2 text-xs text-muted-foreground hover:text-destructive"
+                      >
+                        清空全部
+                      </Button>
+                    )}
+                    <Badge 
+                      variant={isQuotaFull ? "default" : "outline"} 
+                      className={`text-xs ${isQuotaFull ? "bg-green-600" : ""}`}
+                    >
+                      {inviteCodesCount} / {totalQuota}
+                    </Badge>
+                  </div>
                 </div>
                 <ScrollArea className="h-44 rounded border border-input bg-muted/50 px-1">
-                  <div className="space-y-2 p-2">
+                  <div className="space-y-2 py-3 px-1">
                     {formData.inviteCodes?.map((code, index) => (
-                      <div key={index} className="flex items-center gap-3 p-2 bg-card rounded">
-                        <code className="flex-1 text-sm font-mono truncate">{code}</code>
+                      <div key={index} className="flex items-center gap-3 px-2 bg-card rounded">
+                        <code className="flex-1 text-sm font-mono truncate h-4">{code}</code>
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
                           onClick={() => removeInviteCode(index)}
-                          className="h-8 w-8 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                          className="h-8 w-8 p-2"
                         >
                           <X className="h-4 w-4" />
                         </Button>
