@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
-import { PrismaClient } from "@prisma/client"
 import bcrypt from "bcryptjs"
 import crypto from "crypto"
 import { auth } from "@/lib/auth"
-
-const prisma = new PrismaClient()
+import { prisma } from "@/lib/prisma"
 
 interface ClaimRequest {
   projectId: string
@@ -157,8 +155,6 @@ export async function POST(request: NextRequest) {
       { error: "服务器内部错误" },
       { status: 500 }
     )
-  } finally {
-    await prisma.$disconnect()
   }
 }
 

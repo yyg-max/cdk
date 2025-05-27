@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { headers } from "next/headers"
-import { PrismaClient } from "@prisma/client"
+import { prisma } from "@/lib/prisma"
 import { z } from "zod"
-
-const prisma = new PrismaClient()
 
 // 验证请求数据的schema
 const updateAutoUpdateSchema = z.object({

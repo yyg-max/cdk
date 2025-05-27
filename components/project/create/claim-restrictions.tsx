@@ -38,17 +38,55 @@ export function ClaimRestrictions({ formData, setFormData }: ClaimRestrictionsPr
 
   const trustLevels = [
     { value: 0, label: "0级 - 新用户" },
-    { value: 1, label: "1级 - 基础用户" },
+    { value: 1, label: "1级 - 基本用户" },
     { value: 2, label: "2级 - 成员" },
-    { value: 3, label: "3级 - 常客" },
-    { value: 4, label: "4级 - 领袖" }
+    { value: 3, label: "3级 - 活跃用户" },
+    { value: 4, label: "4级 - 领导者" }
   ]
 
   const getRiskLevelText = (value: number) => {
     if (value >= 85) return "严格"
     if (value >= 75) return "推荐"
-    if (value >= 65) return "一般"
+    if (value >= 60) return "一般"
     return "宽松"
+  }
+
+  const getRiskLevelColor = (value: number) => {
+    if (value <= 55) {
+      // 30-55 深红到浅红
+      const intensity = Math.max(0, Math.min(1, (value - 30) / (55 - 30)))
+      const red = Math.round(139 + (220 - 139) * intensity) // 深红#8B0000到浅红#DC143C
+      const green = Math.round(20 + (20 - 20) * intensity)
+      const blue = Math.round(60 + (60 - 60) * intensity)
+      return `rgb(${red}, ${green}, ${blue})`
+    } else if (value <= 75) {
+      // 60-75 深黄到浅黄
+      const intensity = Math.max(0, Math.min(1, (value - 60) / (75 - 60)))
+      const red = Math.round(184 + (255 - 184) * intensity) // 深黄#B8860B到浅黄#FFD700
+      const green = Math.round(134 + (215 - 134) * intensity)
+      const blue = 11
+      return `rgb(${red}, ${green}, ${blue})`
+    } else {
+      // 80-90 浅绿到深绿
+      const intensity = Math.max(0, Math.min(1, (value - 80) / (90 - 80)))
+      const red = 34
+      const green = Math.round(144 + (139 - 144) * intensity) // 浅绿#90EE90到深绿#228B22
+      const blue = 34
+      return `rgb(${red}, ${green + 100}, ${blue})`
+    }
+  }
+
+  const getRiskSliderStyle = (value: number) => {
+    return {
+      background: `linear-gradient(to right, 
+        #8B0000 0%,    /* 深红 30 */
+        #DC143C 16.7%, /* 浅红 55 */
+        #B8860B 33.3%, /* 深黄 60 */
+        #FFD700 50%,   /* 浅黄 75 */
+        #90EE90 66.7%, /* 浅绿 80 */
+        #228B22 100%)`, /* 深绿 90 */
+      backgroundSize: '100% 100%'
+    }
   }
 
   return (
@@ -63,7 +101,7 @@ export function ClaimRestrictions({ formData, setFormData }: ClaimRestrictionsPr
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
-                className="w-full justify-start text-left font-normal h-10"
+                className="w-full justify-start text-left font-normal h-10 shadow-none"
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 {formData.startTime ? (
@@ -94,7 +132,7 @@ export function ClaimRestrictions({ formData, setFormData }: ClaimRestrictionsPr
                       updateFormData("startTime", newDate)
                     }
                   }}
-                  className="mt-2"
+                  className="mt-2 shadow-none"
                 />
               </div>
             </PopoverContent>
@@ -120,7 +158,7 @@ export function ClaimRestrictions({ formData, setFormData }: ClaimRestrictionsPr
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
-                className="w-full justify-start text-left font-normal h-10"
+                className="w-full justify-start text-left font-normal h-10 shadow-none"
                 disabled={formData.endTime === null}
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
@@ -154,7 +192,7 @@ export function ClaimRestrictions({ formData, setFormData }: ClaimRestrictionsPr
                       updateFormData("endTime", newDate)
                     }
                   }}
-                  className="mt-2"
+                  className="mt-2 shadow-none"
                 />
               </div>
             </PopoverContent>
@@ -186,7 +224,7 @@ export function ClaimRestrictions({ formData, setFormData }: ClaimRestrictionsPr
               value={formData.minTrustLevel?.toString() || "2"} 
               onValueChange={(value) => updateFormData("minTrustLevel", parseInt(value))}
             >
-              <SelectTrigger className="h-10">
+              <SelectTrigger className="h-10 shadow-none">
                 <SelectValue placeholder="选择最低信任等级" />
               </SelectTrigger>
               <SelectContent>
@@ -210,29 +248,64 @@ export function ClaimRestrictions({ formData, setFormData }: ClaimRestrictionsPr
           <Label htmlFor="minRiskThreshold" className="text-sm font-medium">
             风控阈值 <span className="text-red-500">*</span>
           </Label>
-          <div className="text-sm text-muted-foreground">
+          <div 
+            className="text-sm font-medium"
+            style={{ color: getRiskLevelColor(formData.minRiskThreshold || 80) }}
+          >
             {formData.minRiskThreshold || 80} - {getRiskLevelText(formData.minRiskThreshold || 80)}
           </div>
         </div>
         
         <div className="space-y-3">
-          <div className="px-3">
-            <Input
+          <div className="px-3 relative">
+            {/* 渐变背景条 */}
+            <div 
+              className="absolute inset-0 h-2 rounded-full top-1/2 transform -translate-y-1/2"
+              style={getRiskSliderStyle(formData.minRiskThreshold || 80)}
+            />
+            <input
               id="minRiskThreshold"
               type="range"
-              min="50"
+              min="30"
               max="90"
-              step="5"
+              step="1"
               value={formData.minRiskThreshold || 80}
               onChange={(e) => updateFormData("minRiskThreshold", parseInt(e.target.value))}
-              className="w-full"
+              className="w-full relative z-10 bg-transparent appearance-none h-2 rounded-full outline-none"
+              style={{
+                background: 'transparent',
+                WebkitAppearance: 'none',
+              }}
             />
+            <style jsx>{`
+              input[type="range"]::-webkit-slider-thumb {
+                appearance: none;
+                width: 20px;
+                height: 20px;
+                border-radius: 50%;
+                background: ${getRiskLevelColor(formData.minRiskThreshold || 80)};
+                cursor: pointer;
+                border: 2px solid white;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+              }
+              
+              input[type="range"]::-moz-range-thumb {
+                width: 20px;
+                height: 20px;
+                border-radius: 50%;
+                background: ${getRiskLevelColor(formData.minRiskThreshold || 80)};
+                cursor: pointer;
+                border: 2px solid white;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                border: none;
+              }
+            `}</style>
           </div>
           
           <div className="flex justify-between text-xs text-muted-foreground px-3">
-            <span>50 (宽松)</span>
-            <span>65 (一般)</span>
-            <span>75 (推荐)</span>
+            <span>30 (宽松)</span>
+            <span>55 (过渡)</span>
+            <span>75 (一般)</span>
             <span>85 (严格)</span>
             <span>90 (最严)</span>
           </div>

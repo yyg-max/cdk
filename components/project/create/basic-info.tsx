@@ -11,6 +11,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Check, ChevronsUpDown, X } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { getCategoryOptions } from "@/lib/constants"
 
 interface BasicInfoFormData {
   name?: string
@@ -27,15 +28,8 @@ interface BasicInfoProps {
   setFormData: (data: BasicInfoFormData) => void
 }
 
-const categories = [
-  "人工智能",
-  "软件工具", 
-  "游戏娱乐",
-  "教育学习",
-  "资源分享",
-  "生活服务",
-  "其他"
-]
+// 从常量文件获取分类选项
+const categories = getCategoryOptions()
 
 const existingTags = [
   "AI工具", "开发工具", "设计软件", "学习资源", "娱乐游戏", "生活助手",
@@ -90,7 +84,7 @@ export function BasicInfo({ formData, setFormData }: BasicInfoProps) {
                 value={formData.name || ""}
                 onChange={(e) => updateFormData("name", e.target.value)}
                 maxLength={16}
-                className="h-10 pr-12"
+                className="h-10 pr-12 shadow-none"
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
                 {(formData.name || "").length}/16
@@ -109,7 +103,7 @@ export function BasicInfo({ formData, setFormData }: BasicInfoProps) {
                 value={formData.description || ""}
                 onChange={(e) => updateFormData("description", e.target.value)}
                 maxLength={64}
-                className="h-10 pr-12"
+                className="h-10 pr-12 shadow-none"
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
                 {(formData.description || "").length}/64
@@ -128,7 +122,7 @@ export function BasicInfo({ formData, setFormData }: BasicInfoProps) {
               placeholder="https://example.com"
               value={formData.usageUrl || ""}
               onChange={(e) => updateFormData("usageUrl", e.target.value)}
-              className="h-10"
+              className="h-10 shadow-none"
             />
           </div>
 
@@ -160,7 +154,7 @@ export function BasicInfo({ formData, setFormData }: BasicInfoProps) {
                     updateFormData("totalQuota", 50)
                   }
                 }}
-                className="h-10 pr-16"
+                className="h-10 pr-16 shadow-none"
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
                 默认50
@@ -180,7 +174,7 @@ export function BasicInfo({ formData, setFormData }: BasicInfoProps) {
               onChange={(e) => updateFormData("tutorial", e.target.value)}
               maxLength={256}
               rows={4}
-              className="resize-none pr-12"
+              className="resize-none pr-12 shadow-none"
             />
             <span className="absolute right-3 bottom-3 text-xs text-muted-foreground">
               {(formData.tutorial || "").length}/256
@@ -195,14 +189,14 @@ export function BasicInfo({ formData, setFormData }: BasicInfoProps) {
             <Label className="text-sm font-medium">
               项目分类 <span className="text-red-500">*</span>
             </Label>
-            <Select value={formData.category || "人工智能"} onValueChange={(value) => updateFormData("category", value)}>
-              <SelectTrigger className="h-10">
-                <SelectValue placeholder="人工智能" />
+            <Select value={formData.category || "AI"} onValueChange={(value) => updateFormData("category", value)}>
+              <SelectTrigger className="h-10 shadow-none">
+                <SelectValue placeholder="选择分类" />
               </SelectTrigger>
               <SelectContent>
                 {categories.map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {category}
+                  <SelectItem key={category.value} value={category.value}>
+                    {category.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -234,7 +228,7 @@ export function BasicInfo({ formData, setFormData }: BasicInfoProps) {
                     variant="outline"
                     role="combobox"
                     aria-expanded={tagComboOpen}
-                    className="h-10 w-full justify-between text-muted-foreground"
+                    className="h-10 w-full justify-between text-muted-foreground shadow-none"
                   >
                     搜索或添加标签...
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />

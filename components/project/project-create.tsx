@@ -40,9 +40,9 @@ interface ProjectFormData {
 export function ProjectCreate() {
   const [activeTab, setActiveTab] = useState("basic")
   const [formData, setFormData] = useState<ProjectFormData>({
-    category: "人工智能",
+    category: "AI",
     totalQuota: 10,
-    distributionMode: "single",
+    distributionMode: "SINGLE",
     isPublic: true,
     startTime: new Date(),
     endTime: null,
@@ -75,11 +75,11 @@ export function ProjectCreate() {
   }
 
   const validateDistribution = () => {
-    if (formData.distributionMode === "single") {
+    if (formData.distributionMode === "SINGLE") {
       return !!(formData.inviteCodes && formData.inviteCodes.length === formData.totalQuota)
-    } else if (formData.distributionMode === "multi") {
+    } else if (formData.distributionMode === "MULTI") {
       return !!formData.singleInviteCode
-    } else if (formData.distributionMode === "manual") {
+    } else if (formData.distributionMode === "MANUAL") {
       return !!formData.question1
     }
     return false
@@ -104,15 +104,15 @@ export function ProjectCreate() {
     if (!formData.totalQuota || formData.totalQuota <= 0) missing.push("分配名额")
     
     // 检查分发内容
-    if (formData.distributionMode === "single") {
+    if (formData.distributionMode === "SINGLE") {
       if (!formData.inviteCodes || formData.inviteCodes.length === 0) {
         missing.push("邀请码/链接")
       } else if (formData.inviteCodes.length !== formData.totalQuota) {
         missing.push(`邀请码数量不匹配（需要${formData.totalQuota}个，当前${formData.inviteCodes.length}个）`)
       }
-    } else if (formData.distributionMode === "multi") {
+    } else if (formData.distributionMode === "MULTI") {
       if (!formData.singleInviteCode) missing.push("邀请码/链接")
-    } else if (formData.distributionMode === "manual") {
+    } else if (formData.distributionMode === "MANUAL") {
       if (!formData.question1) missing.push("问题1")
     }
     

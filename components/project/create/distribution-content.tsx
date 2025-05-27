@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 
 import { X, Plus, Lock, Users, UserCheck } from "lucide-react"
+import { getDistributionModeOptions, DISTRIBUTION_MODE_DISPLAY } from "@/lib/constants"
 
 interface DistributionFormData {
   distributionMode?: string
@@ -64,29 +65,16 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
     }
   }
 
-  const distributionModes = [
-    { 
-      value: "single", 
-      label: "一码一用", 
-      description: "一个邀请码对应一个人",
-      icon: UserCheck,
-      color: "bg-blue-50 border-blue-200 text-blue-700"
-    },
-    { 
-      value: "multi", 
-      label: "一码多用", 
-      description: "一个邀请码可以被多人使用",
-      icon: Users,
-      color: "bg-green-50 border-green-200 text-green-700"
-    },
-    { 
-      value: "manual", 
-      label: "手动邀请", 
-      description: "用户申请后手动审核通过",
-      icon: Lock,
-      color: "bg-orange-50 border-orange-200 text-orange-700"
-    }
-  ]
+  // 从常量文件获取分发模式选项，并添加图标和颜色
+  const distributionModes = getDistributionModeOptions().map((mode) => ({
+    ...mode,
+    icon: mode.value === "SINGLE" ? UserCheck : mode.value === "MULTI" ? Users : Lock,
+    color: mode.value === "SINGLE" 
+      ? "bg-blue-50 border-blue-200 text-blue-700"
+      : mode.value === "MULTI" 
+      ? "bg-green-50 border-green-200 text-green-700"
+      : "bg-orange-50 border-orange-200 text-orange-700"
+  }))
 
   return (
     <div className="space-y-4">
@@ -102,7 +90,7 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
             return (
               <div
                 key={mode.value}
-                className={`relative cursor-pointer rounded-lg p-4 transition-all hover:shadow-md ${
+                className={`relative cursor-pointer rounded-lg p-4 transition-all ${
                   isSelected 
                     ? "bg-primary text-primary-foreground shadow-md ring-2 ring-primary ring-offset-2" 
                     : "bg-card border border-border hover:border-muted-foreground/40"
@@ -146,7 +134,7 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
       </div>
 
       {/* 一码一用模式 */}
-      {formData.distributionMode === "single" && (
+      {formData.distributionMode === "SINGLE" && (
         <div className="space-y-3">
           {/* 邀请码管理 */}
           <div className="space-y-3 p-3 rounded-lg border border-dashed bg-muted/30">
@@ -160,7 +148,7 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
               value={formData.claimPassword || ""}
               onChange={(e) => updateFormData("claimPassword", e.target.value)}
               minLength={6}
-              className="h-10"
+              className="h-10 shadow-none"
             />
           </div>
             <div className="flex items-center justify-between">
@@ -209,7 +197,7 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
                 placeholder="输入邀请码或链接"
                 value={codeInput}
                 onChange={(e) => setCodeInput(e.target.value)}
-                className="h-10"
+                className="h-10 shadow-none"
                 onKeyPress={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault()
@@ -222,7 +210,7 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
                 variant="outline" 
                 onClick={addInviteCode}
                 disabled={!codeInput.trim()}
-                className="h-10 w-10 px-4"
+                className="h-10 w-10 px-4 shadow-none"
               >
                 <Plus className="h-4 w-4" />
               </Button>
@@ -238,7 +226,7 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
                   rows={3}
                   value={batchInput}
                   onChange={(e) => setBatchInput(e.target.value)}
-                  className="resize-none text-sm"
+                  className="resize-none text-sm shadow-none"
                 />
                 <div className="flex gap-2">
                   <Button
@@ -252,7 +240,7 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
                       }
                     }}
                     disabled={!batchInput.trim()}
-                    className="h-8"
+                    className="h-8 shadow-none"
                   >
                     导入
                   </Button>
@@ -262,7 +250,7 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
                     size="sm"
                     onClick={() => setBatchInput("")}
                     disabled={!batchInput}
-                    className="h-8"
+                    className="h-8 shadow-none"
                   >
                     清空
                   </Button>
@@ -274,7 +262,7 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
       )}
 
       {/* 一码多用模式 */}
-      {formData.distributionMode === "multi" && (
+      {formData.distributionMode === "MULTI" && (
         <div className="space-y-3 p-3 rounded-lg border border-dashed bg-muted/30">
           {/* 领取密码 */}
           <div className="space-y-2">
@@ -286,7 +274,7 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
               value={formData.claimPassword || ""}
               onChange={(e) => updateFormData("claimPassword", e.target.value)}
               minLength={6}
-              className="h-10"
+              className="h-10 shadow-none"
             />
           </div>
 
@@ -301,7 +289,7 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
                 placeholder="输入邀请码或链接"
                 value={formData.singleInviteCode || ""}
                 onChange={(e) => updateFormData("singleInviteCode", e.target.value)}
-                className="h-10 pr-16"
+                className="h-10 pr-16 shadow-none"
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
                 {totalQuota}人可用
@@ -312,7 +300,7 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
       )}
 
       {/* 手动邀请模式 */}
-      {formData.distributionMode === "manual" && (
+      {formData.distributionMode === "MANUAL" && (
         <div className="space-y-3 p-3 rounded-lg border border-dashed bg-muted/30">
             {/* 问题1 */}
             <div className="space-y-2">
@@ -326,7 +314,7 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
                   value={formData.question1 || ""}
                   onChange={(e) => updateFormData("question1", e.target.value)}
                   maxLength={16}
-                  className="h-10 pr-12"
+                  className="h-10 pr-12 shadow-none"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
                   {(formData.question1 || "").length}/16
@@ -344,7 +332,7 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
                   value={formData.question2 || ""}
                   onChange={(e) => updateFormData("question2", e.target.value)}
                   maxLength={16}
-                  className="h-10 pr-12"
+                  className="h-10 pr-12 shadow-none"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
                   {(formData.question2 || "").length}/16

@@ -7,28 +7,69 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// 项目分类枚举
+enum ProjectCategory {
+  AI // 人工智能
+  SOFTWARE // 软件工具
+  GAME // 游戏娱乐
+  EDUCATION // 教育学习
+  RESOURCE // 资源分享
+  LIFE // 生活服务
+  OTHER // 其他
+
+  @@map("project_category")
+}
+
+// 分发模式枚举
+enum DistributionMode {
+  SINGLE // 一码一用
+  MULTI // 一码多用
+  MANUAL // 手动邀请
+
+  @@map("distribution_mode")
+}
+
+// 项目状态枚举
+enum ProjectStatus {
+  ACTIVE // 活跃
+  PAUSED // 暂停
+  COMPLETED // 已完成
+  EXPIRED // 已过期
+
+  @@map("project_status")
+}
+
+// 申请状态枚举
+enum ApplicationStatus {
+  PENDING // 申请中
+  APPROVED // 已通过
+  REJECTED // 已拒绝
+
+  @@map("application_status")
+}
+
 model User {
   id            String    @id
-  name          String    @db.VarChar(255)    // 显示名称（Linux Do为username，邮箱注册为用户输入的name）
-  nickname      String?   @db.VarChar(255)    // 昵称
+  name          String    @db.VarChar(255) // 显示名称（Linux Do为username，邮箱注册为用户输入的name）
+  nickname      String?   @db.VarChar(255) // 昵称
   email         String
   emailVerified Boolean
-  source        String    @default("signup")  // 注册来源: "linuxdo", "signup"
+  source        String    @default("signup") // 注册来源: "linuxdo", "signup"
   image         String?   @db.Text
   createdAt     DateTime
   updatedAt     DateTime
   banned        Boolean   @default(false)
   banReason     String?   @db.Text
-  trustLevel    Int?                          // Linux Do 信任等级
-  autoupdate    Boolean   @default(false)     // 是否启用自动更新信息
+  trustLevel    Int? // Linux Do 信任等级
+  autoupdate    Boolean   @default(false) // 是否启用自动更新信息
   sessions      Session[]
   accounts      Account[]
-  
+
   // 新增关联
-  createdProjects     ShareProject[]        // 创建的项目
-  singleCodeClaims    SingleCodeClaim[]     // 一码一用领取记录
-  multiCodeClaims     MultiCodeClaim[]      // 一码多用领取记录
-  manualApplications  ManualApplication[]   // 手动申请记录
+  createdProjects    ShareProject[] // 创建的项目
+  singleCodeClaims   SingleCodeClaim[] // 一码一用领取记录
+  multiCodeClaims    MultiCodeClaim[] // 一码多用领取记录
+  manualApplications ManualApplication[] // 手动申请记录
 
   // 用户名唯一
   @@unique([email])
@@ -83,126 +124,126 @@ model Verification {
 
 // 项目标签表
 model ProjectTag {
-  id          String    @id @default(cuid())
-  name        String    @unique @db.VarChar(20)  // 标签名称
-  createdAt   DateTime  @default(now())
-  projects    ShareProject[]
+  id        String         @id @default(cuid())
+  name      String         @unique @db.VarChar(20) // 标签名称
+  createdAt DateTime       @default(now())
+  projects  ShareProject[]
 
   @@map("project_tag")
 }
 
 // 分享项目主表
 model ShareProject {
-  id                    String    @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   // 基本信息
-  name                  String    @db.VarChar(16)       // 项目名称
-  description           String    @db.VarChar(64)       // 项目描述
-  category              String    @db.VarChar(20)       // 项目分类
-  tagId                 String?                         // 项目标签ID
-  tag                   ProjectTag? @relation(fields: [tagId], references: [id])
-  usageUrl              String?   @db.Text              // 使用地址
-  totalQuota            Int       @default(10)          // 名额数量
-  claimedCount          Int       @default(0)           // 已领取数量（冗余字段，提高查询性能）
-  tutorial              String?   @db.Text              // 使用教程
-  
+  name         String          @db.VarChar(16) // 项目名称
+  description  String          @db.VarChar(64) // 项目描述
+  category     ProjectCategory @default(AI) // 项目分类
+  tagId        String? // 项目标签ID
+  tag          ProjectTag?     @relation(fields: [tagId], references: [id])
+  usageUrl     String?         @db.Text // 使用地址
+  totalQuota   Int             @default(10) // 名额数量
+  claimedCount Int             @default(0) // 已领取数量（冗余字段，提高查询性能）
+  tutorial     String?         @db.Text // 使用教程
+
   // 分发内容
-  distributionMode      String    @default("single")    // 分发模式: single(一码一用), multi(一码多用), manual(手动邀请)
-  isPublic              Boolean   @default(true)        // 是否公开
-  claimPassword         String?   @db.VarChar(255)      // 领取密码(加密存储)
-  
+  distributionMode DistributionMode @default(SINGLE) // 分发模式
+  isPublic         Boolean          @default(true) // 是否公开
+  claimPassword    String?          @db.VarChar(255) // 领取密码(加密存储)
+
   // 一码一用/一码多用的邀请码内容
-  inviteCodes           String?   @db.Text              // JSON格式存储邀请码列表
-  
+  inviteCodes String? @db.Text // JSON格式存储邀请码列表
+
   // 手动邀请的问题
-  question1             String?   @db.VarChar(16)       // 问题1
-  question2             String?   @db.VarChar(16)       // 问题2
-  
+  question1 String? @db.VarChar(16) // 问题1
+  question2 String? @db.VarChar(16) // 问题2
+
   // 领取限制
-  startTime             DateTime  @default(now())       // 开始时间
-  endTime               DateTime?                       // 结束时间
-  requireLinuxdo        Boolean   @default(true)        // 是否需要linuxdo认证
-  minTrustLevel         Int       @default(2)           // 最低信任等级
-  minRiskThreshold      Int       @default(80)          // 最低风控阈值
-  
+  startTime        DateTime  @default(now()) // 开始时间
+  endTime          DateTime? // 结束时间
+  requireLinuxdo   Boolean   @default(true) // 是否需要linuxdo认证
+  minTrustLevel    Int       @default(2) // 最低信任等级
+  minRiskThreshold Int       @default(80) // 最低风控阈值
+
   // 状态字段（提高查询性能）
-  status                String    @default("active")    // 项目状态: active(活跃), paused(暂停), completed(已完成), expired(已过期)
-  
+  status ProjectStatus @default(ACTIVE) // 项目状态
+
   // 元数据
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-  creatorId             String
-  creator               User      @relation(fields: [creatorId], references: [id])
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  creatorId String
+  creator   User     @relation(fields: [creatorId], references: [id])
+
   // 关联表
-  singleCodeClaims      SingleCodeClaim[]
-  multiCodeClaims       MultiCodeClaim[]
-  manualApplications    ManualApplication[]
+  singleCodeClaims   SingleCodeClaim[]
+  multiCodeClaims    MultiCodeClaim[]
+  manualApplications ManualApplication[]
 
   // 索引优化
-  @@index([category, isPublic, status])           // 项目列表查询
-  @@index([creatorId, status])                    // 用户项目查询
-  @@index([distributionMode, status])             // 按分发模式查询
-  @@index([startTime, endTime])                   // 时间范围查询
-  @@index([claimedCount, totalQuota])             // 名额查询
+  @@index([category, isPublic, status]) // 项目列表查询
+  @@index([creatorId, status]) // 用户项目查询
+  @@index([distributionMode, status]) // 按分发模式查询
+  @@index([startTime, endTime]) // 时间范围查询
+  @@index([claimedCount, totalQuota]) // 名额查询
   @@map("share_project")
 }
 
 // 一码一用领取记录表
 model SingleCodeClaim {
-  id          String    @id @default(cuid())
-  content     String    @db.VarChar(255)      // 邀请码/链接内容（限制长度提高性能）
-  contentHash String    @db.VarChar(64)       // 邀请码哈希值（用于快速查找）
+  id          String       @id @default(cuid())
+  content     String       @db.VarChar(255) // 邀请码/链接内容（限制长度提高性能）
+  contentHash String       @db.VarChar(64) // 邀请码哈希值（用于快速查找）
   projectId   String
   project     ShareProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  isClaimed   Boolean   @default(false)       // 是否已领取
-  claimedAt   DateTime?                       // 领取时间
+  isClaimed   Boolean      @default(false) // 是否已领取
+  claimedAt   DateTime? // 领取时间
   claimerId   String?
-  claimer     User?     @relation(fields: [claimerId], references: [id])
-  createdAt   DateTime  @default(now())
+  claimer     User?        @relation(fields: [claimerId], references: [id])
+  createdAt   DateTime     @default(now())
 
   // 性能优化索引
-  @@unique([projectId, contentHash])          // 确保同一个项目的邀请码不重复，使用哈希提高性能
-  @@index([projectId, isClaimed])             // 查询项目可用邀请码
-  @@index([claimerId])                        // 查询用户领取记录
-  @@index([contentHash])                      // 快速验证邀请码
+  @@unique([projectId, contentHash]) // 确保同一个项目的邀请码不重复，使用哈希提高性能
+  @@index([projectId, isClaimed]) // 查询项目可用邀请码
+  @@index([claimerId]) // 查询用户领取记录
+  @@index([contentHash]) // 快速验证邀请码
   @@map("single_code_claim")
 }
 
 // 一码多用领取记录表
 model MultiCodeClaim {
-  id          String    @id @default(cuid())
-  projectId   String
-  project     ShareProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  claimerId   String
-  claimer     User      @relation(fields: [claimerId], references: [id])
-  claimedAt   DateTime  @default(now())       // 领取时间
+  id        String       @id @default(cuid())
+  projectId String
+  project   ShareProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  claimerId String
+  claimer   User         @relation(fields: [claimerId], references: [id])
+  claimedAt DateTime     @default(now()) // 领取时间
 
   // 性能优化索引
-  @@unique([projectId, claimerId])            // 确保同一用户不能重复领取同一项目
-  @@index([projectId])                        // 查询项目领取记录
-  @@index([claimerId])                        // 查询用户领取记录
-  @@index([claimedAt])                        // 按时间查询
+  @@unique([projectId, claimerId]) // 确保同一用户不能重复领取同一项目
+  @@index([projectId]) // 查询项目领取记录
+  @@index([claimerId]) // 查询用户领取记录
+  @@index([claimedAt]) // 按时间查询
   @@map("multi_code_claim")
 }
 
 // 手动申请记录表
 model ManualApplication {
-  id          String    @id @default(cuid())
+  id          String            @id @default(cuid())
   projectId   String
-  project     ShareProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project     ShareProject      @relation(fields: [projectId], references: [id], onDelete: Cascade)
   applicantId String
-  applicant   User      @relation(fields: [applicantId], references: [id])
-  status      String    @default("pending")   // 状态: pending(申请中), approved(已通过), rejected(已拒绝)
-  answer1     String    @db.VarChar(100)      // 问题1的回答
-  answer2     String?   @db.VarChar(100)      // 问题2的回答
-  appliedAt   DateTime  @default(now())       // 申请时间
-  processedAt DateTime?                       // 处理时间
-  
+  applicant   User              @relation(fields: [applicantId], references: [id])
+  status      ApplicationStatus @default(PENDING) // 申请状态
+  answer1     String            @db.VarChar(100) // 问题1的回答
+  answer2     String?           @db.VarChar(100) // 问题2的回答
+  appliedAt   DateTime          @default(now()) // 申请时间
+  processedAt DateTime? // 处理时间
+
   // 性能优化索引
-  @@unique([projectId, applicantId])          // 确保同一用户不能重复申请同一项目
-  @@index([projectId, status])                // 查询项目申请记录
-  @@index([applicantId])                      // 查询用户申请记录
-  @@index([status, appliedAt])                // 按状态和时间查询
+  @@unique([projectId, applicantId]) // 确保同一用户不能重复申请同一项目
+  @@index([projectId, status]) // 查询项目申请记录
+  @@index([applicantId]) // 查询用户申请记录
+  @@index([status, appliedAt]) // 按状态和时间查询
   @@map("manual_application")
 }

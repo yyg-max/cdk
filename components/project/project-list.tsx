@@ -1,204 +1,648 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { ProjectPreview } from "./project-preview"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Search, Plus, Filter } from "lucide-react"
-import Link from "next/link"
 
+import { useState, useEffect } from 'react'
+import { Search, ArrowUpDown, Filter, ChevronLeft, ChevronRight, Gift } from 'lucide-react'
+import { format } from 'date-fns'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { 
+  PROJECT_CATEGORIES, 
+  PROJECT_STATUS, 
+  getCategoryOptions,
+  getCategoryLabel,
+  getProjectStatusOptions
+} from '@/lib/constants'
+import { Label } from '@/components/ui/label'
+import ProjectInfo from '@/components/project/list/project-info'
+import { useRouter } from "next/navigation"
+
+// 项目类型定义
 interface Project {
   id: string
   name: string
   description: string
   category: string
+  tag?: {
+    id: string
+    name: string
+  }
+  usageUrl?: string
   totalQuota: number
-  distributionMode: "single" | "multi" | "manual"
+  claimedCount: number
+  remainingQuota: number
+  tutorial?: string
+  distributionMode: string
   isPublic: boolean
   startTime: string
   endTime?: string
   requireLinuxdo: boolean
   minTrustLevel: number
   minRiskThreshold: number
+  status: string
   createdAt: string
+  updatedAt: string
   creator: {
+    id: string
     name: string
+    nickname?: string
     image?: string
-  }
-  tag?: {
-    name: string
   }
 }
 
-const PROJECT_CATEGORIES = [
-  { value: "all", label: "全部分类" },
-  { value: "ai", label: "人工智能" },
-  { value: "software", label: "软件工具" },
-  { value: "game", label: "游戏娱乐" },
-  { value: "education", label: "教育学习" },
-  { value: "resource", label: "资源分享" },
-  { value: "life", label: "生活服务" },
-  { value: "other", label: "其他" },
-]
+// 过滤器类型定义
+interface Filters {
+  category: string
+  status: string
+  distributionMode: string
+  isPublic: string
+  requireLinuxdo: string
+  tagId: string
+  keyword: string
+}
 
-export function ProjectList() {
+// 排序类型定义
+interface Sort {
+  sortBy: string
+  sortOrder: 'asc' | 'desc'
+}
+
+// 分页类型定义
+interface Pagination {
+  page: number
+  limit: number
+  totalCount: number
+  totalPages: number
+  hasNext: boolean
+  hasPrev: boolean
+}
+
+// 分发模式标签获取函数
+const getDistributionModeLabel = (mode: string): string => {
+  switch (mode) {
+    case 'SINGLE': return '一码一用';
+    case 'MULTI': return '一码多用';
+    case 'MANUAL': return '申请-邀请';
+    default: return mode;
+  }
+}
+
+// 获取状态配置
+const getStatusConfig = (status: string) => {
+  switch (status) {
+    case 'ACTIVE': return { label: '活跃', color: 'green' };
+    case 'PAUSED': return { label: '暂停', color: 'yellow' };
+    case 'COMPLETED': return { label: '已完成', color: 'blue' };
+    case 'EXPIRED': return { label: '已过期', color: 'gray' };
+    default: return { label: status, color: 'gray' };
+  }
+}
+
+export default function ProjectList() {
+  const router = useRouter()
+  // 筛选状态
+  const [filters, setFilters] = useState<Filters>({
+    category: 'all',
+    status: 'all',
+    distributionMode: 'all',
+    isPublic: 'all',
+    requireLinuxdo: 'all',
+    tagId: 'all',
+    keyword: '',
+  })
+
+  // 排序状态
+  const [sort, setSort] = useState<Sort>({
+    sortBy: 'status',
+    sortOrder: 'asc'
+  })
+
+  // 分页状态
+  const [pagination, setPagination] = useState<Pagination>({
+    page: 1,
+    limit: 12,
+    totalCount: 0,
+    totalPages: 0,
+    hasNext: false,
+    hasPrev: false
+  })
+
+  // 项目数据和加载状态
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState("")
-  const [category, setCategory] = useState("all")
-  const [page, setPage] = useState(1)
+  
+  // 详情对话框状态
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null)
+  const [isInfoDialogOpen, setIsInfoDialogOpen] = useState(false)
+  
+  // 打开项目详情
+  const handleOpenProjectInfo = (project: Project) => {
+    setSelectedProject(project)
+    setIsInfoDialogOpen(true)
+  }
+  
+  // 关闭项目详情
+  const handleCloseProjectInfo = () => {
+    setIsInfoDialogOpen(false)
+  }
 
-  // 获取项目列表
+  // 筛选变更处理
+  const handleFilterChange = (key: keyof Filters, value: string): void => {
+    setFilters(prev => ({ ...prev, [key]: value }))
+  }
+
+  // 重置筛选
+  const handleResetFilters = () => {
+    setFilters({
+      category: 'all',
+      status: 'all',
+      distributionMode: 'all',
+      isPublic: 'all',
+      requireLinuxdo: 'all',
+      tagId: 'all',
+      keyword: '',
+    })
+    setSort({
+      sortBy: 'status',
+      sortOrder: 'asc'
+    })
+  }
+
+  // 执行搜索
+  const handleSearch = () => {
+    fetchProjects()
+  }
+
+  // 获取项目数据
   const fetchProjects = async () => {
+    setLoading(true)
+    
     try {
-      setLoading(true)
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: "12",
-        ...(category && category !== "all" && { category }),
-        ...(search && { search }),
-      })
+      // 构建查询参数
+      const params = new URLSearchParams()
+      params.append('page', pagination.page.toString())
+      params.append('limit', pagination.limit.toString())
       
-      const response = await fetch(`/api/projects?${params}`)
-      if (!response.ok) throw new Error("获取项目列表失败")
+      if (filters.category !== 'all') params.append('category', filters.category)
+      if (filters.status !== 'all') params.append('status', filters.status)
+      if (filters.distributionMode !== 'all') params.append('distributionMode', filters.distributionMode)
+      if (filters.isPublic !== 'all') params.append('isPublic', filters.isPublic)
+      if (filters.requireLinuxdo !== 'all') params.append('requireLinuxdo', filters.requireLinuxdo)
+      if (filters.tagId !== 'all') params.append('tagId', filters.tagId)
+      if (filters.keyword) params.append('keyword', filters.keyword)
       
-      const data = await response.json()
-      setProjects(data.projects)
+      // 排序参数 - 根据status进行特殊处理
+      if (sort.sortBy === 'status') {
+        // 当按状态排序时，优先显示活跃项目
+        params.append('sortBy', 'status')
+        params.append('activeFirst', 'true')
+      } else {
+        params.append('sortBy', sort.sortBy)
+        params.append('sortOrder', sort.sortOrder)
+      }
+      
+      // 发送请求
+      const response = await fetch(`/api/projects/search?${params.toString()}`)
+      const result = await response.json()
+      
+      if (result.success) {
+        setProjects(result.data.projects)
+        setPagination(prev => ({
+          ...prev,
+          totalCount: result.data.pagination.totalCount,
+          totalPages: result.data.pagination.totalPages,
+          hasNext: result.data.pagination.hasNext,
+          hasPrev: result.data.pagination.hasPrev
+        }))
+      } else {
+        console.error('获取项目失败:', result.error)
+      }
     } catch (error) {
-      console.error("获取项目列表失败:", error)
+      console.error('获取项目异常:', error)
     } finally {
       setLoading(false)
     }
   }
 
+  // 监听筛选条件、排序和分页变化
   useEffect(() => {
     fetchProjects()
-  }, [page, category, search])
+  }, [pagination.page, sort.sortBy, sort.sortOrder])
+  
+  // 执行搜索和筛选的延迟处理
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPagination(prev => ({ ...prev, page: 1 })) // 重置到第一页
+      fetchProjects()
+    }, 500)
+    
+    return () => clearTimeout(timer)
+  }, [filters])
 
-  // 处理搜索
-  const handleSearch = (value: string) => {
-    setSearch(value)
-    setPage(1)
-  }
-
-  // 处理分类筛选
-  const handleCategoryChange = (value: string) => {
-    setCategory(value)
-    setPage(1)
+  // 处理编辑按钮点击
+  const handleEditProject = (projectId: string) => {
+    router.push(`/project/${projectId}`)
   }
 
   return (
-    <div className="space-y-6">
-      {/* 页面标题和操作 */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">项目广场</h1>
-          <p className="text-muted-foreground">
-            发现和领取社区分享的福利码和资源
-          </p>
-        </div>
-        <Link href="/project">
-          <Button className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            创建项目
-          </Button>
-        </Link>
-      </div>
+    <div className="space-y-10">
+      {/* 顶部工具栏 */}
+      <div className="flex flex-col gap-5">
+        {/* 搜索和重置筛选区 */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              placeholder="搜索项目名称、描述或教程内容..."
+              value={filters.keyword}
+              onChange={(e) => setFilters(prev => ({ ...prev, keyword: e.target.value }))}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              className="pl-10 h-10 border border-gray-200 bg-white hover:border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-200 transition-all duration-200 shadow-none"
+            />
+          </div>
 
-      {/* 搜索和筛选 */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="搜索项目名称或描述..."
-                value={search}
-                onChange={(e) => handleSearch(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <div className="flex gap-2">
-              <Select value={category} onValueChange={handleCategoryChange}>
-                <SelectTrigger className="w-[150px]">
-                  <Filter className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="选择分类" />
-                </SelectTrigger>
-                <SelectContent>
-                  {PROJECT_CATEGORIES.map((cat) => (
-                    <SelectItem key={cat.value} value={cat.value}>
-                      {cat.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <div className="flex items-center">
+            <Button 
+              variant="outline" 
+              onClick={handleResetFilters}
+              className="h-10 px-4 text-gray-600 border border-gray-200 hover:bg-gray-50 shadow-none"
+            >
+              重置
+            </Button>
+          </div>
+        </div>
+
+        {/* 高级筛选区域 - 现代化设计 */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100 mb-4 overflow-hidden">
+          <div className="p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* 分类筛选 */}
+              <div className="flex items-center space-x-3">
+                <div className="w-20 flex-shrink-0">
+                  <span className="text-sm font-medium text-gray-600">分类</span>
+                </div>
+                <Select value={filters.category} onValueChange={(value) => handleFilterChange('category', value)}>
+                  <SelectTrigger className="w-full h-9 text-sm border-gray-200 bg-gray-50 hover:bg-gray-100 transition-colors">
+                    <SelectValue placeholder="全部分类" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">全部</SelectItem>
+                    {getCategoryOptions().map((category) => (
+                      <SelectItem key={category.value} value={category.value}>
+                        {category.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* 状态筛选 */}
+              <div className="flex items-center space-x-3">
+                <div className="w-20 flex-shrink-0">
+                  <span className="text-sm font-medium text-gray-600">状态</span>
+                </div>
+                <Select value={filters.status} onValueChange={(value) => handleFilterChange('status', value)}>
+                  <SelectTrigger className="w-full h-9 text-sm border-gray-200 bg-gray-50 hover:bg-gray-100 transition-colors">
+                    <SelectValue placeholder="全部状态" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">全部</SelectItem>
+                    {getProjectStatusOptions().map((status) => (
+                      <SelectItem key={status.value} value={status.value}>
+                        {status.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* 模式筛选 */}
+              <div className="flex items-center space-x-3">
+                <div className="w-20 flex-shrink-0">
+                  <span className="text-sm font-medium text-gray-600">模式</span>
+                </div>
+                <Select value={filters.distributionMode} onValueChange={(value) => handleFilterChange('distributionMode', value)}>
+                  <SelectTrigger className="w-full h-9 text-sm border-gray-200 bg-gray-50 hover:bg-gray-100 transition-colors">
+                    <SelectValue placeholder="全部模式" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">全部</SelectItem>
+                    <SelectItem value="SINGLE">一码一用</SelectItem>
+                    <SelectItem value="MULTI">一码多用</SelectItem>
+                    <SelectItem value="MANUAL">申请-邀请</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* 可见性筛选 */}
+              <div className="flex items-center space-x-3">
+                <div className="w-20 flex-shrink-0">
+                  <span className="text-sm font-medium text-gray-600">可见性</span>
+                </div>
+                <Select value={filters.isPublic} onValueChange={(value) => handleFilterChange('isPublic', value)}>
+                  <SelectTrigger className="w-full h-9 text-sm border-gray-200 bg-gray-50 hover:bg-gray-100 transition-colors">
+                    <SelectValue placeholder="全部" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">全部</SelectItem>
+                    <SelectItem value="true">公开</SelectItem>
+                    <SelectItem value="false">私有</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* 认证筛选 */}
+              <div className="flex items-center space-x-3">
+                <div className="w-20 flex-shrink-0">
+                  <span className="text-sm font-medium text-gray-600">认证</span>
+                </div>
+                <Select value={filters.requireLinuxdo} onValueChange={(value) => handleFilterChange('requireLinuxdo', value)}>
+                  <SelectTrigger className="w-full h-9 text-sm border-gray-200 bg-gray-50 hover:bg-gray-100 transition-colors">
+                    <SelectValue placeholder="全部" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">全部</SelectItem>
+                    <SelectItem value="true">需要认证</SelectItem>
+                    <SelectItem value="false">无需认证</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* 排序选项 */}
+              <div className="flex items-center space-x-3">
+                <div className="w-20 flex-shrink-0">
+                  <span className="text-sm font-medium text-gray-600">排序</span>
+                </div>
+                <div className="flex space-x-2 w-full">
+                  <Select value={sort.sortBy} onValueChange={(value) => setSort(prev => ({ ...prev, sortBy: value }))}>
+                    <SelectTrigger className="w-full h-9 text-sm border-gray-200 bg-gray-50 hover:bg-gray-100 transition-colors">
+                      <SelectValue placeholder="项目状态" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="status">项目状态</SelectItem>
+                      <SelectItem value="createdAt">创建时间</SelectItem>
+                      <SelectItem value="updatedAt">更新时间</SelectItem>
+                      <SelectItem value="name">项目名称</SelectItem>
+                      <SelectItem value="claimedCount">领取数量</SelectItem>
+                      <SelectItem value="totalQuota">领取名额</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={sort.sortOrder} onValueChange={(value: 'asc' | 'desc') => setSort(prev => ({ ...prev, sortOrder: value }))}>
+                    <SelectTrigger className="w-[80px] h-9 text-sm border-gray-200 bg-gray-50 hover:bg-gray-100 transition-colors">
+                      <SelectValue placeholder="升序" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="asc">升序</SelectItem>
+                      <SelectItem value="desc">降序</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* 项目列表 */}
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Card key={i} className="animate-pulse">
-              <CardHeader>
-                <div className="h-4 bg-muted rounded w-3/4"></div>
-                <div className="h-3 bg-muted rounded w-full"></div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="h-3 bg-muted rounded w-1/2"></div>
-                  <div className="h-3 bg-muted rounded w-2/3"></div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+        <div className="flex justify-center items-center py-20">
+          <div className="flex items-center gap-3 text-gray-500">
+            <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
+            加载中...
+          </div>
         </div>
-      ) : projects.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {projects.map((project) => (
-            <ProjectPreview
-              key={project.id}
-              data={{
-                name: project.name,
-                description: project.description,
-                category: project.category,
-                tags: project.tag ? [project.tag.name] : [],
-                totalQuota: project.totalQuota,
-                distributionMode: project.distributionMode,
-                isPublic: project.isPublic,
-                startTime: new Date(project.startTime),
-                endTime: project.endTime ? new Date(project.endTime) : undefined,
-                requireLinuxdo: project.requireLinuxdo,
-                minTrustLevel: project.minTrustLevel,
-                minRiskThreshold: project.minRiskThreshold,
-              }}
-            />
-          ))}
+      ) : projects.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+            <Search className="w-8 h-8 text-gray-400" />
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">暂无项目</h3>
+          <p className="text-gray-500 max-w-sm">
+            您还没有创建任何项目，或者当前筛选条件下没有匹配的项目
+          </p>
         </div>
       ) : (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <div className="text-center space-y-2">
-              <h3 className="text-lg font-medium">暂无项目</h3>
-              <p className="text-muted-foreground">
-                {search || (category && category !== "all") ? "没有找到符合条件的项目" : "还没有任何项目，成为第一个创建者吧！"}
-              </p>
-              {!search && (!category || category === "all") && (
-                <Link href="/project">
-                  <Button className="mt-4">
-                    <Plus className="h-4 w-4 mr-2" />
-                    创建第一个项目
-                  </Button>
-                </Link>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 p-1">
+          {projects.map((project) => {
+            
+            if (project.requireLinuxdo) {
+              return (
+                <div
+                  key={project.id}
+                  className="flex flex-col overflow-hidden rounded-lg shadow-sm hover:shadow-md transition-all duration-200 h-56 m-1"
+                >
+                  {/* 黑色区域 - 显示认证徽章和状态 - 1/3高度 */}
+                  <div className="bg-gray-900 flex-1 px-5 py-5 flex items-center justify-between">
+                    <div className="flex items-center">
+                      <span className="bg-yellow-500 text-gray-900 text-xs font-bold px-2 py-1 rounded-sm mr-2">
+                        LinuxDo认证
+                      </span>
+                      <span className="text-white text-xs">
+                        {getCategoryLabel(project.category as keyof typeof PROJECT_CATEGORIES)}
+                      </span>
+                    </div>
+                    <div className="flex items-center bg-opacity-20 bg-white rounded-full px-2 py-0.5">
+                      <div className="w-2 h-2 rounded-full mr-1 bg-green-400"></div>
+                      <span className="text-white text-xs">{getStatusConfig(project.status).label}</span>
+                    </div>
+                  </div>
+                  
+                  {/* 白色区域 - 显示标题 - 1/3高度 */}
+                  <div className="bg-white flex-1 px-5 py-5 flex items-center justify-between">
+                    <div className="flex flex-col">
+                      <div className="text-xl font-semibold text-gray-900 truncate">
+                        {project.name}
+                      </div>
+                      <div className="text-xs text-gray-500">{project.creator.nickname || project.creator.name}</div>
+                    </div>
+                    <div className="text-base font-semibold flex items-center gap-1">
+                      <Gift className="w-4 h-4" />
+                      <span className="text-gray-500">{project.claimedCount}/{project.totalQuota}</span>
+                    </div>
+                  </div>
+                  
+                  {/* 黄色区域 - 显示领取情况及操作按钮 - 1/3高度 */}
+                  <div className="bg-yellow-500 flex-1 px-5 py-5 flex items-center justify-between">
+                    <div className="flex flex-col text-xs text-gray-800 gap-1">
+                      <div className="text-xs">
+                        {/* 使用统一函数获取分发模式标签 */}
+                        {getDistributionModeLabel(project.distributionMode)}
+                      </div>
+                      <div className="text-xs">
+                        {format(new Date(project.startTime), 'MM-dd HH:mm')} 至 {project.endTime ? format(new Date(project.endTime), 'MM-dd HH:mm') : '无限期'}
+                      </div>
+                    </div>
+                    <div className="flex gap-1">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleOpenProjectInfo(project)}
+                        className="text-xs shadow-none border-none bg-transparent text-gray-800 h-7 px-3 rounded hover:bg-yellow-400"
+                      >
+                        查看
+                      </Button>
+                      <Button 
+                        variant="default" 
+                        size="sm"
+                        onClick={() => handleEditProject(project.id)}
+                        className="text-xs shadow-none bg-gray-800 text-white h-7 px-3 rounded hover:bg-gray-700"
+                      >
+                        编辑
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              );
+            } else {
+              return (
+                <div
+                  key={project.id}
+                  className="flex flex-col overflow-hidden rounded-lg shadow-sm hover:shadow-md transition-all duration-200 h-56 m-1"
+                >
+                  {/* 蓝色区域 - 显示类型和状态 - 1/3高度 */}
+                  <div className="bg-blue-600 flex-1 px-5 py-5 flex items-center justify-between">
+                    <div className="flex items-center">
+                      <span className="bg-white text-blue-600 text-xs font-bold px-2 py-1 rounded-sm mr-2">
+                        普通项目
+                      </span>
+                      <span className="text-white text-xs">
+                        {getCategoryLabel(project.category as keyof typeof PROJECT_CATEGORIES)}
+                      </span>
+                    </div>
+                    <div className="flex items-center bg-opacity-20 bg-white rounded-full px-2 py-0.5">
+                      <div className="w-2 h-2 rounded-full mr-1 bg-green-400"></div>
+                      <span className="text-white text-xs">{getStatusConfig(project.status).label}</span>
+                    </div>
+                  </div>
+                  
+                  {/* 白色区域 - 显示标题 - 1/3高度 */}
+                  <div className="bg-white flex-1 px-5 py-5 flex items-center justify-between">
+                    <div className="flex flex-col">
+                      <div className="text-xl font-semibold text-gray-900 truncate">
+                        {project.name}
+                      </div>
+                      <div className="text-xs text-gray-500">{project.creator.nickname || project.creator.name}</div>
+                    </div>
+                    <div className="text-base font-semibold flex items-center gap-1">
+                      <Gift className="w-4 h-4" />
+                      <span className="text-gray-500">{project.claimedCount}/{project.totalQuota}</span>
+                    </div>
+                  </div>
+                  
+                  {/* 浅蓝色区域 - 显示领取情况及操作按钮 - 1/3高度 */}
+                  <div className="bg-blue-50 flex-1 px-5 py-5 flex items-center justify-between">
+                    <div className="flex flex-col text-xs text-gray-600 gap-1">
+                      <div className="text-xs">
+                        {/* 使用统一函数获取分发模式标签 */}
+                        {getDistributionModeLabel(project.distributionMode)}
+                      </div>
+                      <div className="text-xs">
+                        {format(new Date(project.startTime), 'MM-dd HH:mm')} 至 {project.endTime ? format(new Date(project.endTime), 'MM-dd HH:mm') : '无限期'}
+                      </div>
+                    </div>
+                    <div className="flex gap-1">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleOpenProjectInfo(project)}
+                        className="text-xs shadow-none border-none bg-transparent text-gray-600 h-7 px-3 rounded hover:bg-blue-100"
+                      >
+                        查看
+                      </Button>
+                      <Button 
+                        variant="default" 
+                        size="sm"
+                        onClick={() => handleEditProject(project.id)}
+                        className="text-xs shadow-none bg-blue-600 text-white h-7 px-3 rounded hover:bg-blue-700"
+                      >
+                        编辑
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+          })}
+        </div>
       )}
+
+      {/* 分页 */}
+      {pagination.totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-6">
+          <div className="text-sm text-gray-500 order-2 sm:order-1">
+            共 {pagination.totalCount} 个项目
+          </div>
+          
+          <div className="flex items-center gap-2 order-1 sm:order-2 w-full sm:w-auto justify-center">
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={!pagination.hasPrev}
+              onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
+              className="h-8 px-2 sm:px-3 text-gray-600 hover:bg-gray-100 disabled:opacity-50 shadow-none"
+            >
+              <ChevronLeft className="w-4 h-4 sm:mr-1" />
+              <span className="hidden sm:inline">上一页</span>
+            </Button>
+            
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                // 计算当前页码组的起始页码
+                let startPage = Math.max(1, pagination.page - 2);
+                
+                // 如果当前页靠近末尾，调整起始页码，确保显示最后5页
+                if (pagination.page > pagination.totalPages - 2) {
+                  startPage = Math.max(1, pagination.totalPages - 4);
+                }
+                
+                const pageNum = startPage + i;
+                if (pageNum > pagination.totalPages) return null;
+                
+                return (
+                  <Button
+                    key={pageNum}
+                    variant={pageNum === pagination.page ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setPagination(prev => ({ ...prev, page: pageNum }))}
+                    className={`h-8 w-8 p-0 text-sm shadow-none ${
+                      pageNum === pagination.page 
+                        ? "bg-gray-900 text-white hover:bg-gray-800" 
+                        : "text-gray-600 hover:bg-gray-100"
+                    }`}
+                  >
+                    {pageNum}
+                  </Button>
+                );
+              })}
+            </div>
+            
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={!pagination.hasNext}
+              onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
+              className="h-8 px-2 sm:px-3 text-gray-600 hover:bg-gray-100 disabled:opacity-50 shadow-none"
+            >
+              <span className="hidden sm:inline">下一页</span>
+              <ChevronRight className="w-4 h-4 sm:ml-1" />
+            </Button>
+          </div>
+        </div>
+      )}
+      
+      {/* 项目详情对话框 */}
+      <ProjectInfo 
+        project={selectedProject} 
+        isOpen={isInfoDialogOpen} 
+        onClose={handleCloseProjectInfo} 
+      />
     </div>
   )
-} 
+}

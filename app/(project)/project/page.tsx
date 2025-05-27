@@ -1,11 +1,11 @@
 import { ProjectCreate } from "@/components/project/project-create"
-import { ProjectListContent } from "@/components/project/project-list-content"
+import ProjectList from "@/components/project/project-list"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default function CreateProjectPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white dark:from-slate-950 dark:to-slate-900">
-      <div className="container max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* 页面标题 */}
         <div className="mb-8">
           <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
@@ -24,7 +24,7 @@ export default function CreateProjectPage() {
           </TabsList>
           
           <TabsContent value="all-projects" className="space-y-6">
-            <ProjectListContent />
+            <ProjectList />
           </TabsContent>
           
           <TabsContent value="create-project" className="space-y-6">
