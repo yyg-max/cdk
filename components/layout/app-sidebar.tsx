@@ -49,7 +49,7 @@ const data = {
   navMain: [
     {
       title: "探索广场",
-      url: "/dashboard",
+      url: "/platform",
       icon: LayoutDashboardIcon,
     },
     {
@@ -64,7 +64,7 @@ const data = {
     },
     {
       title: "我的领取",
-      url: "#",
+      url: "/myclaim",
       icon: ShoppingBag,
     }
   ],
@@ -76,7 +76,7 @@ const data = {
     },
     {
       title: "帮助中心",
-      url: "#",
+      url: "/help",
       icon: HelpCircleIcon,
     },
     {

@@ -434,6 +434,8 @@ export default function ProjectList() {
               onChange={(e) => setFilters(prev => ({ ...prev, keyword: e.target.value }))}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               className="pl-10 h-9 w-full border border-gray-200 bg-white hover:border-gray-300 transition-all duration-200 shadow-none"
+              readOnly
+              onFocus={(e) => e.target.removeAttribute('readonly')}
             />
             {filters.keyword && (
               <Button

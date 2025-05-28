@@ -3,21 +3,35 @@ import bcrypt from "bcryptjs"
 import crypto from "crypto"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { DistributionMode, ProjectStatus } from "@prisma/client"
 
 interface ClaimRequest {
-  projectId: string
-  inviteCode: string
-  claimPassword?: string
+  password?: string
 }
 
-// 生成邀请码哈希值
+// 生成内容哈希值
 function generateContentHash(content: string): string {
   return crypto.createHash('sha256').update(content).digest('hex')
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const body: ClaimRequest = await request.json()
+    const { id: projectId } = await params
+    
+    // 安全地解析请求体
+    let body: ClaimRequest = {}
+    try {
+      const text = await request.text()
+      if (text.trim()) {
+        body = JSON.parse(text)
+      }
+    } catch (parseError) {
+      console.error("JSON解析错误:", parseError)
+      // 使用默认空对象，继续处理
+    }
     
     // 获取当前用户
     const session = await auth.api.getSession({
@@ -33,11 +47,12 @@ export async function POST(request: NextRequest) {
 
     const userId = session.user.id
 
-    // 获取项目信息（使用索引优化查询）
+    // 获取项目信息
     const project = await prisma.shareProject.findFirst({
       where: {
-        id: body.projectId,
-        status: "active",
+        id: projectId,
+        status: ProjectStatus.ACTIVE,
+        isPublic: true,
         startTime: { lte: new Date() },
         OR: [
           { endTime: null },
@@ -46,11 +61,11 @@ export async function POST(request: NextRequest) {
       },
       select: {
         id: true,
+        name: true,
         distributionMode: true,
         totalQuota: true,
         claimedCount: true,
         claimPassword: true,
-        inviteCodes: true,
         requireLinuxdo: true,
         minTrustLevel: true,
         minRiskThreshold: true
@@ -74,14 +89,14 @@ export async function POST(request: NextRequest) {
 
     // 验证领取密码
     if (project.claimPassword) {
-      if (!body.claimPassword) {
+      if (!body.password) {
         return NextResponse.json(
           { error: "请输入领取密码" },
           { status: 400 }
         )
       }
       
-      const isPasswordValid = await bcrypt.compare(body.claimPassword, project.claimPassword)
+      const isPasswordValid = await bcrypt.compare(body.password, project.claimPassword)
       if (!isPasswordValid) {
         return NextResponse.json(
           { error: "领取密码错误" },
@@ -124,15 +139,24 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // 检查用户是否已经领取过
+    const existingClaim = await checkExistingClaim(projectId, userId, project.distributionMode)
+    if (existingClaim) {
+      return NextResponse.json(
+        { error: "您已经领取过此项目" },
+        { status: 400 }
+      )
+    }
+
     // 根据分发模式处理领取逻辑
     let result
-    if (project.distributionMode === "single") {
-      result = await handleSingleCodeClaim(project.id, body.inviteCode, userId)
-    } else if (project.distributionMode === "multi") {
-      result = await handleMultiCodeClaim(project.id, body.inviteCode, userId, project.inviteCodes)
+    if (project.distributionMode === DistributionMode.SINGLE) {
+      result = await handleSingleCodeClaim(projectId, userId)
+    } else if (project.distributionMode === DistributionMode.MULTI) {
+      result = await handleMultiCodeClaim(projectId, userId)
     } else {
       return NextResponse.json(
-        { error: "手动邀请模式不支持直接领取" },
+        { error: "手动邀请模式需要管理员审核" },
         { status: 400 }
       )
     }
@@ -140,7 +164,7 @@ export async function POST(request: NextRequest) {
     if (result.success) {
       // 更新项目的已领取数量（使用原子操作）
       await prisma.shareProject.update({
-        where: { id: project.id },
+        where: { id: projectId },
         data: {
           claimedCount: { increment: 1 }
         }
@@ -158,23 +182,55 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// 检查用户是否已经领取过
+async function checkExistingClaim(projectId: string, userId: string, distributionMode: DistributionMode) {
+  if (distributionMode === DistributionMode.SINGLE) {
+    const existing = await prisma.singleCodeClaim.findFirst({
+      where: {
+        projectId: projectId,
+        claimerId: userId,
+        isClaimed: true
+      }
+    })
+    return !!existing
+  } else if (distributionMode === DistributionMode.MULTI) {
+    const existing = await prisma.multiCodeClaim.findFirst({
+      where: {
+        projectId: projectId,
+        claimerId: userId
+      }
+    })
+    return !!existing
+  } else if (distributionMode === DistributionMode.MANUAL) {
+    const existing = await prisma.manualApplication.findFirst({
+      where: {
+        projectId: projectId,
+        applicantId: userId,
+        status: 'APPROVED'
+      }
+    })
+    return !!existing
+  }
+  return false
+}
+
 // 处理一码一用领取
-async function handleSingleCodeClaim(projectId: string, inviteCode: string, userId: string) {
-  const contentHash = generateContentHash(inviteCode)
-  
+async function handleSingleCodeClaim(projectId: string, userId: string) {
   // 使用事务确保原子性
   return await prisma.$transaction(async (tx) => {
-    // 查找可用的邀请码（使用哈希索引快速查找）
+    // 查找可用的邀请码
     const claim = await tx.singleCodeClaim.findFirst({
       where: {
         projectId: projectId,
-        contentHash: contentHash,
         isClaimed: false
+      },
+      orderBy: {
+        createdAt: 'asc' // 按创建时间排序，先到先得
       }
     })
 
     if (!claim) {
-      return { success: false, error: "邀请码无效或已被使用" }
+      return { success: false, error: "暂无可用的邀请码" }
     }
 
     // 标记为已领取
@@ -196,45 +252,43 @@ async function handleSingleCodeClaim(projectId: string, inviteCode: string, user
 }
 
 // 处理一码多用领取
-async function handleMultiCodeClaim(projectId: string, inviteCode: string, userId: string, inviteCodesJson: string | null) {
-  if (!inviteCodesJson) {
-    return { success: false, error: "项目配置错误" }
-  }
-
-  try {
-    const inviteCodes = JSON.parse(inviteCodesJson)
-    if (!inviteCodes.includes(inviteCode)) {
-      return { success: false, error: "邀请码无效" }
-    }
-  } catch {
-    return { success: false, error: "项目配置错误" }
-  }
-
-  // 检查用户是否已经领取过
-  const existingClaim = await prisma.multiCodeClaim.findUnique({
-    where: {
-      projectId_claimerId: {
-        projectId: projectId,
-        claimerId: userId
-      }
-    }
+async function handleMultiCodeClaim(projectId: string, userId: string) {
+  // 获取项目的多用码
+  const project = await prisma.shareProject.findUnique({
+    where: { id: projectId },
+    select: { inviteCodes: true }
   })
 
-  if (existingClaim) {
-    return { success: false, error: "您已经领取过该项目" }
+  if (!project?.inviteCodes) {
+    return { success: false, error: "项目配置错误" }
   }
 
-  // 创建领取记录
+  let inviteCodes: string[]
+  try {
+    inviteCodes = JSON.parse(project.inviteCodes)
+  } catch {
+    return { success: false, error: "邀请码格式错误" }
+  }
+
+  if (!inviteCodes || inviteCodes.length === 0) {
+    return { success: false, error: "暂无可用的邀请码" }
+  }
+
+  // 随机选择一个邀请码
+  const randomCode = inviteCodes[Math.floor(Math.random() * inviteCodes.length)]
+
+  // 记录领取记录
   await prisma.multiCodeClaim.create({
     data: {
       projectId: projectId,
-      claimerId: userId
+      claimerId: userId,
+      claimedAt: new Date()
     }
   })
 
   return { 
     success: true, 
     message: "领取成功",
-    data: { content: inviteCode }
+    data: { content: randomCode }
   }
 } 

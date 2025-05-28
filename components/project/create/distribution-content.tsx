@@ -210,7 +210,6 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
             <Label htmlFor="claimPassword" className="text-sm font-medium">设置密码<span className="text-muted-foreground">（可选）</span></Label>
             <Input
               id="claimPassword"
-              type="password"
               placeholder="至少6位，用户需要输入密码才能领取"
               value={formData.claimPassword || ""}
               onChange={(e) => updateFormData("claimPassword", e.target.value)}
@@ -372,7 +371,6 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
             <Label htmlFor="claimPassword" className="text-sm font-medium">设置密码<span className="text-muted-foreground">（可选）</span></Label>
             <Input
               id="claimPassword"
-              type="password"
               placeholder="至少6位，用户需要输入密码才能领取"
               value={formData.claimPassword || ""}
               onChange={(e) => updateFormData("claimPassword", e.target.value)}
