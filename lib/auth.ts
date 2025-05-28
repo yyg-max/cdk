@@ -2,7 +2,11 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { genericOAuth } from "better-auth/plugins";
 import { prisma } from "./prisma";
+import { LinuxDoProfile } from "./types/auth";
 
+/**
+ * Better-Auth 配置和初始化
+ */
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "mysql",
@@ -41,16 +45,18 @@ export const auth = betterAuth({
           // 启用用户信息覆盖更新 - 每次登录时更新用户信息
           overrideUserInfo: true,
           // 自定义用户信息映射
-          mapProfileToUser: (profile: any) => {
+          mapProfileToUser: (profile: Record<string, unknown>) => {
+            // 将Record<string, unknown>断言为我们期望的类型结构
+            const linuxDoProfile = profile as unknown as LinuxDoProfile;
             return {
-              id: profile.id.toString(),
-              email: profile.email,
-              name: profile.username,  // username作为系统用户名
-              nickname: profile.name,  // name作为昵称显示
-              image: profile.avatar_url,
+              id: linuxDoProfile.id.toString(),
+              email: linuxDoProfile.email,
+              name: linuxDoProfile.username,  // username作为系统用户名
+              nickname: linuxDoProfile.name,  // name作为昵称显示
+              image: linuxDoProfile.avatar_url,
               emailVerified: false,
               source: "linuxdo",
-              trustLevel: profile.trust_level || 0,
+              trustLevel: linuxDoProfile.trust_level || 0,
               autoupdate: true, // 默认开启自动更新
             };
           },
@@ -88,7 +94,13 @@ export const auth = betterAuth({
   },
 });
 
-// 导出用于管理用户禁用状态的函数
+/**
+ * 将指定用户标记为禁用状态
+ * 
+ * @param userId - 用户ID
+ * @param reason - 禁用原因
+ * @returns 更新后的用户对象
+ */
 export async function banUser(userId: string, reason?: string) {
   return await prisma.user.update({
     where: { id: userId },
@@ -99,6 +111,12 @@ export async function banUser(userId: string, reason?: string) {
   });
 }
 
+/**
+ * 解除用户的禁用状态
+ * 
+ * @param userId - 用户ID
+ * @returns 更新后的用户对象
+ */
 export async function unbanUser(userId: string) {
   return await prisma.user.update({
     where: { id: userId },
@@ -109,6 +127,13 @@ export async function unbanUser(userId: string) {
   });
 }
 
+/**
+ * 检查用户是否被禁用
+ * 
+ * @param email - 用户邮箱
+ * @throws 如果用户被禁用则抛出错误
+ * @returns 用户对象或undefined
+ */
 export async function checkUserBanned(email: string) {
   const user = await prisma.user.findUnique({
     where: { email },

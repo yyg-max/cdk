@@ -1,12 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkUserBanned } from '@/lib/auth';
+import { ErrorResponse } from '@/lib/types/auth';
 
+/**
+ * 检查用户是否被禁用的API
+ * 
+ * @param request - NextRequest请求对象
+ * @returns NextResponse响应对象
+ */
 export async function POST(request: NextRequest) {
   try {
-    const { email } = await request.json();
+    const body = await request.json();
+    const email = body.email as string;
     
     if (!email) {
-      return NextResponse.json(
+      return NextResponse.json<ErrorResponse>(
         { error: '缺少邮箱参数' },
         { status: 400 }
       );
@@ -16,9 +24,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ allowed: true });
     
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : '未知错误';
+    // 断言error为Error类型以安全地访问message属性
+    const errorObj = error as Error;
+    const errorMessage = errorObj.message || '未知错误';
+    
     if (errorMessage.includes('Account is disabled')) {
-      return NextResponse.json(
+      return NextResponse.json<ErrorResponse>(
         { 
           error: errorMessage,
           banned: true 
@@ -27,7 +38,7 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    return NextResponse.json(
+    return NextResponse.json<ErrorResponse>(
       { error: '服务器内部错误' },
       { status: 500 }
     );

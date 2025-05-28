@@ -4,16 +4,15 @@ import { useState, useEffect } from "react"
 import { ChevronRight, ChevronLeft } from "lucide-react"
 import Link from "next/link"
 import { ProjectCard } from "@/components/platform/project-card"
+import { Project } from "@/components/platform/project-card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { 
   Carousel, 
   CarouselContent, 
   CarouselItem, 
-  CarouselNext, 
-  CarouselPrevious 
+  CarouselApi
 } from "@/components/ui/carousel"
-import { cn } from "@/lib/utils"
 import { usePlatformContext } from "@/providers/platform-provider"
 
 // 定义项目分类类型
@@ -28,28 +27,6 @@ const CATEGORY_NAMES: Record<ProjectCategory, string> = {
   RESOURCE: '资源分享',
   LIFE: '生活服务',
   OTHER: '其他',
-}
-
-// 项目类型
-interface Project {
-  id: string
-  name: string
-  description: string
-  category: ProjectCategory
-  tags: { id: string; name: string }[]
-  distributionMode: string
-  totalQuota: number
-  claimedCount: number
-  remainingQuota: number
-  creator: {
-    id: string
-    name: string
-    nickname?: string
-    image?: string
-  }
-  createdAt: string
-  updatedAt: string
-  hasPassword: boolean
 }
 
 export function CategoryCarousel() {
@@ -81,7 +58,7 @@ export function CategoryCarousel() {
         <CategorySection 
           key={category} 
           category={category} 
-          projects={projectsByCategory[category]} 
+          projects={projectsByCategory[category] as unknown as Project[]} 
           count={categories.find(c => c.name === category)?.count || 0}
         />
       ))}
@@ -91,12 +68,12 @@ export function CategoryCarousel() {
 
 interface CategorySectionProps {
   category: ProjectCategory
-  projects: any[]
+  projects: Project[]
   count: number
 }
 
 function CategorySection({ category, projects, count }: CategorySectionProps) {
-  const [carouselApi, setCarouselApi] = useState<any>(null)
+  const [carouselApi, setCarouselApi] = useState<CarouselApi | null>(null)
   const [canScrollPrev, setCanScrollPrev] = useState(false)
   const [canScrollNext, setCanScrollNext] = useState(false)
 
@@ -130,13 +107,13 @@ function CategorySection({ category, projects, count }: CategorySectionProps) {
           </span>
         </h2>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {/* 轮播控制按钮 */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="icon"
-              className="h-8 w-8"
+              className="h-8 w-8 rounded-full border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
               onClick={() => carouselApi?.scrollPrev()}
               disabled={!canScrollPrev}
             >
@@ -146,7 +123,7 @@ function CategorySection({ category, projects, count }: CategorySectionProps) {
             <Button
               variant="outline"
               size="icon"
-              className="h-8 w-8"
+              className="h-8 w-8 rounded-full border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
               onClick={() => carouselApi?.scrollNext()}
               disabled={!canScrollNext}
             >
@@ -158,9 +135,9 @@ function CategorySection({ category, projects, count }: CategorySectionProps) {
           {/* 查看全部链接 */}
           <Link 
             href={`/platform/category/${category}`}
-            className="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center"
+            className="text-sm font-medium px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors flex items-center gap-1"
           >
-            查看全部 <ChevronRight className="h-4 w-4" />
+            查看全部 <ChevronRight className="h-3.5 w-3.5" />
           </Link>
         </div>
       </div>

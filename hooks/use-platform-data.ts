@@ -1,4 +1,7 @@
+"use client"
+
 import { useState, useEffect, useCallback } from 'react'
+import { toast } from "sonner"
 
 // 项目类型定义
 export interface Project {
@@ -41,6 +44,63 @@ export interface CategoryData {
   count: number
 }
 
+// 重试函数
+const fetchWithRetry = async (url: string, options?: RequestInit, retries = 3, delay = 1000) => {
+  let lastError;
+  
+  for (let i = 0; i < retries; i++) {
+    try {
+      const response = await fetch(url, options);
+      
+      // 对于500和其他服务器错误，尝试重试
+      if (response.status >= 500) {
+        // 最后一次尝试时记录详细错误信息
+        if (i === retries - 1) {
+          console.error(`服务器错误 (${response.status})，所有重试失败`);
+          
+          // 尝试读取错误响应内容
+          try {
+            const contentType = response.headers.get("content-type") || "";
+            if (contentType.includes("application/json")) {
+              const errorData = await response.json();
+              console.error("服务器错误详情:", errorData);
+            } else {
+              // 非JSON响应，可能是HTML错误页面
+              const errorText = await response.text();
+              console.error("服务器返回非JSON响应:", 
+                errorText.length > 100 ? errorText.substring(0, 100) + "..." : errorText);
+            }
+          } catch (parseError) {
+            console.error("无法解析错误响应:", parseError);
+          }
+          
+          return response;
+        }
+        
+        // 记录日志但不中断重试循环
+        console.warn(`服务器错误 (${response.status})，第 ${i+1}/${retries} 次尝试重试...`);
+        await new Promise(r => setTimeout(r, delay * Math.pow(1.5, i))); // 指数退避策略
+        continue;
+      }
+      
+      return response;
+    } catch (error) {
+      lastError = error;
+      
+      // 最后一次尝试失败，记录详细错误
+      if (i === retries - 1) {
+        console.error(`网络请求失败，已重试 ${retries} 次:`, error);
+        throw error;
+      }
+      
+      console.warn(`网络请求失败，第 ${i+1}/${retries} 次尝试重试...`, error);
+      await new Promise(r => setTimeout(r, delay * Math.pow(1.5, i)));
+    }
+  }
+  
+  throw lastError;
+};
+
 // 平台数据hook
 export function usePlatformData() {
   // 统计数据
@@ -59,23 +119,34 @@ export function usePlatformData() {
   const [featuredProjects, setFeaturedProjects] = useState<Project[]>([])
   const [isFeaturedLoading, setIsFeaturedLoading] = useState(true)
 
+  const [error, setError] = useState<string | null>(null)
+
   // 获取统计数据
   const fetchStats = useCallback(async () => {
     try {
-      const response = await fetch('/api/projects/search', {
+      const response = await fetchWithRetry('/api/projects/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'getStats' }),
-      })
+      });
       
-      if (!response.ok) throw new Error('获取统计数据失败')
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => '未知错误');
+        throw new Error(`获取统计数据失败: ${response.status} ${errorText}`);
+      }
       
       const data = await response.json()
       if (data.success && data.data) {
         setStats(data.data)
+      } else {
+        throw new Error('获取统计数据失败: 返回数据格式错误');
       }
     } catch (error) {
-      console.error('获取统计数据错误:', error)
+      console.error('获取统计数据错误:', error);
+      // 显示用户友好的错误消息
+      setStats({ totalProjects: 0, activeProjects: 0, totalUsers: 0, totalClaims: 0 });
+      setError('获取统计数据失败');
+      toast.error('获取统计数据失败，已加载默认内容');
     } finally {
       setIsStatsLoading(false)
     }
@@ -84,20 +155,37 @@ export function usePlatformData() {
   // 获取分类数据
   const fetchCategories = useCallback(async () => {
     try {
-      const response = await fetch('/api/projects/search', {
+      const response = await fetchWithRetry('/api/projects/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'getCategories' }),
-      })
+      });
       
-      if (!response.ok) throw new Error('获取分类失败')
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => '未知错误');
+        throw new Error(`获取分类失败: ${response.status} ${errorText}`);
+      }
       
       const data = await response.json()
       if (data.success && data.data) {
         setCategories(data.data)
+      } else {
+        throw new Error('获取分类数据失败: 返回数据格式错误');
       }
     } catch (error) {
-      console.error('获取分类数据错误:', error)
+      console.error('获取分类数据错误:', error);
+      // 提供默认分类，这样UI不会完全崩溃
+      setCategories([
+        { name: 'AI', count: 0 },
+        { name: 'SOFTWARE', count: 0 },
+        { name: 'GAME', count: 0 },
+        { name: 'EDUCATION', count: 0 },
+        { name: 'RESOURCE', count: 0 },
+        { name: 'LIFE', count: 0 },
+        { name: 'OTHER', count: 0 },
+      ]);
+      setError('获取分类数据失败');
+      toast.error('获取分类数据失败，已加载默认内容');
     } finally {
       setIsCategoriesLoading(false)
     }
@@ -107,9 +195,12 @@ export function usePlatformData() {
   const fetchProjectsByCategory = useCallback(async () => {
     try {
       // 获取活跃且公开的项目，按创建时间倒序排列
-      const response = await fetch('/api/projects/search?status=ACTIVE&isPublic=true&limit=100&sortBy=createdAt&sortOrder=desc')
+      const response = await fetchWithRetry('/api/projects/search?status=ACTIVE&isPublic=true&limit=100&sortBy=createdAt&sortOrder=desc')
       
-      if (!response.ok) throw new Error('获取项目失败')
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => '未知错误');
+        throw new Error(`获取项目失败: ${response.status} ${errorText}`);
+      }
       
       const data = await response.json()
       if (data.success && data.data?.projects) {
@@ -136,9 +227,23 @@ export function usePlatformData() {
         })
         
         setProjectsByCategory(categorizedProjects)
+      } else {
+        throw new Error('获取项目数据失败: 返回数据格式错误');
       }
     } catch (error) {
-      console.error('获取项目数据错误:', error)
+      console.error('获取项目数据错误:', error);
+      // 提供空数据结构
+      setProjectsByCategory({
+        AI: [],
+        SOFTWARE: [],
+        GAME: [],
+        EDUCATION: [],
+        RESOURCE: [],
+        LIFE: [],
+        OTHER: [],
+      });
+      setError('获取项目数据失败');
+      toast.error('获取项目数据失败，已加载默认内容');
     } finally {
       setIsProjectsLoading(false)
     }
@@ -148,9 +253,12 @@ export function usePlatformData() {
   const fetchFeaturedProjects = useCallback(async () => {
     try {
       // 获取最新的活跃项目作为特色项目
-      const response = await fetch('/api/projects/search?status=ACTIVE&isPublic=true&limit=8&sortBy=createdAt&sortOrder=desc')
+      const response = await fetchWithRetry('/api/projects/search?status=ACTIVE&isPublic=true&limit=8&sortBy=createdAt&sortOrder=desc')
       
-      if (!response.ok) throw new Error('获取特色项目失败')
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => '未知错误');
+        throw new Error(`获取特色项目失败: ${response.status} ${errorText}`);
+      }
       
       const data = await response.json()
       if (data.success && data.data?.projects) {
@@ -160,9 +268,15 @@ export function usePlatformData() {
         })
         
         setFeaturedProjects(validProjects.slice(0, 5)) // 最多5个特色项目
+      } else {
+        throw new Error('获取特色项目失败: 返回数据格式错误');
       }
     } catch (error) {
-      console.error('获取特色项目错误:', error)
+      console.error('获取特色项目错误:', error);
+      // 提供空数组
+      setFeaturedProjects([]);
+      setError('获取特色项目失败');
+      toast.error('获取项目数据失败，请稍后刷新页面重试');
     } finally {
       setIsFeaturedLoading(false)
     }
@@ -214,5 +328,7 @@ export function usePlatformData() {
     fetchCategories,
     fetchProjectsByCategory,
     fetchFeaturedProjects,
+
+    error,
   }
 } 

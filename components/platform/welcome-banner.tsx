@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useState, useEffect, useCallback } from "react"
+import { useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { RollingText } from "@/components/animate-ui/text/rolling"
@@ -155,19 +155,11 @@ export function WelcomeBanner() {
                   {/* 底部按钮区 */}
                   <div className="mt-auto">
                     <div className="flex gap-2 sm:gap-3">
-                      <Button 
-                        variant="default" 
-                        size="sm"
-                        className="bg-white hover:bg-white/90 text-blue-700 text-[10px] sm:text-sm sm:h-9 h-8"
-                      >
-                        开始探索
-                      </Button>
-                      
                       <Link href="/project" passHref>
                         <Button 
                           variant="default"
                           size="sm" 
-                          className="text-white bg-none text-[10px] sm:text-sm sm:h-9 h-8"
+                          className="bg-white hover:bg-white/90 text-blue-700 text-[10px] sm:text-sm sm:h-9 h-8"
                         >
                           创建项目
                           <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
