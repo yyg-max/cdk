@@ -13,32 +13,43 @@ import { format } from "date-fns"
 import { zhCN } from "date-fns/locale"
 import { useState, useEffect } from "react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import type { EditClaimRestrictionsProps } from "./types"
 
-export interface EditClaimRestrictionsProps {
-  formData: {
-    startTime: Date
-    endTime: Date | null
-    requireLinuxdo: boolean
-    minTrustLevel: number
-    minRiskThreshold: number
-  }
-  setFormData: (data: Partial<EditClaimRestrictionsProps["formData"]>) => void
-}
-
+/**
+ * 项目领取限制编辑组件
+ * 
+ * @description 提供项目时间设置、认证要求、风控阈值等限制条件的编辑功能
+ * @param props - 组件属性
+ * @returns React 功能组件
+ */
 export function EditClaimRestrictions({ formData, setFormData }: EditClaimRestrictionsProps) {
   // 错误状态管理
   const [timeError, setTimeError] = useState<string | null>(null)
   
-  const updateField = <T extends Date | boolean | number | null>(field: keyof typeof formData, value: T) => {
+  /**
+   * 更新单个表单字段
+   * 
+   * @param field - 要更新的字段名
+   * @param value - 新的字段值
+   */
+  const updateField = <K extends keyof typeof formData>(
+    field: K, 
+    value: typeof formData[K]
+  ): void => {
     setFormData({ [field]: value })
   }
 
-  // 设置为无限期
-  const setInfiniteEndTime = () => {
+  /**
+   * 设置项目为无限期
+   */
+  const setInfiniteEndTime = (): void => {
     updateField("endTime", null)
   }
   
-  // 验证时间设置是否有效
+  /**
+   * 验证时间设置是否有效
+   * 检查结束时间不能早于开始时间
+   */
   useEffect(() => {
     // 清除错误
     setTimeError(null)
@@ -52,26 +63,39 @@ export function EditClaimRestrictions({ formData, setFormData }: EditClaimRestri
     }
   }, [formData.startTime, formData.endTime])
   
-  // 当开始时间变更时，确保结束时间不早于开始时间
+  /**
+   * 当开始时间变更时，确保结束时间不早于开始时间
+   */
   useEffect(() => {
     if (formData.startTime && formData.endTime && formData.endTime < formData.startTime) {
       // 设置结束时间为开始时间后的一小时
-      const newEndTime = new Date(formData.startTime as Date)
+      const newEndTime = new Date(formData.startTime)
       newEndTime.setHours(newEndTime.getHours() + 1)
       updateField("endTime", newEndTime)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.startTime])
 
-  // 获取风控阈值相关样式和描述
-  const getRiskLevelText = (value: number) => {
+  /**
+   * 获取风控阈值等级文本描述
+   * 
+   * @param value - 风控阈值数值
+   * @returns 等级文本描述
+   */
+  const getRiskLevelText = (value: number): string => {
     if (value >= 85) return "严格"
     if (value >= 75) return "推荐"
     if (value >= 60) return "一般"
     return "宽松"
   }
 
-  const getRiskLevelColor = (value: number) => {
+  /**
+   * 获取风控阈值对应的颜色
+   * 
+   * @param value - 风控阈值数值
+   * @returns RGB 颜色字符串
+   */
+  const getRiskLevelColor = (value: number): string => {
     if (value <= 55) {
       // 30-55 深红到浅红
       const intensity = Math.max(0, Math.min(1, (value - 30) / (55 - 30)))
@@ -96,7 +120,12 @@ export function EditClaimRestrictions({ formData, setFormData }: EditClaimRestri
     }
   }
 
-  const getRiskSliderStyle = () => {
+  /**
+   * 获取风控滑块的渐变样式
+   * 
+   * @returns CSS 样式对象
+   */
+  const getRiskSliderStyle = (): React.CSSProperties => {
     return {
       background: `linear-gradient(to right, 
         #8B0000 0%,    /* 深红 30 */
@@ -268,7 +297,7 @@ export function EditClaimRestrictions({ formData, setFormData }: EditClaimRestri
                   
                   // 如果选择了新日期，确保时间不早于开始时间
                   if (formData.startTime) {
-                    const startDateOnly = new Date(formData.startTime as Date);
+                    const startDateOnly = new Date(formData.startTime);
                     startDateOnly.setHours(0, 0, 0, 0);
                     
                     const selectedDateOnly = new Date(date);
@@ -277,7 +306,7 @@ export function EditClaimRestrictions({ formData, setFormData }: EditClaimRestri
                     // 如果选择的日期早于开始日期，使用开始日期
                     if (selectedDateOnly < startDateOnly) {
                       // 使用开始时间的日期
-                      const newDate = new Date(formData.startTime as Date);
+                      const newDate = new Date(formData.startTime);
                       newDate.setHours(
                         formData.endTime ? formData.endTime.getHours() : formData.startTime.getHours() + 1,
                         formData.endTime ? formData.endTime.getMinutes() : 0,
@@ -403,7 +432,7 @@ export function EditClaimRestrictions({ formData, setFormData }: EditClaimRestri
                       size="sm" 
                       onClick={() => {
                         // 设置为开始时间后一小时
-                        const newEndTime = new Date(formData.startTime as Date)
+                        const newEndTime = new Date(formData.startTime)
                         newEndTime.setHours(newEndTime.getHours() + 1)
                         updateField("endTime", newEndTime)
                       }}

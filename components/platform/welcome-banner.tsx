@@ -13,6 +13,8 @@ import {
   CarouselItem,
 } from "@/components/ui/carousel"
 import { usePlatformContext } from "@/providers/platform-provider"
+import { CarouselApi } from "@/components/ui/carousel"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 
 // 项目分类中文映射（按顺序）
 const CATEGORY_NAMES: Record<string, string> = {
@@ -23,6 +25,41 @@ const CATEGORY_NAMES: Record<string, string> = {
   RESOURCE: '资源分享',
   LIFE: '生活服务',
   OTHER: '其他',
+}
+
+// 参考project-card.tsx的渐变配色方案
+const CATEGORY_GRADIENTS: Record<string, {
+  gradient: string
+  name: string
+}> = {
+  AI: {
+    gradient: "bg-gradient-to-br from-emerald-500 to-cyan-500",
+    name: "AI智能"
+  },
+  SOFTWARE: {
+    gradient: "bg-gradient-to-br from-orange-500 to-pink-500", 
+    name: "软件工具"
+  },
+  GAME: {
+    gradient: "bg-gradient-to-br from-green-500 to-blue-600",
+    name: "游戏娱乐"
+  },
+  EDUCATION: {
+    gradient: "bg-gradient-to-br from-purple-600 to-pink-600", 
+    name: "教育学习"
+  },
+  RESOURCE: {
+    gradient: "bg-gradient-to-br from-blue-600 to-purple-700",
+    name: "资源分享"
+  },
+  LIFE: {
+    gradient: "bg-gradient-to-br from-cyan-500 to-blue-600",
+    name: "生活服务"
+  },
+  OTHER: {
+    gradient: "bg-gradient-to-br from-gray-600 to-gray-700",
+    name: "其他"
+  }
 }
 
 // 格式化日期时间，精确到秒
@@ -39,12 +76,23 @@ function formatDateTime(dateString: string): string {
   });
 }
 
+/**
+ * 欢迎横幅组件
+ * 
+ * 探索广场首页的主要展示组件，包含：
+ * - 平台统计信息展示
+ * - 特色项目轮播
+ * - 自动轮播和手动控制
+ * - 响应式设计适配
+ * 
+ * @returns React 函数组件
+ */
 export function WelcomeBanner() {
   // 使用共享的平台数据
   const { stats, featuredProjects, isStatsLoading, isFeaturedLoading } = usePlatformContext()
   
   // API 引用
-  const [api, setApi] = React.useState<any>(null)
+  const [api, setApi] = React.useState<CarouselApi | null>(null)
   const [current, setCurrent] = React.useState(0)
   
   // 手动切换到下一个或前一个
@@ -173,12 +221,16 @@ export function WelcomeBanner() {
           </CarouselItem>
 
           {/* 特色项目卡片 - 优化移动端适配 */}
-          {featuredProjects.map((project) => (
+          {featuredProjects.map((project) => {
+            // 获取项目分类对应的渐变配色
+            const gradientTheme = CATEGORY_GRADIENTS[project.category] || CATEGORY_GRADIENTS.OTHER
+            
+            return (
             <CarouselItem key={project.id}>
               <div className="p-1">
                 <div className="relative h-80 w-full overflow-hidden rounded-xl">
-                  {/* 背景渐变 - 保留原有颜色 */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-600/90 via-indigo-600/90 to-violet-700/90" />
+                  {/* 背景渐变 - 使用分类对应的渐变配色 */}
+                  <div className={`absolute inset-0 ${gradientTheme.gradient}`} />
                   
                   {/* 装饰元素 */}
                   <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full -translate-y-1/2 translate-x-1/2"></div>
@@ -237,11 +289,12 @@ export function WelcomeBanner() {
                     <div className="flex items-center mt-3 sm:mt-6 md:mt-3">
                       <div className="w-5 h-5 sm:w-7 sm:h-7 rounded-full bg-white/10 flex items-center justify-center mr-1 sm:mr-2">
                         {project.creator.image ? (
-                          <img 
-                            src={project.creator.image} 
-                            alt={project.creator.nickname || project.creator.name} 
-                            className="w-full h-full rounded-full object-cover" 
-                          />
+                          <Avatar>
+                            <AvatarImage src={project.creator.image} />
+                            <AvatarFallback>
+                              {project.creator.nickname?.[0] || project.creator.name?.[0] || '?'}
+                            </AvatarFallback>
+                          </Avatar>
                         ) : (
                           <span className="text-white text-[8px] sm:text-xs">{project.creator.nickname?.[0] || project.creator.name?.[0] || '?'}</span>
                         )}
@@ -320,7 +373,8 @@ export function WelcomeBanner() {
                 </div>
               </div>
             </CarouselItem>
-          ))}
+            )
+          })}
         </CarouselContent>
       </Carousel>
 

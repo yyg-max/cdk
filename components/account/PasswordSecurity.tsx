@@ -8,16 +8,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
-import { ExtendedUser } from "./types"
+import { ExtendedUser, PasswordStatusResponse } from "./types"
 
 interface PasswordSecurityProps {
   user?: ExtendedUser
-}
-
-interface PasswordStatus {
-  hasPassword: boolean
-  isThirdPartyUser: boolean
-  needsCurrentPassword: boolean
 }
 
 export function PasswordSecurity({ user }: PasswordSecurityProps) {
@@ -25,7 +19,7 @@ export function PasswordSecurity({ user }: PasswordSecurityProps) {
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [passwordStatus, setPasswordStatus] = useState<PasswordStatus | null>(
+  const [passwordStatus, setPasswordStatus] = useState<PasswordStatusResponse | null>(
     null
   )
   const [isCheckingPassword, setIsCheckingPassword] = useState(true)

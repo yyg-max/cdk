@@ -16,12 +16,27 @@ import {
   DistributionModeType 
 } from "./create/types"
 
+/**
+ * 标签页选项接口
+ */
 interface TabOption {
-  id: string
-  title: string
-  icon: React.ElementType
+  readonly id: string
+  readonly title: string
+  readonly icon: React.ElementType
 }
 
+/**
+ * 表单验证状态类型
+ */
+type ValidationStatus = {
+  isValid: boolean
+  missingFields: string[]
+}
+
+/**
+ * 项目创建主组件
+ * 统一管理项目创建流程的所有步骤
+ */
 export function ProjectCreate() {
   const [activeTab, setActiveTab] = useState<string>("basic")
   const [formData, setFormData] = useState<ProjectFormData>({
@@ -36,7 +51,10 @@ export function ProjectCreate() {
     minRiskThreshold: 80
   })
 
-  const tabs: TabOption[] = [
+  /**
+   * 标签页配置
+   */
+  const tabs: readonly TabOption[] = [
     {
       id: "basic",
       title: "基本信息",
@@ -52,13 +70,20 @@ export function ProjectCreate() {
       title: "领取限制",
       icon: AlertCircle
     }
-  ]
+  ] as const
 
-  // 验证各个配置部分
+  /**
+   * 验证基本信息部分
+   * @returns 是否验证通过
+   */
   const validateBasicInfo = (): boolean => {
     return !!(formData.name && formData.category && formData.totalQuota && formData.totalQuota > 0)
   }
 
+  /**
+   * 验证分发内容部分
+   * @returns 是否验证通过
+   */
   const validateDistribution = (): boolean => {
     const mode = formData.distributionMode as DistributionModeType
     
@@ -72,17 +97,33 @@ export function ProjectCreate() {
     return false
   }
 
+  /**
+   * 验证领取限制部分
+   * @returns 是否验证通过
+   */
   const validateRestrictions = (): boolean => {
     return !!(formData.startTime && formData.minRiskThreshold)
   }
 
-  // 验证表单数据
-  const validateForm = (): boolean => {
-    return validateBasicInfo() && validateDistribution() && validateRestrictions()
+  /**
+   * 验证整个表单
+   * @returns 验证状态
+   */
+  const validateForm = (): ValidationStatus => {
+    const isValid = validateBasicInfo() && validateDistribution() && validateRestrictions()
+    const missingFields = getMissingFields()
+    
+    return {
+      isValid,
+      missingFields
+    }
   }
 
-  // 获取缺失的数据信息
-  const getMissingData = (): string[] => {
+  /**
+   * 获取缺失的必填字段信息
+   * @returns 缺失字段数组
+   */
+  const getMissingFields = (): string[] => {
     const missing: string[] = []
     
     // 检查基本信息
@@ -112,7 +153,11 @@ export function ProjectCreate() {
     return missing
   }
 
-  // 获取配置状态
+  /**
+   * 获取标签页的验证状态
+   * @param tabId - 标签页ID
+   * @returns 是否验证通过
+   */
   const getTabStatus = (tabId: string): boolean => {
     switch (tabId) {
       case "basic":
@@ -126,11 +171,15 @@ export function ProjectCreate() {
     }
   }
 
+  /**
+   * 提交表单创建项目
+   */
   const handleSubmit = async (): Promise<void> => {
-    if (!validateForm()) {
-      const missingItems = getMissingData()
+    const validation = validateForm()
+    
+    if (!validation.isValid) {
       toast.error("请完成所有必填项", {
-        description: `缺少：${missingItems.join("、")}`,
+        description: `缺少：${validation.missingFields.join("、")}`,
         duration: 4000,
       })
       return
@@ -182,10 +231,17 @@ export function ProjectCreate() {
         body: JSON.stringify(requestData),
       })
 
-      const result = await response.json() as CreateProjectResponse
+      const result: unknown = await response.json()
+      
+      // 安全断言API响应
+      if (typeof result !== 'object' || result === null) {
+        throw new Error("API响应格式错误")
+      }
+      
+      const typedResult = result as CreateProjectResponse
 
       if (!response.ok) {
-        throw new Error(result.error || result.details || "创建失败")
+        throw new Error(typedResult.error || typedResult.details || "创建失败")
       }
       
       toast.success("项目创建成功！", {
@@ -206,7 +262,11 @@ export function ProjectCreate() {
     }
   }
 
-  const renderTabContent = () => {
+  /**
+   * 渲染当前标签页内容
+   * @returns 标签页组件
+   */
+  const renderTabContent = (): React.ReactNode => {
     switch (activeTab) {
       case "basic":
         return (
@@ -235,8 +295,7 @@ export function ProjectCreate() {
     }
   }
 
-  const isFormValid = validateForm()
-  const missingData = getMissingData()
+  const validation = validateForm()
 
   return (
     <TooltipProvider>
@@ -271,7 +330,7 @@ export function ProjectCreate() {
               <div>
                 <Button
                   onClick={handleSubmit}
-                  disabled={!isFormValid}
+                  disabled={!validation.isValid}
                   className="bg-black hover:bg-gray-800 text-white flex items-center space-x-1 disabled:opacity-50 px-3 py-2 h-auto text-sm"
                 >
                   <Check className="w-4 h-4" />
@@ -279,12 +338,12 @@ export function ProjectCreate() {
                 </Button>
               </div>
             </TooltipTrigger>
-            {!isFormValid && (
+            {!validation.isValid && (
               <TooltipContent side="top" className="max-w-xs">
                 <div className="space-y-1">
                   <p className="font-medium text-sm">请完成以下必填项：</p>
                   <ul className="text-xs space-y-0.5">
-                    {missingData.map((item, index) => (
+                    {validation.missingFields.map((item, index) => (
                       <li key={index} className="flex items-center space-x-1">
                         <span className="w-1 h-1 bg-current rounded-full"></span>
                         <span>{item}</span>

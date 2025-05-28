@@ -3,11 +3,12 @@
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Lock, Shield, Clock, Gift } from "lucide-react"
 import { format } from "date-fns"
 import { zhCN } from "date-fns/locale"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import type { Project } from "@/components/project/read/types"
 
 // 定义分发模式名称映射
 const DISTRIBUTION_MODE_NAMES: Record<string, string> = {
@@ -22,27 +23,27 @@ const CATEGORY_GRADIENTS: Record<string, {
   name: string
 }> = {
   AI: {
-    gradient: "bg-gradient-to-br from-cyan-500 to-blue-600",
+    gradient: "bg-gradient-to-br from-emerald-500 to-cyan-500",
     name: "AI智能"
   },
   SOFTWARE: {
-    gradient: "bg-gradient-to-br from-blue-600 to-purple-700", 
+    gradient: "bg-gradient-to-br from-orange-500 to-pink-500", 
     name: "软件工具"
   },
   GAME: {
-    gradient: "bg-gradient-to-br from-purple-600 to-pink-600",
+    gradient: "bg-gradient-to-br from-green-500 to-blue-600",
     name: "游戏娱乐"
   },
   EDUCATION: {
-    gradient: "bg-gradient-to-br from-green-500 to-blue-600", 
+    gradient: "bg-gradient-to-br from-purple-600 to-pink-600", 
     name: "教育学习"
   },
   RESOURCE: {
-    gradient: "bg-gradient-to-br from-orange-500 to-pink-500",
+    gradient: "bg-gradient-to-br from-blue-600 to-purple-700",
     name: "资源分享"
   },
   LIFE: {
-    gradient: "bg-gradient-to-br from-emerald-500 to-cyan-500",
+    gradient: "bg-gradient-to-br from-cyan-500 to-blue-600",
     name: "生活服务"
   },
   OTHER: {
@@ -51,37 +52,36 @@ const CATEGORY_GRADIENTS: Record<string, {
   }
 }
 
-// 项目类型定义
-export interface Project {
-  id: string
-  name: string
-  description: string
-  category: string
-  tags: { id: string; name: string }[]
-  distributionMode: string
-  totalQuota: number
-  claimedCount: number
-  remainingQuota: number
-  creator: {
-    id: string
-    name: string
-    nickname?: string
-    image?: string
-  }
-  createdAt: string
-  updatedAt: string
-  hasPassword: boolean
-  requireLinuxdo?: boolean
-  minTrustLevel?: number
-  endTime?: string
-}
-
+/**
+ * 项目卡片组件属性接口
+ */
 interface ProjectCardProps {
+  /** 项目数据 */
   project: Project
+  /** 是否显示分类标签 */
   showCategory?: boolean
+  /** 卡片显示变体 */
   variant?: 'default' | 'compact'
 }
 
+/**
+ * 项目卡片组件
+ * 
+ * 用于在探索广场中展示项目信息，采用现代化的卡片设计
+ * 支持响应式布局和多种交互状态
+ * 
+ * @param props - 组件属性
+ * @returns React 函数组件
+ * 
+ * @example
+ * ```tsx
+ * <ProjectCard 
+ *   project={projectData} 
+ *   showCategory={true}
+ *   variant="compact"
+ * />
+ * ```
+ */
 export function ProjectCard({ project }: ProjectCardProps) {
   // 用户显示名
   const creatorName = project.creator.nickname || project.creator.name
@@ -147,12 +147,18 @@ export function ProjectCard({ project }: ProjectCardProps) {
                 
                 {/* 头像 + 创建人名称 */}
                 <div className="flex items-center gap-2">
-                  <Avatar className="h-6 w-6 border-1 border-white/30">
-                    <AvatarImage src={project.creator.image} alt={creatorName} />
-                    <AvatarFallback className="bg-white/20 text-white text-sm font-medium">
-                      {creatorName.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
+                  <div className="w-5 h-5 sm:w-7 sm:h-7 rounded-full bg-white/10 flex items-center justify-center mr-1 sm:mr-2">
+                    {project.creator.image ? (
+                      <Avatar>
+                        <AvatarImage src={project.creator.image} />
+                        <AvatarFallback>
+                          {project.creator.nickname?.[0] || project.creator.name?.[0] || '?'}
+                        </AvatarFallback>
+                      </Avatar>
+                    ) : (
+                      <span className="text-white text-[8px] sm:text-xs">{project.creator.nickname?.[0] || project.creator.name?.[0] || '?'}</span>
+                    )}
+                  </div>
                   <span className="text-white/90 text-sm font-medium">
                     {creatorName}
                   </span>

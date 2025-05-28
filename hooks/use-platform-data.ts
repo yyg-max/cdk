@@ -2,33 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { toast } from "sonner"
-
-// 项目类型定义
-export interface Project {
-  id: string
-  name: string
-  description: string
-  category: 'AI' | 'SOFTWARE' | 'GAME' | 'EDUCATION' | 'RESOURCE' | 'LIFE' | 'OTHER'
-  tags: { id: string; name: string }[]
-  distributionMode: string
-  totalQuota: number
-  claimedCount: number
-  remainingQuota: number
-  creator: {
-    id: string
-    name: string
-    nickname?: string
-    image?: string
-  }
-  createdAt: string
-  updatedAt: string
-  hasPassword: boolean
-  requireLinuxdo: boolean
-  minTrustLevel: number
-  startTime: string
-  endTime: string | null
-  status: string
-}
+import type { Project } from '@/components/project/read/types'
 
 // 统计数据接口
 export interface StatsData {
@@ -249,11 +223,21 @@ export function usePlatformData() {
     }
   }, [])
 
-  // 获取特色项目
+  /**
+   * 获取特色项目
+   * 
+   * 算法逻辑：
+   * 1. 从每个分类中选取最新的1个活跃项目
+   * 2. 如果某个分类没有项目，跳过该分类  
+   * 3. 如果总数不足5个，从剩余的活跃项目中按时间顺序补充
+   * 4. 最终保证特色项目总数不超过5个
+   * 
+   * 这样可以确保特色项目具有分类多样性，同时保证项目的时效性
+   */
   const fetchFeaturedProjects = useCallback(async () => {
     try {
-      // 获取最新的活跃项目作为特色项目
-      const response = await fetchWithRetry('/api/projects/search?status=ACTIVE&isPublic=true&limit=8&sortBy=createdAt&sortOrder=desc')
+      // 获取活跃且公开的项目，按创建时间倒序排列，获取足够多的数据用于分类筛选
+      const response = await fetchWithRetry('/api/projects/search?status=ACTIVE&isPublic=true&limit=200&sortBy=createdAt&sortOrder=desc')
       
       if (!response.ok) {
         const errorText = await response.text().catch(() => '未知错误');
@@ -267,7 +251,48 @@ export function usePlatformData() {
           return !project.endTime || new Date(project.endTime) > new Date()
         })
         
-        setFeaturedProjects(validProjects.slice(0, 5)) // 最多5个特色项目
+        // 按分类整理项目，每个分类取最新的1个项目
+        const categorizedFeatured: Record<string, Project[]> = {
+          AI: [],
+          SOFTWARE: [],
+          GAME: [],
+          EDUCATION: [],
+          RESOURCE: [],
+          LIFE: [],
+          OTHER: [],
+        }
+        
+        // 遍历所有项目，为每个分类收集最新的项目
+        validProjects.forEach((project: Project) => {
+          if (categorizedFeatured[project.category] && categorizedFeatured[project.category].length === 0) {
+            categorizedFeatured[project.category].push(project)
+          }
+        })
+        
+        // 从每个分类中收集特色项目（每个分类最多1个）
+        const featuredList: Project[] = []
+        const categories = ['AI', 'SOFTWARE', 'GAME', 'EDUCATION', 'RESOURCE', 'LIFE', 'OTHER']
+        
+        // 先从每个分类中取一个项目
+        categories.forEach((category) => {
+          if (categorizedFeatured[category].length > 0 && featuredList.length < 5) {
+            featuredList.push(categorizedFeatured[category][0])
+          }
+        })
+        
+        // 如果不足5个，从剩余的活跃项目中按时间顺序补充
+        if (featuredList.length < 5) {
+          const featuredIds = new Set(featuredList.map((p: Project) => p.id))
+          const remainingProjects = validProjects.filter((p: Project) => !featuredIds.has(p.id))
+          
+          for (const project of remainingProjects) {
+            if (featuredList.length >= 5) break
+            featuredList.push(project)
+          }
+        }
+        
+        // 确保最终数量不超过5个
+        setFeaturedProjects(featuredList.slice(0, 5))
       } else {
         throw new Error('获取特色项目失败: 返回数据格式错误');
       }

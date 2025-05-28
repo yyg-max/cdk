@@ -1,20 +1,21 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { auth } from "@/lib/auth"
+import { authenticateUser } from "@/lib/auth-utils"
 
-// 获取所有标签
+/**
+ * 获取所有标签 API
+ * GET /api/tags
+ * @param request - Next.js 请求对象
+ * @returns 标签列表或错误信息
+ */
 export async function GET(request: NextRequest) {
   try {
-    // 使用Better Auth的getSession方法获取当前session
-    const session = await auth.api.getSession({
-      headers: request.headers
-    })
-    
-    // 检查session是否存在且有效
-    if (!session?.user?.id) {
+    // 统一认证检查
+    const authResult = await authenticateUser(request)
+    if (!authResult.success) {
       return NextResponse.json(
-        { error: "未授权访问" },
-        { status: 401 }
+        { error: authResult.error || "未授权访问" },
+        { status: authResult.status || 401 }
       )
     }
 

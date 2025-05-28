@@ -1,5 +1,5 @@
 import { ProjectCreate } from "@/components/project/project-create"
-import ProjectList from "@/components/project/read/project-list"
+import ProjectList from "@/components/project/project-list"
 import { Tabs, TabsContent, TabsList, TabsTrigger, TabsContents } from "@/components/animate-ui/components/tabs"
 
 export default function CreateProjectPage() {

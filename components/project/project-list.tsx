@@ -26,7 +26,7 @@ import {
   Sort, 
   SortableField, 
   Pagination 
-} from './types'
+} from './read/types'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -202,21 +202,40 @@ export default function ProjectList() {
         body: JSON.stringify({ projectIds: projectsToDelete }),
       })
       
-      const result = await response.json()
+      // 安全的 API 响应处理
+      let result: unknown
+      try {
+        result = await response.json()
+      } catch {
+        throw new Error('服务器响应格式无效')
+      }
       
-      if (result.success) {
-        toast.success(`成功删除 ${projectsToDelete.length} 个项目`)
+      // 类型安全的响应数据检查
+      if (!result || typeof result !== 'object' || result === null) {
+        throw new Error('服务器响应数据无效')
+      }
+      
+      const deleteResult = result as Record<string, unknown>
+      
+      if (deleteResult.success === true) {
+        const data = deleteResult.data as Record<string, unknown> | undefined
+        const deletedCount = data?.deletedCount as number || projectsToDelete.length
+        toast.success(`成功删除 ${deletedCount} 个项目`)
         // 重置状态
         setProjectsToDelete([])
         setDeleteMode(false)
         // 重新加载数据
         fetchProjects()
       } else {
-        toast.error(`删除失败: ${result.error}`)
+        const errorMsg = typeof deleteResult.error === 'string' 
+          ? deleteResult.error 
+          : '删除操作失败'
+        toast.error(`删除失败: ${errorMsg}`)
       }
     } catch (error) {
       console.error('删除项目异常:', error)
-      toast.error('删除项目时发生错误')
+      const errorMessage = error instanceof Error ? error.message : '删除项目时发生未知错误'
+      toast.error(errorMessage)
     } finally {
       setIsDeleting(false)
       setIsDeleteDialogOpen(false)
@@ -311,15 +330,9 @@ export default function ProjectList() {
       if (filters.tagId !== 'all') params.append('tagId', filters.tagId);
       if (filters.keyword) params.append('keyword', filters.keyword);
       
-      // 排序参数 - 根据status进行特殊处理
-      if (sort.sortBy === 'status') {
-        // 当按状态排序时，优先显示活跃项目
-        params.append('sortBy', 'status');
-        params.append('activeFirst', 'true');
-      } else {
-        params.append('sortBy', sort.sortBy);
-        params.append('sortOrder', sort.sortOrder);
-      }
+      // 排序参数
+      params.append('sortBy', sort.sortBy);
+      params.append('sortOrder', sort.sortOrder);
       
       const response = await fetch(`/api/projects/search?${params.toString()}`, { signal });
       
@@ -327,25 +340,79 @@ export default function ProjectList() {
         return;
       }
       
-      const result = await response.json();
+      // 安全的 API 响应处理
+      let result: unknown
+      try {
+        result = await response.json();
+      } catch {
+        console.error('API 响应解析失败: 响应格式不是有效的 JSON');
+        return;
+      }
       
-      if (result.success) {
-        setProjects(result.data.projects);
-        setPagination(prev => ({
-          ...prev,
-          totalCount: result.data.pagination.totalCount,
-          totalPages: result.data.pagination.totalPages,
-          hasNext: result.data.pagination.hasNext,
-          hasPrev: result.data.pagination.hasPrev
-        }));
+      // 类型安全的响应数据检查
+      if (!result || typeof result !== 'object' || result === null) {
+        console.error('API 响应数据无效: 响应不是对象类型');
+        return;
+      }
+      
+      const apiResponse = result as Record<string, unknown>;
+      
+      if (apiResponse.success === true && apiResponse.data) {
+        const responseData = apiResponse.data as Record<string, unknown>;
+        
+        // 验证响应数据结构
+        if (Array.isArray(responseData.projects) && 
+            responseData.pagination && 
+            typeof responseData.pagination === 'object') {
+          
+          let projects = responseData.projects as Project[];
+          
+          // 如果当前按状态排序，在客户端重新排序以确保正确顺序
+          if (sort.sortBy === 'status') {
+            const statusPriority: Record<string, number> = {
+              'PAUSED': 1,    // 暂停
+              'ACTIVE': 2,    // 活跃  
+              'EXPIRED': 3,   // 已过期
+              'COMPLETED': 4  // 已完成
+            };
+            
+            projects = projects.sort((a, b) => {
+              const priorityA = statusPriority[a.status] || 5;
+              const priorityB = statusPriority[b.status] || 5;
+              
+              if (sort.sortOrder === 'asc') {
+                return priorityA - priorityB;
+              } else {
+                return priorityB - priorityA;
+              }
+            });
+          }
+          
+          setProjects(projects);
+          
+          const paginationData = responseData.pagination as Record<string, unknown>;
+          setPagination(prev => ({
+            ...prev,
+            totalCount: typeof paginationData.totalCount === 'number' ? paginationData.totalCount : 0,
+            totalPages: typeof paginationData.totalPages === 'number' ? paginationData.totalPages : 0,
+            hasNext: Boolean(paginationData.hasNext),
+            hasPrev: Boolean(paginationData.hasPrev)
+          }));
+        } else {
+          console.error('API 响应数据结构无效: 缺少必要的字段');
+        }
       } else {
-        console.error('获取项目失败:', result.error);
+        const errorMsg = typeof apiResponse.error === 'string' 
+          ? apiResponse.error 
+          : '获取项目列表失败';
+        console.error('获取项目失败:', errorMsg);
       }
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
         return;
       }
-      console.error('获取项目异常:', error);
+      const errorMessage = error instanceof Error ? error.message : '获取项目时发生未知错误';
+      console.error('获取项目异常:', errorMessage);
     } finally {
       if (!signal?.aborted) {
         setLoading(false);

@@ -1,17 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
-import crypto from "crypto"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { DistributionMode, ProjectStatus } from "@prisma/client"
 
 interface ClaimRequest {
   password?: string
-}
-
-// 生成内容哈希值
-function generateContentHash(content: string): string {
-  return crypto.createHash('sha256').update(content).digest('hex')
 }
 
 export async function POST(
@@ -47,16 +41,16 @@ export async function POST(
 
     const userId = session.user.id
 
-    // 获取项目信息
+    // 获取项目信息 - 移除isPublic限制，允许领取私有项目
     const project = await prisma.shareProject.findFirst({
       where: {
         id: projectId,
-        status: ProjectStatus.ACTIVE,
-        isPublic: true,
-        startTime: { lte: new Date() },
+        status: ProjectStatus.ACTIVE, // 保持活跃状态检查
+        // 注意：移除 isPublic 限制，因为用户能访问分享页面就应该允许尝试领取
+        startTime: { lte: new Date() }, // 保持开始时间检查
         OR: [
           { endTime: null },
-          { endTime: { gte: new Date() } }
+          { endTime: { gte: new Date() } } // 保持结束时间检查
         ]
       },
       select: {
@@ -74,7 +68,7 @@ export async function POST(
 
     if (!project) {
       return NextResponse.json(
-        { error: "项目不存在或已过期" },
+        { error: "项目不存在、未开始或已过期" },
         { status: 404 }
       )
     }

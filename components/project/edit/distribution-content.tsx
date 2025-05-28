@@ -10,24 +10,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { X, Plus, AlertCircle } from "lucide-react"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { toast } from "sonner"
-import { Project, DistributionModeEnum } from "../read/types"
+import type { EditDistributionContentProps } from "./types"
+import type { DistributionMode } from "../read/types"
 
-export interface EditDistributionContentProps {
-  formData: {
-    distributionMode: DistributionModeEnum
-    passwordOption: string
-    newPassword: string
-    singleInviteCode: string
-    newInviteCodes: string
-    question1: string
-    question2: string
-    additionalQuota: number
-    totalQuota: number
-  }
-  setFormData: (data: Partial<EditDistributionContentProps["formData"]>) => void
-  project: Project
-}
-
+/**
+ * 项目分发内容编辑组件
+ * 
+ * @description 提供项目分发设置、密码配置、邀请码管理、申请问题等功能的编辑
+ * @param props - 组件属性
+ * @returns React 功能组件
+ */
 export function EditDistributionContent({ formData, setFormData, project }: EditDistributionContentProps) {
   const [codeInput, setCodeInput] = useState("")
   const [batchInput, setBatchInput] = useState("")
@@ -35,7 +27,10 @@ export function EditDistributionContent({ formData, setFormData, project }: Edit
   const [importPreview, setImportPreview] = useState({ total: 0, unique: 0 })
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   
-  // 批量输入变化时计算导入预览
+  /**
+   * 批量输入变化时计算导入预览
+   * 统计可导入的邀请码数量和重复数量
+   */
   useEffect(() => {
     if (batchInput) {
       const codes = batchInput.split(/[,，\n]/).map(code => code.trim()).filter(Boolean)
@@ -49,11 +44,14 @@ export function EditDistributionContent({ formData, setFormData, project }: Edit
     }
   }, [batchInput, previewCodes])
   
-  // 解析当前项目的邀请码
+  /**
+   * 解析当前项目的邀请码
+   * 在组件初始化时解析现有的邀请码
+   */
   useEffect(() => {
     if (project.inviteCodes) {
       try {
-        const existingCodes = JSON.parse(project.inviteCodes)
+        const existingCodes = JSON.parse(project.inviteCodes) as string[]
         setPreviewCodes(existingCodes)
       } catch (e) {
         console.error("解析邀请码失败:", e)
@@ -62,12 +60,24 @@ export function EditDistributionContent({ formData, setFormData, project }: Edit
     }
   }, [project.inviteCodes])
   
-  const updateFormData = (field: string, value: string | number | boolean) => {
-    setFormData({ [field as keyof EditDistributionContentProps["formData"]]: value })
+  /**
+   * 更新表单数据的通用方法
+   * 
+   * @param field - 要更新的字段名
+   * @param value - 新的字段值
+   */
+  const updateFormData = <K extends keyof typeof formData>(
+    field: K, 
+    value: typeof formData[K]
+  ): void => {
+    setFormData({ [field]: value })
   }
   
-  // 添加单个邀请码
-  const addInviteCode = () => {
+  /**
+   * 添加单个邀请码
+   * 验证邀请码是否重复和配额限制
+   */
+  const addInviteCode = (): void => {
     if (!codeInput.trim()) return
     
     // 检查是否已存在相同的邀请码
@@ -98,8 +108,13 @@ export function EditDistributionContent({ formData, setFormData, project }: Edit
     setErrorMsg(null)
   }
   
-  // 移除邀请码
-  const removeInviteCode = (indexToRemove: number) => {
+  /**
+   * 移除邀请码
+   * 只能移除新增的邀请码，不能删除原有的
+   * 
+   * @param indexToRemove - 要移除的邀请码索引
+   */
+  const removeInviteCode = (indexToRemove: number): void => {
     // 如果要移除的是原有邀请码，需要提示用户
     if (indexToRemove < previewCodes.length - formData.newInviteCodes.split('\n').filter(Boolean).length) {
       toast.error("无法删除已有邀请码，只能新增")
@@ -119,8 +134,11 @@ export function EditDistributionContent({ formData, setFormData, project }: Edit
     updateFormData("newInviteCodes", updatedNewCodes.join('\n'))
   }
   
-  // 批量导入邀请码
-  const parseCodesFromText = () => {
+  /**
+   * 批量导入邀请码
+   * 解析文本输入并批量添加邀请码
+   */
+  const parseCodesFromText = (): void => {
     if (!batchInput.trim()) return
     
     // 解析邀请码
@@ -175,12 +193,27 @@ export function EditDistributionContent({ formData, setFormData, project }: Edit
     setErrorMsg(null)
   }
   
+  /**
+   * 获取分发模式的显示标签
+   * 
+   * @param mode - 分发模式枚举值
+   * @returns 分发模式的中文标签
+   */
+  const getDistributionModeLabel = (mode: DistributionMode): string => {
+    switch (mode) {
+      case 'SINGLE': return '一码一用（每个邀请码仅能使用一次）'
+      case 'MULTI': return '一码多用（多人使用同一个邀请码）'
+      case 'MANUAL': return '申请-邀请（用户申请，管理员批准）'
+      default: return mode
+    }
+  }
+  
   // 计算已添加邀请码数量
   const inviteCodesCount = previewCodes.length
   const newCodesCount = formData.newInviteCodes.split('\n').filter(Boolean).length
   const originalCodesCount = inviteCodesCount - newCodesCount
   const isQuotaFull = newCodesCount >= formData.additionalQuota
-  
+
   return (
     <div className="space-y-4">
       {/* 分发模式显示 */}
@@ -188,9 +221,7 @@ export function EditDistributionContent({ formData, setFormData, project }: Edit
         <div className="space-y-2">
           <Label className="text-sm font-medium">分发模式</Label>
           <div className="p-2.5 bg-gray-50 border rounded-md text-gray-600 text-sm">
-            {formData.distributionMode === "SINGLE" && "一码一用（每个邀请码仅能使用一次）"}
-            {formData.distributionMode === "MULTI" && "一码多用（多人使用同一个邀请码）"}
-            {formData.distributionMode === "MANUAL" && "申请-邀请（用户申请，管理员批准）"}
+            {getDistributionModeLabel(formData.distributionMode)}
           </div>
           <p className="text-xs text-muted-foreground mt-1">
             分发模式在创建项目后不可更改
@@ -202,7 +233,7 @@ export function EditDistributionContent({ formData, setFormData, project }: Edit
           <Label htmlFor="passwordOption" className="text-sm font-medium">领取密码</Label>
           <Select 
             value={formData.passwordOption} 
-            onValueChange={(value) => updateFormData("passwordOption", value)}
+            onValueChange={(value: 'keep' | 'new' | 'none') => updateFormData("passwordOption", value)}
           >
             <SelectTrigger className="h-10 shadow-none">
               <SelectValue placeholder="选择密码选项" />
@@ -419,7 +450,9 @@ export function EditDistributionContent({ formData, setFormData, project }: Edit
       {formData.distributionMode === "MULTI" && (
         <div className="space-y-3 p-3 rounded-lg border border-dashed bg-muted/30">
           <div className="space-y-2">
-            <Label htmlFor="singleInviteCode" className="text-sm font-medium">邀请码/链接 <span className="text-red-500">*</span></Label>
+            <Label htmlFor="singleInviteCode" className="text-sm font-medium">
+              邀请码/链接 <span className="text-red-500">*</span>
+            </Label>
             <Input 
               id="singleInviteCode" 
               value={formData.singleInviteCode}
@@ -435,7 +468,9 @@ export function EditDistributionContent({ formData, setFormData, project }: Edit
       {formData.distributionMode === "MANUAL" && (
         <div className="space-y-3 p-3 rounded-lg border border-dashed bg-muted/30">
           <div className="space-y-2">
-            <Label htmlFor="question1" className="text-sm font-medium">问题1 <span className="text-red-500">*</span></Label>
+            <Label htmlFor="question1" className="text-sm font-medium">
+              问题1 <span className="text-red-500">*</span>
+            </Label>
             <Input 
               id="question1" 
               value={formData.question1}

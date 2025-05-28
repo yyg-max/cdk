@@ -8,10 +8,13 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react"
 import Link from "next/link"
-import { Project } from "@/hooks/use-platform-data"
+import type { Project, ProjectCategory } from "@/components/project/read/types"
 
-// 分类中文映射
-const CATEGORY_NAMES: Record<string, string> = {
+/**
+ * 分类中文名称映射
+ * 将英文分类枚举值映射为用户友好的中文显示名称
+ */
+const CATEGORY_NAMES: Record<ProjectCategory, string> = {
   AI: '人工智能',
   SOFTWARE: '软件工具',
   GAME: '游戏娱乐',
@@ -19,16 +22,37 @@ const CATEGORY_NAMES: Record<string, string> = {
   RESOURCE: '资源分享',
   LIFE: '生活服务',
   OTHER: '其他',
-}
+} as const
 
+/**
+ * 分页数据接口
+ * 定义分页相关的状态信息
+ */
 interface PaginationData {
+  /** 当前页码 */
   currentPage: number
+  /** 总页数 */
   totalPages: number
+  /** 总记录数 */
   totalCount: number
+  /** 是否有下一页 */
   hasNext: boolean
+  /** 是否有上一页 */
   hasPrev: boolean
 }
 
+/**
+ * 项目分类页面组件
+ * 
+ * 展示特定分类下的所有项目，支持分页浏览
+ * 路由格式：/platform/category/[category]?page=1
+ * 
+ * @returns React 函数组件
+ * 
+ * @example
+ * 访问路径：/platform/category/AI?page=2
+ * 显示AI分类下第2页的项目列表
+ */
 export default function CategoryPage() {
   const params = useParams()
   const searchParams = useSearchParams()
@@ -84,13 +108,18 @@ export default function CategoryPage() {
     }
   }, [category, page])
 
-  // 分页导航
+  /**
+   * 处理分页导航
+   * 更新URL参数实现页面跳转，保持分类和页码状态
+   * 
+   * @param newPage - 目标页码
+   */
   const handlePageChange = (newPage: number) => {
     router.push(`/platform/category/${category}?page=${newPage}`)
   }
 
   // 检查分类是否有效
-  if (!CATEGORY_NAMES[category?.toUpperCase()]) {
+  if (!CATEGORY_NAMES[category?.toUpperCase() as ProjectCategory]) {
     return (
       <div className="container max-w-7xl mx-auto px-4 py-8">
         <div className="text-center">
@@ -123,7 +152,7 @@ export default function CategoryPage() {
             
             <div>
               <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-                {CATEGORY_NAMES[category.toUpperCase()]}
+                {CATEGORY_NAMES[category.toUpperCase() as ProjectCategory]}
               </h1>
               {pagination && (
                 <p className="text-slate-600 dark:text-slate-400 mt-1">
@@ -241,6 +270,14 @@ export default function CategoryPage() {
   )
 }
 
+/**
+ * 项目列表骨架屏组件
+ * 
+ * 在项目数据加载时显示的占位符界面
+ * 模拟真实项目卡片的布局结构
+ * 
+ * @returns React 函数组件
+ */
 function ProjectListSkeleton() {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">

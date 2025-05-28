@@ -1,50 +1,70 @@
 'use client';
 
-import { GalleryVerticalEnd } from "lucide-react"
-import { useState } from "react"
+import { AlertTriangle, GalleryVerticalEnd } from "lucide-react"
+import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { authClient } from "@/lib/auth-client"
-import { useFormError } from "@/lib/hooks/useFormError"
-import { ErrorDisplay } from "./error-display"
-import { ErrorMessages } from "@/lib/types/auth"
 
-/**
- * 注册表单组件属性接口
- */
-interface SignupFormProps extends React.ComponentPropsWithoutRef<"div"> {
-  /**
-   * 初始错误消息
-   */
-  initialError?: string | null;
-}
-
-/**
- * 注册表单组件
- * 
- * @param className - 组件CSS类名
- * @param initialError - 初始错误消息
- * @param props - 其他div元素属性
- */
 export function SignupForm({
   className,
   initialError,
   ...props
-}: SignupFormProps) {
+}: React.ComponentPropsWithoutRef<"div"> & {
+  initialError?: string | null;
+}) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
-  const { error, setError } = useFormError(initialError, 3000);
+  const [error, setError] = useState<string | null>(initialError || null);
 
-  /**
-   * 处理表单提交
-   * 
-   * @param e - 表单提交事件
-   */
+  // 当initialError变化时更新error状态
+  useEffect(() => {
+    if (initialError) {
+      setError(initialError);
+    }
+  }, [initialError]);
+
+  // 统一错误自动消失功能：3秒后自动消失
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        setError(null);
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
+  // 统一错误交互清除机制：点击页面、按ESC键都会清除
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if (error) {
+        setError(null);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && error) {
+        setError(null);
+      }
+    };
+
+    if (error) {
+      document.addEventListener('click', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [error]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -59,7 +79,7 @@ export function SignupForm({
       
       if (error) {
         // 处理常见错误消息的中文翻译
-        const errorMessages: ErrorMessages = {
+        const errorMessages: Record<string, string> = {
           'Email already exists': '该邮箱已被注册',
           'Password too weak': '密码强度不够',
           'Invalid email': '邮箱格式不正确',
@@ -72,9 +92,7 @@ export function SignupForm({
         window.location.href = '/dashboard';
       }
     } catch (err: unknown) {
-      // 断言error为Error类型以安全地访问message属性
-      const errorObj = err as Error;
-      const errorMessage = errorObj.message || '注册过程中发生错误';
+      const errorMessage = err instanceof Error ? err.message : '注册过程中发生错误';
       setError(errorMessage);
       console.error('注册失败:', err);
     } finally {
@@ -151,8 +169,14 @@ export function SignupForm({
               {loading ? '注册中...' : '注册'}
             </Button>
             
-            {/* 使用共享错误显示组件 */}
-            <ErrorDisplay error={error} />
+            {/* 错误提示容器 - 固定高度避免布局跳动 */}
+            <div className={`transition-all duration-300 ease-in-out overflow-hidden ${
+              error ? 'max-h-20 opacity-100' : 'max-h-0 opacity-0'
+            }`}>
+              <div className="p-2 bg-red-100 border border-red-200 text-red-700 rounded text-xs font-bold text-center flex items-center justify-center gap-1">
+                <AlertTriangle className="h-4 w-4" /> {error || ''}
+              </div>
+            </div>
           </div>
         </div>
       </form>

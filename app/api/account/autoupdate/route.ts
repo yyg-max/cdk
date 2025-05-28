@@ -1,31 +1,37 @@
 import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/lib/auth"
-import { headers } from "next/headers"
+import { authenticateUser } from "@/lib/auth-utils"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 
-// 验证请求数据的schema
+/**
+ * 验证请求数据的schema
+ */
 const updateAutoUpdateSchema = z.object({
   autoupdate: z.boolean()
 })
 
+/**
+ * 更新自动同步设置
+ * PUT /api/account/autoupdate
+ * 
+ * 仅适用于Linux Do用户，控制登录时是否自动更新个人信息
+ */
 export async function PUT(request: NextRequest) {
   try {
-    // 验证用户身份
-    const session = await auth.api.getSession({
-      headers: await headers()
-    })
-
-    if (!session?.user?.id) {
+    // 使用统一的认证中间件
+    const authResult = await authenticateUser(request)
+    if (!authResult.success) {
       return NextResponse.json(
-        { success: false, error: "未登录" },
-        { status: 401 }
+        { success: false, error: authResult.error },
+        { status: authResult.status }
       )
     }
 
+    const userId = authResult.userId!
+
     // 检查用户是否是Linux Do用户
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: userId },
       select: { source: true }
     })
 
@@ -42,7 +48,7 @@ export async function PUT(request: NextRequest) {
 
     // 更新自动更新设置
     const updatedUser = await prisma.user.update({
-      where: { id: session.user.id },
+      where: { id: userId },
       data: {
         autoupdate: validatedData.autoupdate,
         updatedAt: new Date()

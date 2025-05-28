@@ -8,23 +8,48 @@ import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
-
 import { X, Plus, Lock, Users, UserCheck, AlertCircle } from "lucide-react"
 import { getDistributionModeOptions } from "@/lib/constants"
 import { DistributionContentProps, DistributionModeType, DistributionModeOption } from "./types"
 import { toast } from "sonner"
 
+/**
+ * 扩展的分发模式选项接口，包含UI相关属性
+ */
+interface ExtendedDistributionModeOption extends DistributionModeOption {
+  readonly icon: React.ElementType
+  readonly color: string
+}
+
+/**
+ * 分发内容配置组件
+ * 用于项目创建流程中的分发模式和内容设置
+ * 
+ * @param formData - 表单数据
+ * @param setFormData - 表单数据更新函数
+ * @param totalQuota - 总配额数量
+ */
 export function DistributionContent({ formData, setFormData, totalQuota }: DistributionContentProps) {
   const [codeInput, setCodeInput] = useState("")
   const [batchInput, setBatchInput] = useState("")
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
-  const updateFormData = (field: string, value: string | boolean | string[]) => {
-    setFormData({ ...formData, [field]: value })
+  /**
+   * 更新表单字段值
+   * @param field - 字段名
+   * @param value - 字段值
+   */
+  const updateField = <K extends keyof typeof formData>(
+    field: K, 
+    value: typeof formData[K]
+  ) => {
+    setFormData({ [field]: value })
   }
 
-  // 添加单个邀请码
-  const addInviteCode = () => {
+  /**
+   * 添加单个邀请码
+   */
+  const addInviteCode = (): void => {
     if (!codeInput.trim()) return
     
     const newCode = codeInput.trim()
@@ -43,7 +68,7 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
     }
     
     const newCodes = [...existingCodes, newCode]
-    updateFormData("inviteCodes", newCodes)
+    updateField("inviteCodes", newCodes)
     setCodeInput("")
     setErrorMsg(null)
     
@@ -53,15 +78,21 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
     }
   }
 
-  // 移除邀请码
-  const removeInviteCode = (index: number) => {
+  /**
+   * 移除邀请码
+   * @param index - 要移除的邀请码索引
+   */
+  const removeInviteCode = (index: number): void => {
     const newCodes = formData.inviteCodes?.filter((_, i) => i !== index) || []
-    updateFormData("inviteCodes", newCodes)
+    updateField("inviteCodes", newCodes)
     setErrorMsg(null) // 移除错误信息
   }
 
-  // 从文本解析邀请码（批量导入）
-  const parseCodesFromText = (text: string) => {
+  /**
+   * 从文本解析邀请码（批量导入）
+   * @param text - 包含邀请码的文本
+   */
+  const parseCodesFromText = (text: string): void => {
     if (!text.trim()) return
     
     // 分割并清理邀请码
@@ -109,7 +140,7 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
       toast.info(`跳过 ${existingDuplicateCount} 个已存在的邀请码`)
     }
     
-    updateFormData("inviteCodes", allCodes)
+    updateField("inviteCodes", allCodes)
     setBatchInput("")
     setErrorMsg(null)
     
@@ -128,12 +159,7 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
   const isQuotaFull = remainingQuota <= 0
   
   // 从常量文件获取分发模式选项，并添加图标和颜色
-  type ExtendedDistributionModeOption = DistributionModeOption & {
-    icon: React.ElementType
-    color: string
-  }
-
-  const distributionModes: ExtendedDistributionModeOption[] = getDistributionModeOptions().map((mode) => ({
+  const distributionModes: ExtendedDistributionModeOption[] = getDistributionModeOptions().map((mode): ExtendedDistributionModeOption => ({
     ...mode,
     icon: mode.value === "SINGLE" ? UserCheck : mode.value === "MULTI" ? Users : Lock,
     color: mode.value === "SINGLE" 
@@ -162,7 +188,7 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
                     ? "bg-primary text-primary-foreground shadow-md ring-2 ring-primary ring-offset-2" 
                     : "bg-card border border-border hover:border-muted-foreground/40"
                 }`}
-                onClick={() => updateFormData("distributionMode", mode.value)}
+                onClick={() => updateField("distributionMode", mode.value)}
               >
                 <div className="flex items-start space-x-3">
                   <Icon className={`h-5 w-5 mt-0.5 ${isSelected ? "text-primary-foreground" : "text-muted-foreground"}`} />
@@ -195,7 +221,7 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
           </div>
           <Switch
             checked={formData.isPublic ?? true}
-            onCheckedChange={(checked) => updateFormData("isPublic", checked)}
+            onCheckedChange={(checked) => updateField("isPublic", checked)}
           />
         </div>
       </div>
@@ -206,17 +232,20 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
           {/* 邀请码管理 */}
           <div className="space-y-3 p-3 rounded-lg border border-dashed bg-muted/30">
             {/* 设置密码 */}
-          <div className="space-y-2">
-            <Label htmlFor="claimPassword" className="text-sm font-medium">设置密码<span className="text-muted-foreground">（可选）</span></Label>
-            <Input
-              id="claimPassword"
-              placeholder="至少6位，用户需要输入密码才能领取"
-              value={formData.claimPassword || ""}
-              onChange={(e) => updateFormData("claimPassword", e.target.value)}
-              minLength={6}
-              className="h-10 shadow-none"
-            />
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="claimPassword" className="text-sm font-medium">
+                设置密码<span className="text-muted-foreground">（可选）</span>
+              </Label>
+              <Input
+                id="claimPassword"
+                placeholder="至少6位，用户需要输入密码才能领取"
+                value={formData.claimPassword || ""}
+                onChange={(e) => updateField("claimPassword", e.target.value)}
+                minLength={6}
+                className="h-10 shadow-none"
+              />
+            </div>
+            
             <div className="flex items-center">
               <Label className="text-sm font-medium">邀请码/链接 <span className="text-red-500">*</span></Label>
             </div>
@@ -325,7 +354,7 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => updateFormData("inviteCodes", [])}
+                        onClick={() => updateField("inviteCodes", [])}
                         className="h-2 px-2 text-xs text-muted-foreground hover:text-destructive"
                       >
                         清空全部
@@ -368,12 +397,14 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
         <div className="space-y-3 p-3 rounded-lg border border-dashed bg-muted/30">
           {/* 领取密码 */}
           <div className="space-y-2">
-            <Label htmlFor="claimPassword" className="text-sm font-medium">设置密码<span className="text-muted-foreground">（可选）</span></Label>
+            <Label htmlFor="claimPasswordMulti" className="text-sm font-medium">
+              设置密码<span className="text-muted-foreground">（可选）</span>
+            </Label>
             <Input
-              id="claimPassword"
+              id="claimPasswordMulti"
               placeholder="至少6位，用户需要输入密码才能领取"
               value={formData.claimPassword || ""}
-              onChange={(e) => updateFormData("claimPassword", e.target.value)}
+              onChange={(e) => updateField("claimPassword", e.target.value)}
               minLength={6}
               className="h-10 shadow-none"
             />
@@ -389,7 +420,7 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
                 id="singleInviteCode"
                 placeholder="输入邀请码或链接"
                 value={formData.singleInviteCode || ""}
-                onChange={(e) => updateFormData("singleInviteCode", e.target.value)}
+                onChange={(e) => updateField("singleInviteCode", e.target.value)}
                 className="h-10 pr-16 shadow-none"
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
@@ -413,7 +444,7 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
                   id="question1"
                   placeholder="输入问题"
                   value={formData.question1 || ""}
-                  onChange={(e) => updateFormData("question1", e.target.value)}
+                  onChange={(e) => updateField("question1", e.target.value)}
                   maxLength={16}
                   className="h-10 pr-12 shadow-none"
                 />
@@ -425,13 +456,15 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
 
             {/* 问题2 */}
             <div className="space-y-2">
-              <Label htmlFor="question2" className="text-sm font-medium">问题2<span className="text-muted-foreground">（可选）</span></Label>
+              <Label htmlFor="question2" className="text-sm font-medium">
+                问题2<span className="text-muted-foreground">（可选）</span>
+              </Label>
               <div className="relative">
                 <Input
                   id="question2"
                   placeholder="输入问题"
                   value={formData.question2 || ""}
-                  onChange={(e) => updateFormData("question2", e.target.value)}
+                  onChange={(e) => updateField("question2", e.target.value)}
                   maxLength={16}
                   className="h-10 pr-12 shadow-none"
                 />

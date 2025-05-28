@@ -5,22 +5,27 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { getCategoryOptions, getProjectStatusOptions } from "@/lib/constants"
-import { ProjectStatusEnum } from "../read/types"
+import type { EditBasicInfoProps } from "./types"
+import type { ProjectCategory, ProjectStatus } from "../read/types"
 
-export interface EditBasicInfoProps {
-  formData: {
-    name: string
-    description: string
-    category: string
-    usageUrl: string
-    tutorial: string
-    status: string | ProjectStatusEnum
-  }
-  setFormData: (data: Partial<EditBasicInfoProps["formData"]>) => void
-}
-
+/**
+ * 项目基本信息编辑组件
+ * 
+ * @description 提供项目名称、描述、分类、使用地址、教程和状态的编辑功能
+ * @param props - 组件属性
+ * @returns React 功能组件
+ */
 export function EditBasicInfo({ formData, setFormData }: EditBasicInfoProps) {
-  const updateField = <T extends string>(field: keyof typeof formData, value: T) => {
+  /**
+   * 更新单个表单字段
+   * 
+   * @param field - 要更新的字段名
+   * @param value - 新的字段值
+   */
+  const updateField = <K extends keyof typeof formData>(
+    field: K, 
+    value: typeof formData[K]
+  ): void => {
     setFormData({ [field]: value })
   }
 
@@ -60,7 +65,7 @@ export function EditBasicInfo({ formData, setFormData }: EditBasicInfoProps) {
             </Label>
             <Select 
               value={formData.category} 
-              onValueChange={(value) => updateField("category", value)}
+              onValueChange={(value) => updateField("category", value as ProjectCategory)}
             >
               <SelectTrigger className="h-10 shadow-none">
                 <SelectValue placeholder="选择分类" />
@@ -79,7 +84,9 @@ export function EditBasicInfo({ formData, setFormData }: EditBasicInfoProps) {
         {/* 第二行：使用地址、项目状态 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="usageUrl" className="text-sm font-medium">使用地址<span className="text-muted-foreground">（可选）</span></Label>
+            <Label htmlFor="usageUrl" className="text-sm font-medium">
+              使用地址<span className="text-muted-foreground">（可选）</span>
+            </Label>
             <Input
               id="usageUrl"
               type="url"
@@ -95,8 +102,8 @@ export function EditBasicInfo({ formData, setFormData }: EditBasicInfoProps) {
               项目状态 <span className="text-red-500">*</span>
             </Label>
             <Select 
-              value={formData.status as string} 
-              onValueChange={(value) => updateField("status", value)}
+              value={formData.status} 
+              onValueChange={(value) => updateField("status", value as ProjectStatus)}
             >
               <SelectTrigger className="h-10 shadow-none">
                 <SelectValue placeholder="选择状态" />
@@ -114,7 +121,9 @@ export function EditBasicInfo({ formData, setFormData }: EditBasicInfoProps) {
 
         {/* 第三行：项目描述 */}
         <div className="space-y-2">
-          <Label htmlFor="description" className="text-sm font-medium">项目描述<span className="text-muted-foreground">（可选）</span></Label>
+          <Label htmlFor="description" className="text-sm font-medium">
+            项目描述<span className="text-muted-foreground">（可选）</span>
+          </Label>
           <div className="relative">
             <Textarea
               id="description"
@@ -132,7 +141,9 @@ export function EditBasicInfo({ formData, setFormData }: EditBasicInfoProps) {
 
         {/* 第四行：使用教程 */}
         <div className="space-y-2">
-          <Label htmlFor="tutorial" className="text-sm font-medium">使用教程<span className="text-muted-foreground">（可选）</span></Label>
+          <Label htmlFor="tutorial" className="text-sm font-medium">
+            使用教程<span className="text-muted-foreground">（可选）</span>
+          </Label>
           <div className="relative">
             <Textarea
               id="tutorial"

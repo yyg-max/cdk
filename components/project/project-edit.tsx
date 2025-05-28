@@ -7,31 +7,85 @@ import { Button } from "@/components/ui/button"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Info, CheckCircle, AlertCircle, Check, X, Save } from "lucide-react"
-import { ProjectEditProps, ProjectRequestData, ProjectStatusEnum } from "./edit/types"
 import { EditBasicInfo } from "./edit/basic-info"
 import { EditDistributionContent } from "./edit/distribution-content"
 import { EditClaimRestrictions } from "./edit/claim-restrictions"
+import type { 
+  ProjectEditProps, 
+  TabOption,
+  ProjectUpdateRequest,
+  ProjectUpdateResponse,
+  BasicInfoFormData,
+  DistributionContentFormData,
+  ClaimRestrictionsFormData
+} from "./edit/types"
+import type { 
+  ProjectCategory,
+  ProjectStatus,
+  DistributionMode
+} from "./read/types"
 
-interface TabOption {
-  id: string
-  title: string
-  icon: React.ElementType
+/**
+ * 完整的编辑表单数据接口
+ * 整合所有子组件的表单数据
+ */
+interface EditFormData {
+  // 基本信息
+  name: string
+  description: string
+  category: ProjectCategory
+  usageUrl: string
+  tutorial: string
+  status: ProjectStatus
+  
+  // 分发设置
+  distributionMode: DistributionMode
+  isPublic: boolean
+  passwordOption: 'keep' | 'new' | 'none'
+  newPassword: string
+  newInviteCodes: string
+  singleInviteCode: string
+  question1: string
+  question2: string
+  
+  // 领取限制
+  startTime: Date
+  endTime: Date | null
+  requireLinuxdo: boolean
+  minTrustLevel: number
+  minRiskThreshold: number
+  
+  // 配额管理
+  totalQuota: number
+  additionalQuota: number
 }
 
+/**
+ * 项目编辑主组件
+ * 
+ * @description 提供项目编辑的完整界面，包含基本信息、分发设置、领取限制等功能
+ * @param props - 组件属性
+ * @returns React 功能组件
+ */
 export default function ProjectEdit({ project }: ProjectEditProps) {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState("basic")
   const [isSubmitting, setIsSubmitting] = useState(false)
   
-  // 如果不是创建者，重定向到dashboard
+  /**
+   * 权限检查 - 如果不是创建者，重定向到dashboard
+   */
   useEffect(() => {
     if (!project.isCreator) {
       router.push('/dashboard')
     }
   }, [project.isCreator, router])
   
-  // 初始化表单数据
-  const [formData, setFormData] = useState({
+  /**
+   * 初始化表单数据
+   * 基于项目现有数据进行初始化
+   */
+  const [formData, setFormData] = useState<EditFormData>({
     // 基本信息 - 可编辑
     name: project.name,
     description: project.description,
@@ -41,12 +95,12 @@ export default function ProjectEdit({ project }: ProjectEditProps) {
     status: project.status,
     
     // 分发设置 - 部分可编辑
-    distributionMode: project.distributionMode, // 不可编辑
-    isPublic: project.isPublic,                // 不可编辑
-    passwordOption: project.hasPassword ? "keep" : "none", // 密码选项：keep(保持), new(新密码), none(无密码)
-    newPassword: "", // 新密码内容
-    newInviteCodes: '',                       // 新增邀请码（一码一用模式）
-    singleInviteCode: project.inviteCodes ? JSON.parse(project.inviteCodes)[0] : '', // 一码多用模式
+    distributionMode: project.distributionMode,
+    isPublic: project.isPublic,
+    passwordOption: project.hasPassword ? "keep" : "none",
+    newPassword: "",
+    newInviteCodes: '',
+    singleInviteCode: project.inviteCodes ? JSON.parse(project.inviteCodes)[0] : '',
     question1: project.question1 || '',
     question2: project.question2 || '',
     
@@ -57,12 +111,14 @@ export default function ProjectEdit({ project }: ProjectEditProps) {
     minTrustLevel: project.minTrustLevel,
     minRiskThreshold: project.minRiskThreshold,
     
-    // 不可变字段
-    totalQuota: project.totalQuota,           // 不可直接编辑
-    additionalQuota: 0                        // 可以增加配额
+    // 配额管理
+    totalQuota: project.totalQuota,
+    additionalQuota: 0
   })
   
-  // 定义标签页配置
+  /**
+   * 定义标签页配置
+   */
   const tabs: TabOption[] = [
     {
       id: "basic",
@@ -81,12 +137,21 @@ export default function ProjectEdit({ project }: ProjectEditProps) {
     }
   ]
   
-  // 检查各个标签页的有效性
-  const validateBasicInfo = () => {
+  /**
+   * 验证基本信息是否完整
+   * 
+   * @returns 验证结果
+   */
+  const validateBasicInfo = (): boolean => {
     return !!(formData.name && formData.category && formData.status)
   }
   
-  const validateDistribution = () => {
+  /**
+   * 验证分发设置是否完整
+   * 
+   * @returns 验证结果
+   */
+  const validateDistribution = (): boolean => {
     // 分发模式特定验证
     if (formData.additionalQuota > 0) {
       if (formData.distributionMode === "SINGLE") {
@@ -106,14 +171,24 @@ export default function ProjectEdit({ project }: ProjectEditProps) {
     return false;
   }
   
-  const validateRestrictions = () => {
+  /**
+   * 验证领取限制是否完整
+   * 
+   * @returns 验证结果
+   */
+  const validateRestrictions = (): boolean => {
     return !!(formData.startTime && 
       (formData.requireLinuxdo ? formData.minTrustLevel >= 0 : true) && 
       formData.minRiskThreshold >= 30 && formData.minRiskThreshold <= 90)
   }
   
-  // 获取标签页状态
-  const getTabStatus = (tabId: string) => {
+  /**
+   * 获取标签页状态
+   * 
+   * @param tabId - 标签页ID
+   * @returns 标签页是否有效
+   */
+  const getTabStatus = (tabId: string): boolean => {
     switch (tabId) {
       case "basic":
         return validateBasicInfo()
@@ -126,7 +201,11 @@ export default function ProjectEdit({ project }: ProjectEditProps) {
     }
   }
   
-  // 获取缺失的数据信息
+  /**
+   * 获取缺失的数据信息
+   * 
+   * @returns 缺失数据的描述数组
+   */
   const getMissingData = (): string[] => {
     const missing: string[] = []
     
@@ -159,8 +238,13 @@ export default function ProjectEdit({ project }: ProjectEditProps) {
     return missing
   }
   
-  // 处理表单提交
-  const handleSubmit = async (e: React.FormEvent) => {
+  /**
+   * 处理表单提交
+   * 验证表单数据并发送更新请求
+   * 
+   * @param e - 表单事件
+   */
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault()
     
     // 验证表单
@@ -192,7 +276,7 @@ export default function ProjectEdit({ project }: ProjectEditProps) {
     
     try {
       // 准备请求数据
-      const requestData: ProjectRequestData = {
+      const requestData: ProjectUpdateRequest = {
         id: project.id,
         
         // 基本信息
@@ -271,14 +355,47 @@ export default function ProjectEdit({ project }: ProjectEditProps) {
       })
       
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || '更新失败')
+        // 安全的错误处理
+        let errorData: unknown
+        try {
+          errorData = await response.json()
+        } catch {
+          throw new Error('服务器响应格式无效')
+        }
+        
+        if (errorData && typeof errorData === 'object' && errorData !== null) {
+          const errorResponse = errorData as Record<string, unknown>
+          const errorMessage = typeof errorResponse.error === 'string' 
+            ? errorResponse.error 
+            : '更新失败'
+          throw new Error(errorMessage)
+        } else {
+          throw new Error('更新失败')
+        }
       }
       
-      toast.success('项目更新成功')
+      // 处理成功响应
+      let result: unknown
+      try {
+        result = await response.json()
+      } catch {
+        throw new Error('服务器响应格式无效')
+      }
       
-      // 重新加载页面以获取最新数据
-      router.refresh()
+      if (!result || typeof result !== 'object' || result === null) {
+        throw new Error('服务器响应数据无效')
+      }
+      
+      const updateResponse = result as ProjectUpdateResponse
+      
+      if (updateResponse.success) {
+        toast.success('项目更新成功')
+        // 重新加载页面以获取最新数据
+        router.refresh()
+      } else {
+        const errorMessage = updateResponse.error || '更新失败'
+        throw new Error(errorMessage)
+      }
       
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : '更新失败'
@@ -288,8 +405,12 @@ export default function ProjectEdit({ project }: ProjectEditProps) {
     }
   }
   
-  // 渲染标签页内容
-  const renderTabContent = () => {
+  /**
+   * 渲染标签页内容
+   * 
+   * @returns 当前标签页的内容组件
+   */
+  const renderTabContent = (): React.ReactNode => {
     switch (activeTab) {
       case "basic":
         return <EditBasicInfo 
@@ -299,33 +420,38 @@ export default function ProjectEdit({ project }: ProjectEditProps) {
             category: formData.category,
             usageUrl: formData.usageUrl,
             tutorial: formData.tutorial,
-            status: formData.status as string // 确保类型兼容性
-          }} 
+            status: formData.status
+          } as BasicInfoFormData} 
           setFormData={(data) => {
-            // 手动处理数据更新，确保类型兼容
-            const updatedFormData = { ...formData };
-            
-            // 只更新已定义的字段
-            if (data.name !== undefined) updatedFormData.name = data.name;
-            if (data.description !== undefined) updatedFormData.description = data.description;
-            if (data.category !== undefined) updatedFormData.category = data.category;
-            if (data.usageUrl !== undefined) updatedFormData.usageUrl = data.usageUrl;
-            if (data.tutorial !== undefined) updatedFormData.tutorial = data.tutorial;
-            if (data.status !== undefined) updatedFormData.status = data.status as ProjectStatusEnum;
-            
-            setFormData(updatedFormData);
+            setFormData(prev => ({ ...prev, ...data }))
           }} 
         />
       case "distribution":
         return <EditDistributionContent 
-          formData={formData} 
-          setFormData={(data) => setFormData({ ...formData, ...data })} 
+          formData={{
+            distributionMode: formData.distributionMode,
+            passwordOption: formData.passwordOption,
+            newPassword: formData.newPassword,
+            singleInviteCode: formData.singleInviteCode,
+            newInviteCodes: formData.newInviteCodes,
+            question1: formData.question1,
+            question2: formData.question2,
+            additionalQuota: formData.additionalQuota,
+            totalQuota: formData.totalQuota
+          } as DistributionContentFormData} 
+          setFormData={(data) => setFormData(prev => ({ ...prev, ...data }))} 
           project={project} 
         />
       case "restrictions":
         return <EditClaimRestrictions 
-          formData={formData} 
-          setFormData={(data) => setFormData({ ...formData, ...data })} 
+          formData={{
+            startTime: formData.startTime,
+            endTime: formData.endTime,
+            requireLinuxdo: formData.requireLinuxdo,
+            minTrustLevel: formData.minTrustLevel,
+            minRiskThreshold: formData.minRiskThreshold
+          } as ClaimRestrictionsFormData} 
+          setFormData={(data) => setFormData(prev => ({ ...prev, ...data }))} 
         />
       default:
         return null

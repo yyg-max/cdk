@@ -14,23 +14,63 @@ import { ClaimRestrictionsProps, TrustLevel } from "./types"
 import { useState, useEffect } from "react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
+/**
+ * 信任等级选项配置
+ */
+const TRUST_LEVELS: readonly TrustLevel[] = [
+  { value: 0, label: "0级 - 新用户" },
+  { value: 1, label: "1级 - 基本用户" },
+  { value: 2, label: "2级 - 成员" },
+  { value: 3, label: "3级 - 活跃用户" },
+  { value: 4, label: "4级 - 领导者" }
+] as const
+
+/**
+ * 风控阈值配置
+ */
+const RISK_CONFIG = {
+  MIN: 30,
+  MAX: 90,
+  DEFAULT: 80,
+  STEP: 1
+} as const
+
+/**
+ * 领取限制配置组件
+ * 用于项目创建流程中的领取限制设置
+ * 
+ * @param formData - 表单数据
+ * @param setFormData - 表单数据更新函数
+ */
 export function ClaimRestrictions({ formData, setFormData }: ClaimRestrictionsProps) {
   // 错误状态管理
   const [timeError, setTimeError] = useState<string | null>(null)
   
-  // 处理表单数据更新
-  const updateFormData = (field: string, value: Date | boolean | number | null) => {
-    setFormData({ ...formData, [field]: value })
+  /**
+   * 更新表单字段值
+   * @param field - 字段名
+   * @param value - 字段值
+   */
+  const updateField = <K extends keyof typeof formData>(
+    field: K, 
+    value: typeof formData[K]
+  ) => {
+    setFormData({ [field]: value })
   }
 
-  // 获取当前中国时间
-  const getCurrentChinaTime = () => {
+  /**
+   * 获取当前中国时间
+   * @returns 中国时区的当前时间
+   */
+  const getCurrentChinaTime = (): Date => {
     const now = new Date()
     const chinaTime = new Date(now.getTime() + (8 * 60 * 60 * 1000)) // UTC+8
     return chinaTime
   }
   
-  // 验证时间设置是否有效
+  /**
+   * 验证时间设置是否有效
+   */
   useEffect(() => {
     // 清除错误
     setTimeError(null)
@@ -44,33 +84,36 @@ export function ClaimRestrictions({ formData, setFormData }: ClaimRestrictionsPr
     }
   }, [formData.startTime, formData.endTime])
   
-  // 当开始时间变更时，确保结束时间不早于开始时间
+  /**
+   * 当开始时间变更时，确保结束时间不早于开始时间
+   */
   useEffect(() => {
     if (formData.startTime && formData.endTime && formData.endTime < formData.startTime) {
       // 设置结束时间为开始时间后的一小时
       const newEndTime = new Date(formData.startTime)
       newEndTime.setHours(newEndTime.getHours() + 1)
-      updateFormData("endTime", newEndTime)
+      updateField("endTime", newEndTime)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formData.startTime])
+  }, [formData.startTime]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const trustLevels: TrustLevel[] = [
-    { value: 0, label: "0级 - 新用户" },
-    { value: 1, label: "1级 - 基本用户" },
-    { value: 2, label: "2级 - 成员" },
-    { value: 3, label: "3级 - 活跃用户" },
-    { value: 4, label: "4级 - 领导者" }
-  ]
-
-  const getRiskLevelText = (value: number) => {
+  /**
+   * 获取风控等级文本描述
+   * @param value - 风控阈值
+   * @returns 风控等级描述
+   */
+  const getRiskLevelText = (value: number): string => {
     if (value >= 85) return "严格"
     if (value >= 75) return "推荐"
     if (value >= 60) return "一般"
     return "宽松"
   }
 
-  const getRiskLevelColor = (value: number) => {
+  /**
+   * 获取风控等级颜色
+   * @param value - 风控阈值
+   * @returns CSS颜色值
+   */
+  const getRiskLevelColor = (value: number): string => {
     if (value <= 55) {
       // 30-55 深红到浅红
       const intensity = Math.max(0, Math.min(1, (value - 30) / (55 - 30)))
@@ -95,7 +138,11 @@ export function ClaimRestrictions({ formData, setFormData }: ClaimRestrictionsPr
     }
   }
 
-  const getRiskSliderStyle = () => {
+  /**
+   * 获取风控滑块样式
+   * @returns CSS样式对象
+   */
+  const getRiskSliderStyle = (): React.CSSProperties => {
     return {
       background: `linear-gradient(to right, 
         #8B0000 0%,    /* 深红 30 */
@@ -108,9 +155,46 @@ export function ClaimRestrictions({ formData, setFormData }: ClaimRestrictionsPr
     }
   }
 
+  /**
+   * 处理时间输入更新
+   * @param date - 日期对象
+   * @param timeType - 时间类型
+   * @param timeField - 时间字段 ('hours' | 'minutes' | 'seconds')
+   * @param value - 新值
+   */
+  const handleTimeUpdate = (
+    date: Date | null | undefined, 
+    timeType: 'startTime' | 'endTime', 
+    timeField: 'hours' | 'minutes' | 'seconds', 
+    value: number
+  ): void => {
+    if (!date) return
+    
+    const newDate = new Date(date)
+    
+    switch (timeField) {
+      case 'hours':
+        newDate.setHours(Math.min(23, Math.max(0, value)))
+        break
+      case 'minutes':
+        newDate.setMinutes(Math.min(59, Math.max(0, value)))
+        break
+      case 'seconds':
+        newDate.setSeconds(Math.min(59, Math.max(0, value)))
+        break
+    }
+    
+    // 验证新时间不早于开始时间（仅对结束时间）
+    if (timeType === 'endTime' && formData.startTime && newDate < formData.startTime) {
+      setTimeError("结束时间不能早于开始时间")
+    } else {
+      setTimeError(null)
+      updateField(timeType, newDate)
+    }
+  }
+
   // 默认风控阈值
-  const defaultRiskThreshold = 80
-  const currentRiskThreshold = formData.minRiskThreshold || defaultRiskThreshold
+  const currentRiskThreshold = formData.minRiskThreshold || RISK_CONFIG.DEFAULT
 
   return (
     <div className="space-y-4">
@@ -146,7 +230,7 @@ export function ClaimRestrictions({ formData, setFormData }: ClaimRestrictionsPr
               <Calendar
                 mode="single"
                 selected={formData.startTime}
-                onSelect={(date) => updateFormData("startTime", date || getCurrentChinaTime())}
+                onSelect={(date) => updateField("startTime", date || getCurrentChinaTime())}
                 initialFocus
                 locale={zhCN}
               />
@@ -160,14 +244,12 @@ export function ClaimRestrictions({ formData, setFormData }: ClaimRestrictionsPr
                       min="0"
                       max="23"
                       value={formData.startTime ? formData.startTime.getHours() : 0}
-                      onChange={(e) => {
-                        if (formData.startTime) {
-                          const hours = Math.min(23, Math.max(0, parseInt(e.target.value) || 0))
-                          const newDate = new Date(formData.startTime)
-                          newDate.setHours(hours)
-                          updateFormData("startTime", newDate)
-                        }
-                      }}
+                      onChange={(e) => handleTimeUpdate(
+                        formData.startTime, 
+                        'startTime', 
+                        'hours', 
+                        parseInt(e.target.value) || 0
+                      )}
                       className="shadow-none w-15"
                     />
                     <span>:</span>
@@ -177,14 +259,12 @@ export function ClaimRestrictions({ formData, setFormData }: ClaimRestrictionsPr
                       min="0"
                       max="59"
                       value={formData.startTime ? formData.startTime.getMinutes() : 0}
-                      onChange={(e) => {
-                        if (formData.startTime) {
-                          const minutes = Math.min(59, Math.max(0, parseInt(e.target.value) || 0))
-                          const newDate = new Date(formData.startTime)
-                          newDate.setMinutes(minutes)
-                          updateFormData("startTime", newDate)
-                        }
-                      }}
+                      onChange={(e) => handleTimeUpdate(
+                        formData.startTime, 
+                        'startTime', 
+                        'minutes', 
+                        parseInt(e.target.value) || 0
+                      )}
                       className="shadow-none w-15"
                     />
                     <span>:</span>
@@ -194,14 +274,12 @@ export function ClaimRestrictions({ formData, setFormData }: ClaimRestrictionsPr
                       min="0"
                       max="59"
                       value={formData.startTime ? formData.startTime.getSeconds() : 0}
-                      onChange={(e) => {
-                        if (formData.startTime) {
-                          const seconds = Math.min(59, Math.max(0, parseInt(e.target.value) || 0))
-                          const newDate = new Date(formData.startTime)
-                          newDate.setSeconds(seconds)
-                          updateFormData("startTime", newDate)
-                        }
-                      }}
+                      onChange={(e) => handleTimeUpdate(
+                        formData.startTime, 
+                        'startTime', 
+                        'seconds', 
+                        parseInt(e.target.value) || 0
+                      )}
                       className="shadow-none w-15"
                     />
                   </div>
@@ -209,7 +287,7 @@ export function ClaimRestrictions({ formData, setFormData }: ClaimRestrictionsPr
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  onClick={() => updateFormData("startTime", getCurrentChinaTime())}
+                  onClick={() => updateField("startTime", getCurrentChinaTime())}
                   className="w-full mt-1"
                 >
                   设为当前时间
@@ -229,7 +307,7 @@ export function ClaimRestrictions({ formData, setFormData }: ClaimRestrictionsPr
               <Switch
                 id="noEndTime"
                 checked={formData.endTime === null}
-                onCheckedChange={(checked) => updateFormData("endTime", checked ? null : (() => {
+                onCheckedChange={(checked) => updateField("endTime", checked ? null : (() => {
                   // 如果有开始时间，则设置为开始时间后的一小时
                   if (formData.startTime) {
                     const newEndTime = new Date(formData.startTime)
@@ -268,58 +346,53 @@ export function ClaimRestrictions({ formData, setFormData }: ClaimRestrictionsPr
                 selected={formData.endTime || undefined}
                 onSelect={(date) => {
                   if (!date) {
-                    // 如果日期被清除，设置为null
-                    updateFormData("endTime", null);
-                    return;
+                    updateField("endTime", null)
+                    return
                   }
                   
                   // 如果选择了新日期，确保时间不早于开始时间
                   if (formData.startTime) {
-                    const startDateOnly = new Date(formData.startTime);
-                    startDateOnly.setHours(0, 0, 0, 0);
+                    const startDateOnly = new Date(formData.startTime)
+                    startDateOnly.setHours(0, 0, 0, 0)
                     
-                    const selectedDateOnly = new Date(date);
-                    selectedDateOnly.setHours(0, 0, 0, 0);
+                    const selectedDateOnly = new Date(date)
+                    selectedDateOnly.setHours(0, 0, 0, 0)
                     
                     // 如果选择的日期早于开始日期，使用开始日期
                     if (selectedDateOnly < startDateOnly) {
-                      // 使用开始时间的日期
-                      const newDate = new Date(formData.startTime);
+                      const newDate = new Date(formData.startTime)
                       newDate.setHours(
                         formData.endTime ? formData.endTime.getHours() : formData.startTime.getHours() + 1,
                         formData.endTime ? formData.endTime.getMinutes() : 0,
                         formData.endTime ? formData.endTime.getSeconds() : 0
-                      );
-                      updateFormData("endTime", newDate);
-                      return;
+                      )
+                      updateField("endTime", newDate)
+                      return
                     }
                   }
                   
                   // 处理正常的日期选择
                   if (formData.endTime) {
-                    // 保留当前的时分秒
-                    const newDate = new Date(date);
+                    const newDate = new Date(date)
                     newDate.setHours(
                       formData.endTime.getHours(),
                       formData.endTime.getMinutes(),
                       formData.endTime.getSeconds()
-                    );
-                    updateFormData("endTime", newDate);
+                    )
+                    updateField("endTime", newDate)
                   } else {
-                    // 设置默认时间为开始时间后一小时
-                    const newDate = new Date(date);
+                    const newDate = new Date(date)
                     if (formData.startTime) {
                       newDate.setHours(
                         formData.startTime.getHours() + 1,
                         formData.startTime.getMinutes(),
                         formData.startTime.getSeconds()
-                      );
+                      )
                     } else {
-                      // 无开始时间，使用当前时间
-                      const now = new Date();
-                      newDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds());
+                      const now = new Date()
+                      newDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds())
                     }
-                    updateFormData("endTime", newDate);
+                    updateField("endTime", newDate)
                   }
                 }}
                 initialFocus
@@ -335,21 +408,12 @@ export function ClaimRestrictions({ formData, setFormData }: ClaimRestrictionsPr
                       min="0"
                       max="23"
                       value={formData.endTime ? formData.endTime.getHours() : 0}
-                      onChange={(e) => {
-                        if (formData.endTime) {
-                          const hours = Math.min(23, Math.max(0, parseInt(e.target.value) || 0))
-                          const newDate = new Date(formData.endTime)
-                          newDate.setHours(hours)
-                          
-                          // 验证新时间不早于开始时间
-                          if (formData.startTime && newDate < formData.startTime) {
-                            setTimeError("结束时间不能早于开始时间")
-                          } else {
-                            setTimeError(null)
-                            updateFormData("endTime", newDate)
-                          }
-                        }
-                      }}
+                      onChange={(e) => handleTimeUpdate(
+                        formData.endTime, 
+                        'endTime', 
+                        'hours', 
+                        parseInt(e.target.value) || 0
+                      )}
                       className="shadow-none w-15"
                     />
                     <span>:</span>
@@ -359,21 +423,12 @@ export function ClaimRestrictions({ formData, setFormData }: ClaimRestrictionsPr
                       min="0"
                       max="59"
                       value={formData.endTime ? formData.endTime.getMinutes() : 0}
-                      onChange={(e) => {
-                        if (formData.endTime) {
-                          const minutes = Math.min(59, Math.max(0, parseInt(e.target.value) || 0))
-                          const newDate = new Date(formData.endTime)
-                          newDate.setMinutes(minutes)
-                          
-                          // 验证新时间不早于开始时间
-                          if (formData.startTime && newDate < formData.startTime) {
-                            setTimeError("结束时间不能早于开始时间")
-                          } else {
-                            setTimeError(null)
-                            updateFormData("endTime", newDate)
-                          }
-                        }
-                      }}
+                      onChange={(e) => handleTimeUpdate(
+                        formData.endTime, 
+                        'endTime', 
+                        'minutes', 
+                        parseInt(e.target.value) || 0
+                      )}
                       className="shadow-none w-15"
                     />
                     <span>:</span>
@@ -383,21 +438,12 @@ export function ClaimRestrictions({ formData, setFormData }: ClaimRestrictionsPr
                       min="0"
                       max="59"
                       value={formData.endTime ? formData.endTime.getSeconds() : 0}
-                      onChange={(e) => {
-                        if (formData.endTime) {
-                          const seconds = Math.min(59, Math.max(0, parseInt(e.target.value) || 0))
-                          const newDate = new Date(formData.endTime)
-                          newDate.setSeconds(seconds)
-                          
-                          // 验证新时间不早于开始时间
-                          if (formData.startTime && newDate < formData.startTime) {
-                            setTimeError("结束时间不能早于开始时间")
-                          } else {
-                            setTimeError(null)
-                            updateFormData("endTime", newDate)
-                          }
-                        }
-                      }}
+                      onChange={(e) => handleTimeUpdate(
+                        formData.endTime, 
+                        'endTime', 
+                        'seconds', 
+                        parseInt(e.target.value) || 0
+                      )}
                       className="shadow-none w-15"
                     />
                   </div>
@@ -408,10 +454,9 @@ export function ClaimRestrictions({ formData, setFormData }: ClaimRestrictionsPr
                     variant="outline" 
                     size="sm" 
                     onClick={() => {
-                      // 设置为开始时间后一小时
                       const newEndTime = new Date(formData.startTime as Date)
                       newEndTime.setHours(newEndTime.getHours() + 1)
-                      updateFormData("endTime", newEndTime)
+                      updateField("endTime", newEndTime)
                     }}
                     className="w-full mt-1"
                   >
@@ -436,7 +481,7 @@ export function ClaimRestrictions({ formData, setFormData }: ClaimRestrictionsPr
           </div>
           <Switch
             checked={formData.requireLinuxdo ?? true}
-            onCheckedChange={(checked) => updateFormData("requireLinuxdo", checked)}
+            onCheckedChange={(checked) => updateField("requireLinuxdo", checked)}
           />
         </div>
 
@@ -447,13 +492,13 @@ export function ClaimRestrictions({ formData, setFormData }: ClaimRestrictionsPr
             </Label>
             <Select 
               value={formData.minTrustLevel?.toString() || "2"} 
-              onValueChange={(value) => updateFormData("minTrustLevel", parseInt(value))}
+              onValueChange={(value) => updateField("minTrustLevel", parseInt(value))}
             >
               <SelectTrigger className="h-10 shadow-none">
                 <SelectValue placeholder="选择最低信任等级" />
               </SelectTrigger>
               <SelectContent>
-                {trustLevels.map((level) => (
+                {TRUST_LEVELS.map((level) => (
                   <SelectItem key={level.value} value={level.value.toString()}>
                     {level.label}
                   </SelectItem>
@@ -491,11 +536,11 @@ export function ClaimRestrictions({ formData, setFormData }: ClaimRestrictionsPr
             <input
               id="minRiskThreshold"
               type="range"
-              min="30"
-              max="90"
-              step="1"
+              min={RISK_CONFIG.MIN}
+              max={RISK_CONFIG.MAX}
+              step={RISK_CONFIG.STEP}
               value={currentRiskThreshold}
-              onChange={(e) => updateFormData("minRiskThreshold", parseInt(e.target.value))}
+              onChange={(e) => updateField("minRiskThreshold", parseInt(e.target.value))}
               className="w-full relative z-10 bg-transparent appearance-none h-2 rounded-full outline-none"
               style={{
                 background: 'transparent',

@@ -4,7 +4,6 @@ import { useState, useEffect } from "react"
 import { ChevronRight, ChevronLeft } from "lucide-react"
 import Link from "next/link"
 import { ProjectCard } from "@/components/platform/project-card"
-import { Project } from "@/components/platform/project-card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { 
@@ -14,9 +13,8 @@ import {
   CarouselApi
 } from "@/components/ui/carousel"
 import { usePlatformContext } from "@/providers/platform-provider"
-
-// 定义项目分类类型
-type ProjectCategory = 'AI' | 'SOFTWARE' | 'GAME' | 'EDUCATION' | 'RESOURCE' | 'LIFE' | 'OTHER'
+import type { Project } from "@/components/project/read/types"
+import type { ProjectCategory } from "@/components/project/read/types"
 
 // 分类中文映射
 const CATEGORY_NAMES: Record<ProjectCategory, string> = {
@@ -29,6 +27,14 @@ const CATEGORY_NAMES: Record<ProjectCategory, string> = {
   OTHER: '其他',
 }
 
+/**
+ * 分类轮播组件
+ * 
+ * 按项目分类展示轮播项目列表，支持分类筛选和项目轮播展示
+ * 集成了平台数据上下文，提供统一的数据管理
+ * 
+ * @returns React 函数组件
+ */
 export function CategoryCarousel() {
   // 使用共享的平台数据
   const { projectsByCategory, categories, isProjectsLoading, isCategoriesLoading } = usePlatformContext()
@@ -58,7 +64,7 @@ export function CategoryCarousel() {
         <CategorySection 
           key={category} 
           category={category} 
-          projects={projectsByCategory[category] as unknown as Project[]} 
+          projects={projectsByCategory[category]} 
           count={categories.find(c => c.name === category)?.count || 0}
         />
       ))}
@@ -66,12 +72,27 @@ export function CategoryCarousel() {
   )
 }
 
+/**
+ * 分类章节组件属性接口
+ */
 interface CategorySectionProps {
+  /** 项目分类 */
   category: ProjectCategory
+  /** 该分类下的项目列表 */
   projects: Project[]
+  /** 项目数量 */
   count: number
 }
 
+/**
+ * 分类章节组件
+ * 
+ * 展示特定分类下的项目轮播列表，包含分类标题、项目轮播和控制按钮
+ * 支持自动轮播和手动控制
+ * 
+ * @param props - 组件属性
+ * @returns React 函数组件
+ */
 function CategorySection({ category, projects, count }: CategorySectionProps) {
   const [carouselApi, setCarouselApi] = useState<CarouselApi | null>(null)
   const [canScrollPrev, setCanScrollPrev] = useState(false)

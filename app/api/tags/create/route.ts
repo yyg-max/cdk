@@ -1,23 +1,28 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { auth } from "@/lib/auth"
+import { authenticateUser } from "@/lib/auth-utils"
 
+/**
+ * 创建标签请求接口
+ */
 interface CreateTagRequest {
   name: string
 }
 
+/**
+ * 创建标签 API
+ * POST /api/tags/create
+ * @param request - Next.js 请求对象
+ * @returns 创建的标签信息或错误信息
+ */
 export async function POST(request: NextRequest) {
   try {
-    // 使用Better Auth的getSession方法获取当前session
-    const session = await auth.api.getSession({
-      headers: request.headers
-    })
-    
-    // 检查session是否存在且有效
-    if (!session?.user?.id) {
+    // 统一认证检查
+    const authResult = await authenticateUser(request)
+    if (!authResult.success) {
       return NextResponse.json(
-        { error: "未授权访问" },
-        { status: 401 }
+        { error: authResult.error || "未授权访问" },
+        { status: authResult.status || 401 }
       )
     }
 

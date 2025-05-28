@@ -1,15 +1,21 @@
 import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/lib/auth"
-import { headers } from "next/headers"
+import { authenticateUser } from "@/lib/auth-utils"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
+import type { Prisma } from "@prisma/client"
 
-// 转换时间为中国时区 (UTC+8)
-const formatToChineseTime = (date: Date) => {
+/**
+ * 转换时间为中国时区 (UTC+8)
+ * @param date - 需要转换的日期
+ * @returns 中国时区的ISO字符串
+ */
+const formatToChineseTime = (date: Date): string => {
   return new Date(date.getTime() + (8 * 60 * 60 * 1000)).toISOString()
 }
 
-// 验证请求数据的schema
+/**
+ * 验证请求数据的schema
+ */
 const updateBasicInfoSchema = z.object({
   nickname: z.string().min(1).max(50).optional(),
   email: z.string().email().optional(),
@@ -24,26 +30,29 @@ const updateBasicInfoSchema = z.object({
   }, { message: "头像链接格式无效" })
 })
 
+/**
+ * 更新用户基本信息
+ * PUT /api/account/basic
+ */
 export async function PUT(request: NextRequest) {
   try {
-    // 验证用户身份
-    const session = await auth.api.getSession({
-      headers: await headers()
-    })
-
-    if (!session?.user?.id) {
+    // 使用统一的认证中间件
+    const authResult = await authenticateUser(request)
+    if (!authResult.success) {
       return NextResponse.json(
-        { success: false, error: "未登录" },
-        { status: 401 }
+        { success: false, error: authResult.error },
+        { status: authResult.status }
       )
     }
+
+    const userId = authResult.userId!
 
     // 解析请求数据
     const body = await request.json()
     const validatedData = updateBasicInfoSchema.parse(body)
 
-    // 准备更新数据
-    const updateData: any = {
+    // 准备更新数据，使用明确的类型
+    const updateData: Prisma.UserUpdateInput = {
       updatedAt: new Date() // 手动设置更新时间
     }
     
@@ -57,7 +66,7 @@ export async function PUT(request: NextRequest) {
         const existingUser = await prisma.user.findFirst({
           where: {
             email: validatedData.email,
-            id: { not: session.user.id }
+            id: { not: userId }
           }
         })
         
@@ -80,7 +89,7 @@ export async function PUT(request: NextRequest) {
 
     // 更新用户信息
     const updatedUser = await prisma.user.update({
-      where: { id: session.user.id },
+      where: { id: userId },
       data: updateData,
       select: {
         nickname: true,

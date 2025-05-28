@@ -6,39 +6,45 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { 
   Lock, 
-  Clock, 
-  Calendar, 
   AlertCircle,
   Copy,
   Check,
   Shield,
   ArrowLeft,
   Gift,
-  Tag,
   ExternalLink,
-  Info,
-  BookOpen
+  XCircle,
+  CheckCircle,
+  User,
 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { zhCN } from "date-fns/locale"
 import { toast } from "sonner"
-import { Project } from "@/hooks/use-platform-data"
+import type { Project, ProjectCategory, DistributionMode } from "@/components/project/read/types"
 import Link from "next/link"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Separator } from "@/components/ui/separator"
 
-// 分发模式名称映射
-const DISTRIBUTION_MODE_NAMES: Record<string, string> = {
+import { cn } from "@/lib/utils"
+
+/**
+ * 分发模式中文名称映射
+ * 将英文分发模式枚举值映射为用户友好的中文显示名称
+ */
+const DISTRIBUTION_MODE_NAMES: Record<DistributionMode, string> = {
   SINGLE: "一码一用",
   MULTI: "一码多用", 
   MANUAL: "手动邀请"
-}
+} as const
 
-// 分类中文映射
-const CATEGORY_NAMES: Record<string, string> = {
+/**
+ * 分类中文名称映射
+ * 将英文分类枚举值映射为用户友好的中文显示名称
+ */
+const CATEGORY_NAMES: Record<ProjectCategory, string> = {
   AI: '人工智能',
   SOFTWARE: '软件工具',
   GAME: '游戏娱乐',
@@ -46,9 +52,15 @@ const CATEGORY_NAMES: Record<string, string> = {
   RESOURCE: '资源分享',
   LIFE: '生活服务',
   OTHER: '其他',
-}
+} as const
 
-// 格式化日期时间
+/**
+ * 格式化日期时间
+ * 将ISO日期字符串格式化为中文本地化的日期时间格式
+ * 
+ * @param dateString - ISO格式的日期字符串
+ * @returns 格式化后的日期时间字符串 (yyyy-MM-dd HH:mm:ss)
+ */
 function formatDateTime(dateString: string): string {
   const date = new Date(dateString);
   return date.toLocaleString('zh-CN', { 
@@ -62,31 +74,99 @@ function formatDateTime(dateString: string): string {
   });
 }
 
+/**
+ * 领取状态检查结果接口
+ */
+interface ClaimCheckResult {
+  claimed: boolean
+  canClaim?: boolean
+  reason?: string
+  requirements?: {
+    userStatus: boolean
+    projectActive: boolean
+    timeValid: boolean
+    quotaAvailable: boolean
+    linuxdoAuth: boolean
+    trustLevel: boolean
+  }
+  needPassword?: boolean
+  content?: string
+  usageUrl?: string | null
+  tutorial?: string | null
+  claimedAt?: string
+  projectInfo?: {
+    name: string
+    status: string
+    totalQuota: number
+    claimedCount: number
+    remainingQuota: number
+    distributionMode: DistributionMode
+  }
+}
+
+/**
+ * 项目分享信息组件属性接口
+ */
 interface ShareInfoProps {
+  /** 项目唯一标识符 */
   projectId: string
 }
 
+/**
+ * 获取项目状态的显示配置
+ */
+function getStatusConfig(status: string) {
+  switch (status) {
+    case 'ACTIVE': 
+      return { 
+        label: '活跃', 
+        variant: 'default' as const
+      }
+    case 'PAUSED': 
+      return { 
+        label: '暂停', 
+        variant: 'secondary' as const
+      }
+    case 'COMPLETED': 
+      return { 
+        label: '已完成', 
+        variant: 'secondary' as const
+      }
+    case 'EXPIRED': 
+      return { 
+        label: '已过期', 
+        variant: 'outline' as const
+      }
+    default: 
+      return { 
+        label: status, 
+        variant: 'outline' as const
+      }
+  }
+}
+
+/**
+ * 项目分享信息组件
+ * 
+ * 采用 Vercel + ShadcnUI 简约黑白高级设计风格
+ * 无边框、极简、高级感
+ */
 export function ShareInfo({ projectId }: ShareInfoProps) {
   const [project, setProject] = useState<Project | null>(null)
+  const [claimStatus, setClaimStatus] = useState<ClaimCheckResult | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [needPassword, setNeedPassword] = useState(false)
   const [password, setPassword] = useState("")
   const [isVerifying, setIsVerifying] = useState(false)
-  const [shareContent, setShareContent] = useState<string | null>(null)
   const [isClaiming, setIsClaiming] = useState(false)
-  const [hasClaimed, setHasClaimed] = useState(false)
   const [copied, setCopied] = useState(false)
   const [activeTab, setActiveTab] = useState<string>("content")
-  
-  // 新增字段
-  const [usageUrl, setUsageUrl] = useState<string | null>(null)
-  const [tutorial, setTutorial] = useState<string | null>(null)
-  const [isCheckingClaim, setIsCheckingClaim] = useState(true)
+  const [justClaimed, setJustClaimed] = useState(false)
 
-  // 检查是否已经领取
-  const checkIfClaimed = async () => {
-    setIsCheckingClaim(true);
+  /**
+   * 检查领取状态和要求
+   */
+  const checkClaimStatus = async (): Promise<void> => {
     try {
       const response = await fetch(`/api/projects/${projectId}/check-claim`, {
         method: 'GET',
@@ -97,92 +177,79 @@ export function ShareInfo({ projectId }: ShareInfoProps) {
       });
       
       if (!response.ok) {
-        console.warn('检查领取状态返回非 200 状态:', response.status);
-        return;
+        if (response.status === 401) {
+          setErrorMessage("请先登录后查看项目内容")
+          return
+        }
+        throw new Error(`检查失败: ${response.status}`)
       }
       
-      // 检查响应内容类型
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        console.warn('响应不是 JSON 格式:', contentType);
+      const data = await response.json() as unknown;
+      
+      if (data && typeof data === 'object' && 'success' in data && data.success === true && 'data' in data) {
+        const checkResult = data.data as ClaimCheckResult
+        setClaimStatus(checkResult)
+        
+        // 如果已领取且有教程或使用地址，默认切换到使用选项卡
+        if (checkResult.claimed && (checkResult.usageUrl || checkResult.tutorial)) {
+          setActiveTab("usage")
+        }
+      } else {
+        throw new Error("响应格式错误")
+      }
+    } catch (err) {
+      console.error("检查领取状态错误:", err)
+      setErrorMessage("检查领取状态失败，请稍后重试")
+    }
+  };
+
+  /**
+   * 获取项目基本信息
+   */
+  const fetchProject = async (): Promise<void> => {
+    try {
+      const response = await fetch(`/api/projects/${projectId}`);
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          setErrorMessage("项目不存在");
+        } else {
+          throw new Error("获取项目详情失败");
+        }
         return;
       }
       
       const data = await response.json();
-      
-      if (data.success && data.data?.claimed) {
-        setHasClaimed(true);
-        if (data.data.content) setShareContent(data.data.content);
-        if (data.data.usageUrl) setUsageUrl(data.data.usageUrl);
-        if (data.data.tutorial) setTutorial(data.data.tutorial);
-        
-        // 如果有教程或使用地址，默认切换到使用选项卡
-        if (data.data.usageUrl || data.data.tutorial) {
-          setActiveTab("usage");
-        }
+      if (data.success && data.data) {
+        setProject(data.data);
+      } else {
+        setErrorMessage("项目数据格式错误");
       }
     } catch (err) {
-      console.error("检查领取状态错误:", err);
-      // 错误时不影响页面正常展示
-    } finally {
-      setIsCheckingClaim(false);
+      console.error("获取项目详情错误:", err);
+      setErrorMessage("网络错误，请稍后重试");
     }
   };
 
-  // 获取项目详情
+  // 初始化加载
   useEffect(() => {
-    const fetchProject = async () => {
-      try {
-        const response = await fetch(`/api/projects/${projectId}`);
-        
-        if (!response.ok) {
-          if (response.status === 404) {
-            setErrorMessage("项目不存在");
-          } else {
-            throw new Error("获取项目详情失败");
-          }
-          return;
-        }
-        
-        const data = await response.json();
-        if (data.success && data.data) {
-          setProject(data.data);
-          setNeedPassword(data.data.hasPassword);
-          
-          // 保存使用地址和教程
-          if (data.data.usageUrl) setUsageUrl(data.data.usageUrl);
-          if (data.data.tutorial) setTutorial(data.data.tutorial);
-          
-          // 如果API返回了已领取的数据，直接设置
-          if (data.data.claimed) {
-            setHasClaimed(true);
-            if (data.data.content) setShareContent(data.data.content);
-            
-            // 如果有教程或使用地址，默认切换到使用选项卡
-            if (data.data.usageUrl || data.data.tutorial) {
-              setActiveTab("usage");
-            }
-          } else {
-            // 否则再检查是否已领取
-            await checkIfClaimed();
-          }
-        } else {
-          setErrorMessage("项目数据格式错误");
-        }
-      } catch (err) {
-        console.error("获取项目详情错误:", err);
-        setErrorMessage("网络错误，请稍后重试");
-      } finally {
-        setIsLoading(false);
+    const initialize = async () => {
+      if (projectId) {
+        setIsLoading(true)
+        await Promise.all([
+          fetchProject(),
+          checkClaimStatus()
+        ])
+        setIsLoading(false)
       }
-    };
-
-    if (projectId) {
-      fetchProject();
     }
+    initialize()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
-  // 验证密码并获取分享内容
+  /**
+   * 验证密码并领取
+   */
   const handleVerifyPassword = async () => {
     if (!password.trim()) {
       toast.error("请输入密码")
@@ -202,19 +269,10 @@ export function ShareInfo({ projectId }: ShareInfoProps) {
       const data = await response.json()
       
       if (data.success) {
-        if (data.data.content) {
-          setShareContent(data.data.content)
-          setHasClaimed(true)
-          
-          // 切换到使用选项卡（如果有教程或使用地址）
-          if (usageUrl || tutorial) {
-            setActiveTab("usage")
-          }
-          
-          toast.success("验证成功！")
-        } else if (data.data.message) {
-          toast.info(data.data.message)
-        }
+        setJustClaimed(true)
+        toast.success("领取成功")
+        await checkClaimStatus()
+        setPassword("")
       } else {
         toast.error(data.error || "密码错误")
       }
@@ -226,7 +284,9 @@ export function ShareInfo({ projectId }: ShareInfoProps) {
     }
   }
 
-  // 领取项目内容（无密码项目）
+  /**
+   * 直接领取（无密码）
+   */
   const handleClaim = async () => {
     setIsClaiming(true)
     try {
@@ -241,19 +301,9 @@ export function ShareInfo({ projectId }: ShareInfoProps) {
       const data = await response.json()
       
       if (data.success) {
-        if (data.data.content) {
-          setShareContent(data.data.content)
-          setHasClaimed(true)
-          
-          // 切换到使用选项卡（如果有教程或使用地址）
-          if (usageUrl || tutorial) {
-            setActiveTab("usage")
-          }
-          
-          toast.success("领取成功！")
-        } else if (data.data.message) {
-          toast.info(data.data.message)
-        }
+        setJustClaimed(true)
+        toast.success("领取成功")
+        await checkClaimStatus()
       } else {
         toast.error(data.error || "领取失败")
       }
@@ -265,58 +315,50 @@ export function ShareInfo({ projectId }: ShareInfoProps) {
     }
   }
 
-  // 复制分享内容
-  const handleCopy = async () => {
-    if (!shareContent) return
-    
+  /**
+   * 复制内容到剪贴板
+   */
+  const handleCopy = async (content: string, label: string = "内容") => {
     try {
-      await navigator.clipboard.writeText(shareContent)
+      await navigator.clipboard.writeText(content)
       setCopied(true)
-      toast.success("已复制到剪贴板")
+      toast.success(`已复制${label}`)
       setTimeout(() => setCopied(false), 2000)
     } catch (err) {
       console.error("复制失败:", err)
       toast.error("复制失败")
     }
   }
-  
-  // 复制使用地址
-  const handleCopyUrl = async () => {
-    if (!usageUrl) return
-    
-    try {
-      await navigator.clipboard.writeText(usageUrl)
-      toast.success("已复制使用地址")
-    } catch (err) {
-      console.error("复制失败:", err)
-      toast.error("复制失败")
-    }
-  }
 
-  if (isLoading || isCheckingClaim) {
+  // 渲染加载状态
+  if (isLoading) {
     return <ShareInfoSkeleton />
   }
 
+  // 渲染错误状态
   if (errorMessage) {
     return (
-      <div className="container max-w-3xl mx-auto px-4 py-8">
-        <div className="text-center">
-          <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-foreground mb-2">
-            出错了
-          </h1>
-          <p className="text-muted-foreground mb-4">
-            {errorMessage}
-          </p>
-          <Button onClick={() => window.history.back()}>
+      <div className="flex flex-col items-center justify-center py-24">
+        <AlertCircle className="h-12 w-12 text-gray-400 mb-4" />
+        <h1 className="text-2xl font-semibold mb-2 text-gray-900">
+          出错了
+        </h1>
+        <p className="text-gray-600 mb-8 text-center max-w-md">
+          {errorMessage}
+        </p>
+        <div className="flex gap-3">
+          <Button onClick={() => window.history.back()} variant="ghost">
             返回上一页
+          </Button>
+          <Button onClick={() => window.location.reload()}>
+            重新加载
           </Button>
         </div>
       </div>
     )
   }
 
-  if (!project) {
+  if (!project || !claimStatus) {
     return null
   }
 
@@ -324,281 +366,310 @@ export function ShareInfo({ projectId }: ShareInfoProps) {
     ? Math.round((project.claimedCount / project.totalQuota) * 100) 
     : 0
 
+  const statusConfig = getStatusConfig(project.status)
+
   return (
-    <div className="container max-w-3xl mx-auto px-4 py-8">
+    <div className="max-w-4xl mx-auto py-8 px-4">
       {/* 顶部导航 */}
-      <div className="mb-6 flex items-center justify-between">
-        <Link href="/platform" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors">
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          返回平台首页
+      <div className="flex items-center justify-between mb-12">
+        <Link 
+          href="/platform" 
+          className="group inline-flex items-center text-gray-500 hover:text-gray-900 transition-colors text-sm"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2 transition-transform group-hover:-translate-x-0.5" />
+          返回探索广场
         </Link>
         
-        {hasClaimed && (
-          <Badge variant="outline" className="bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800">
-            <Check className="h-3.5 w-3.5 mr-1" />
+        {claimStatus.claimed && (
+          <Badge variant="secondary" className="bg-gray-100 text-gray-900">
+            <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
             已领取
           </Badge>
         )}
       </div>
 
-      <div className="space-y-8">
-        {/* 项目基本信息 */}
-        <div className="space-y-4">
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">
-                {project.name}
-              </h1>
-              <div className="flex flex-wrap items-center gap-2 mt-3">
-                <Badge variant="outline">
-                  {CATEGORY_NAMES[project.category] || project.category}
-                </Badge>
-                <Badge variant="secondary">
-                  {DISTRIBUTION_MODE_NAMES[project.distributionMode]}
-                </Badge>
-                {project.requireLinuxdo && (
-                  <Badge variant="outline" className="bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800 flex items-center gap-1">
-                    <Shield className="h-3 w-3" /> T{project.minTrustLevel}+
-                  </Badge>
-                )}
-                {project.hasPassword && (
-                  <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800 flex items-center gap-1">
-                    <Lock className="h-3 w-3" /> 需要密码
-                  </Badge>
-                )}
-              </div>
-              <p className="mt-4 text-muted-foreground">
-                {project.description || "暂无项目描述"}
-              </p>
-            </div>
-            
-            <div className="text-right hidden md:block">
-              <div className="text-sm text-muted-foreground mb-1">
-                剩余名额
-              </div>
-              <div className="text-3xl font-bold">
-                {project.remainingQuota}
-              </div>
-            </div>
+      {/* 标题区域 */}
+      <div className="mb-8">
+        <div className="flex items-start justify-between gap-8 mb-6">
+          <div className="flex-1">
+            <h1 className="text-4xl font-bold tracking-tight mb-4">
+              {project.name}
+            </h1>
+            <p className="text-lg text-gray-600 leading-relaxed">
+              {project.description || "暂无项目描述"}
+            </p>
           </div>
           
-          <Separator />
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="flex flex-col">
-              <span className="text-xs text-muted-foreground">领取进度</span>
-              <div className="flex items-center gap-2 mt-1">
-                <Gift className="h-4 w-4 text-blue-500" />
-                <span className="font-medium">
-                  {project.claimedCount}/{project.totalQuota}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  ({progressPercentage}%)
-                </span>
-              </div>
-              <div className="h-1.5 bg-secondary rounded-full overflow-hidden mt-2">
-                <div 
-                  className="h-full bg-blue-500 rounded-full transition-all duration-300"
-                  style={{ width: `${Math.min(100, progressPercentage)}%` }}
-                />
-              </div>
+          {/* 剩余名额 */}
+          <div className="text-right">
+            <div className="text-sm text-gray-500 mb-1">剩余名额</div>
+            <div className="text-4xl font-bold text-gray-900">
+              {project.remainingQuota}
             </div>
-            
-            <div className="flex flex-col">
-              <span className="text-xs text-muted-foreground">开始时间</span>
-              <div className="flex items-center gap-2 mt-1">
-                <Calendar className="h-4 w-4 text-green-500" />
-                <span className="font-medium">
-                  {formatDateTime(project.startTime).split(' ')[0]}
-                </span>
-              </div>
-            </div>
-            
-            <div className="flex flex-col">
-              <span className="text-xs text-muted-foreground">结束时间</span>
-              <div className="flex items-center gap-2 mt-1">
-                <Clock className="h-4 w-4 text-orange-500" />
-                <span className="font-medium">
-                  {project.endTime ? formatDateTime(project.endTime).split(' ')[0] : "永久有效"}
-                </span>
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex items-center pt-2">
-            <div className="flex items-center gap-2">
-              <div className="relative h-8 w-8 rounded-full overflow-hidden bg-secondary">
-                {project.creator.image ? (
-                  <img 
-                    src={project.creator.image} 
-                    alt={project.creator.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="h-full w-full flex items-center justify-center text-xs font-medium text-muted-foreground">
-                    {project.creator.name.charAt(0).toUpperCase()}
-                  </div>
-                )}
-              </div>
-              <div>
-                <div className="text-sm font-medium">
-                  {project.creator.nickname || project.creator.name}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  创建于 {formatDistanceToNow(new Date(project.createdAt), { 
-                    addSuffix: true, 
-                    locale: zhCN 
-                  })}
-                </div>
-              </div>
+            <div className="text-sm text-gray-500">
+              共 {project.totalQuota} 个
             </div>
           </div>
         </div>
 
         {/* 标签 */}
-        {project.tags.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 mb-8">
+          <Badge variant="outline" className="text-gray-700">
+            {CATEGORY_NAMES[project.category] || project.category}
+          </Badge>
+          <Badge variant="secondary">
+            {DISTRIBUTION_MODE_NAMES[project.distributionMode]}
+          </Badge>
+          <Badge variant={statusConfig.variant}>
+            {statusConfig.label}
+          </Badge>
+          {project.requireLinuxdo && (
+            <Badge variant="outline" className="text-gray-700">
+              <Shield className="h-3 w-3 mr-1" /> 
+              T{project.minTrustLevel}+
+            </Badge>
+          )}
+          {project.hasPassword && (
+            <Badge variant="outline" className="text-gray-700">
+              <Lock className="h-3 w-3 mr-1" /> 
+              需要密码
+            </Badge>
+          )}
+          {project.tags && project.tags.map((tag) => (
+            <Badge key={tag.id} variant="secondary" className="text-gray-600">
+              {tag.name}
+            </Badge>
+          ))}
+        </div>
+      </div>
+
+      {/* 项目信息 */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 py-6 border-y border-gray-100">
+        {/* 发起人 */}
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center">
+            {project.creator.image ? (
+              <Avatar>
+                <AvatarImage src={project.creator.image} />
+                <AvatarFallback>
+                  {project.creator.nickname?.[0] || project.creator.name?.[0] || '?'}
+                </AvatarFallback>
+              </Avatar>
+            ) : (
+              <User className="h-4 w-4 text-gray-500" />
+            )}
+          </div>
           <div>
-            <h3 className="text-sm font-medium mb-2 flex items-center gap-1.5">
-              <Tag className="h-3.5 w-3.5" />
-              标签
-            </h3>
-            <div className="flex flex-wrap gap-1.5">
-              {project.tags.map((tag) => (
-                <Badge key={tag.id} variant="outline" className="rounded-md">
-                  {tag.name}
-                </Badge>
-              ))}
+            <div className="text-sm font-medium text-gray-900">
+              {project.creator.nickname || project.creator.name}
+            </div>
+            <div className="text-xs text-gray-500">
+              {formatDistanceToNow(new Date(project.createdAt), { 
+                addSuffix: true, 
+                locale: zhCN 
+              })}
             </div>
           </div>
-        )}
+        </div>
+        
+        {/* 开始时间 */}
+        <div>
+          <div className="text-xs text-gray-500 mb-1">开始时间</div>
+          <div className="text-sm text-gray-900">
+            {formatDateTime(project.startTime)}
+          </div>
+        </div>
+        
+        {/* 结束时间 */}
+        <div>
+          <div className="text-xs text-gray-500 mb-1">结束时间</div>
+          <div className="text-sm text-gray-900">
+            {project.endTime ? formatDateTime(project.endTime) : "永久有效"}
+          </div>
+        </div>
+        
+        {/* 进度 */}
+        <div>
+          <div className="text-xs text-gray-500 mb-2">领取进度</div>
+          <div className="text-sm text-gray-900 mb-2">
+            {project.claimedCount}/{project.totalQuota} ({progressPercentage}%)
+          </div>
+          <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-gray-900 rounded-full transition-all duration-500"
+              style={{ width: `${Math.min(100, progressPercentage)}%` }}
+            />
+          </div>
+        </div>
+      </div>
 
-        {/* 领取区域 */}
-        <div className="bg-card rounded-lg border">
-          {project.remainingQuota <= 0 ? (
-            <div className="p-6 text-center">
-              <AlertCircle className="h-12 w-12 text-orange-500 mx-auto mb-3" />
-              <h3 className="text-lg font-semibold mb-2">名额已满</h3>
-              <p className="text-muted-foreground">
-                该项目的所有名额已被领取完毕
-              </p>
-            </div>
-          ) : hasClaimed ? (
+      {/* 核心内容区域 */}
+      <div className="space-y-6">
+        {claimStatus.claimed ? (
+          // 已领取状态
+          <div className={cn(
+            "transition-all duration-300",
+            justClaimed && "animate-in fade-in-0 duration-300"
+          )}>
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <div className="border-b px-4">
-                <TabsList className="h-12 -mb-px">
-                  <TabsTrigger value="content" className="data-[state=active]:border-b-2 rounded-none border-primary">
-                    内容
+              <TabsList className="grid w-full grid-cols-2 bg-gray-50">
+                <TabsTrigger value="content" className="data-[state=active]:bg-white">
+                  领取内容
+                </TabsTrigger>
+                {(claimStatus.usageUrl || claimStatus.tutorial) && (
+                  <TabsTrigger value="usage" className="data-[state=active]:bg-white">
+                    使用方法
                   </TabsTrigger>
-                  {(usageUrl || tutorial) && (
-                    <TabsTrigger value="usage" className="data-[state=active]:border-b-2 rounded-none border-primary">
-                      使用方法
-                    </TabsTrigger>
-                  )}
-                </TabsList>
-              </div>
+                )}
+              </TabsList>
               
-              <TabsContent value="content" className="p-6 focus-visible:outline-none focus-visible:ring-0">
+              <TabsContent value="content" className="mt-6">
                 <div className="space-y-4">
-                  <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
-                    <Check className="h-4 w-4" />
-                    <span className="font-medium">已成功领取</span>
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <CheckCircle className="h-4 w-4" />
+                    <span>
+                      领取成功 {claimStatus.claimedAt && `· ${formatDistanceToNow(new Date(claimStatus.claimedAt), { addSuffix: true, locale: zhCN })}`}
+                    </span>
                   </div>
                   
-                  <ScrollArea className="h-[120px] rounded border bg-muted/40 p-4">
-                    <div className="font-mono text-sm break-all whitespace-pre-wrap">
-                      {shareContent}
-                    </div>
-                  </ScrollArea>
-                  
-                  <div className="flex justify-end">
-                    <Button
-                      onClick={handleCopy}
-                      variant="outline"
-                      size="sm"
-                      className="gap-1.5"
-                    >
-                      {copied ? (
-                        <>
-                          <Check className="h-3.5 w-3.5" />
-                          已复制
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="h-3.5 w-3.5" />
-                          复制内容
-                        </>
-                      )}
-                    </Button>
+                  <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    <ScrollArea className="h-32">
+                      <div className="font-mono text-sm break-all whitespace-pre-wrap text-gray-900">
+                        {claimStatus.content}
+                      </div>
+                    </ScrollArea>
                   </div>
+                  
+                  <Button
+                    onClick={() => handleCopy(claimStatus.content || "", "内容")}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    {copied ? (
+                      <>
+                        <Check className="h-4 w-4 mr-2" />
+                        已复制
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-4 w-4 mr-2" />
+                        复制内容
+                      </>
+                    )}
+                  </Button>
                 </div>
               </TabsContent>
               
-              <TabsContent value="usage" className="p-6 focus-visible:outline-none focus-visible:ring-0">
+              <TabsContent value="usage" className="mt-6">
                 <div className="space-y-6">
-                  {usageUrl && (
-                    <div className="space-y-2">
-                      <h3 className="text-sm font-medium flex items-center gap-1.5">
-                        <ExternalLink className="h-3.5 w-3.5" />
-                        项目链接
-                      </h3>
-                      <div className="flex items-center gap-2">
+                  {claimStatus.usageUrl && (
+                    <div className="space-y-3">
+                      <h3 className="text-sm font-medium text-gray-900">使用链接</h3>
+                      <div className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg bg-gray-50">
                         <a 
-                          href={usageUrl} 
+                          href={claimStatus.usageUrl} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="text-blue-600 dark:text-blue-400 hover:underline text-sm truncate max-w-[70%]"
+                          className="text-gray-900 text-sm truncate flex-1 hover:underline"
                         >
-                          {usageUrl}
+                          {claimStatus.usageUrl}
                         </a>
                         <Button
-                          onClick={handleCopyUrl}
+                          onClick={() => handleCopy(claimStatus.usageUrl || "", "链接")}
                           variant="ghost"
                           size="sm"
-                          className="h-7 px-2"
+                          className="h-8 w-8 p-0"
                         >
-                          <Copy className="h-3.5 w-3.5" />
-                          <span className="sr-only">复制链接</span>
+                          <Copy className="h-4 w-4" />
                         </Button>
                         <Button
-                          onClick={() => window.open(usageUrl, '_blank')}
+                          onClick={() => window.open(claimStatus.usageUrl!, '_blank')}
                           variant="ghost"
                           size="sm"
-                          className="h-7 px-2"
+                          className="h-8 w-8 p-0"
                         >
-                          <ExternalLink className="h-3.5 w-3.5" />
-                          <span className="sr-only">访问链接</span>
+                          <ExternalLink className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
                   )}
                   
-                  {tutorial && (
-                    <div className="space-y-2">
-                      <h3 className="text-sm font-medium flex items-center gap-1.5">
-                        <BookOpen className="h-3.5 w-3.5" />
-                        使用教程
-                      </h3>
-                      <div className="bg-muted/40 rounded-md p-4 text-sm whitespace-pre-wrap">
-                        {tutorial}
+                  {claimStatus.tutorial && (
+                    <div className="space-y-3">
+                      <h3 className="text-sm font-medium text-gray-900">使用教程</h3>
+                      <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 text-sm text-gray-900 whitespace-pre-wrap">
+                        {claimStatus.tutorial}
                       </div>
                     </div>
                   )}
                 </div>
               </TabsContent>
             </Tabs>
-          ) : needPassword ? (
-            <div className="p-6 space-y-4">
-              <div className="bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded-md p-3 text-sm flex items-start gap-2">
-                <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                <p>该项目需要密码验证，请输入正确的密码领取</p>
+          </div>
+        ) : !claimStatus.canClaim ? (
+          // 不符合要求状态
+          <div className="text-center py-12">
+            <XCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">不满足领取要求</h3>
+            <p className="text-gray-600 mb-6">
+              {claimStatus.reason}
+            </p>
+            
+            {/* 详细要求检查 */}
+            {claimStatus.requirements && (
+              <div className="text-left max-w-md mx-auto">
+                <h4 className="text-sm font-medium text-gray-900 mb-3">检查结果</h4>
+                <div className="space-y-2">
+                  {Object.entries(claimStatus.requirements).map(([key, passed]) => {
+                    const labels: Record<string, string> = {
+                      userStatus: '用户状态正常',
+                      projectActive: '项目处于活跃状态',
+                      timeValid: '在有效时间内',
+                      quotaAvailable: '仍有剩余名额',
+                      linuxdoAuth: 'LinuxDo 认证',
+                      trustLevel: '信任等级达标'
+                    }
+                    
+                    return (
+                      <div 
+                        key={key}
+                        className="flex items-center gap-2 text-sm"
+                      >
+                        {passed ? (
+                          <CheckCircle className="h-4 w-4 text-gray-600" />
+                        ) : (
+                          <XCircle className="h-4 w-4 text-gray-400" />
+                        )}
+                        <span className={cn(
+                          passed ? "text-gray-900" : "text-gray-500"
+                        )}>
+                          {labels[key]}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
-              
+            )}
+          </div>
+        ) : claimStatus.needPassword ? (
+          // 密码验证状态
+          <div className="max-w-sm mx-auto py-8">
+            <div className="text-center mb-6">
+              <Lock className="h-8 w-8 text-gray-400 mx-auto mb-3" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">密码验证</h3>
+              <p className="text-sm text-gray-600">该项目需要密码验证</p>
+            </div>
+            
+            <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="password">请输入领取密码</Label>
+                <Label htmlFor="password" className="text-sm text-gray-700">
+                  领取密码
+                </Label>
                 <Input
                   id="password"
                   type="password"
-                  placeholder="输入密码"
+                  placeholder="请输入密码"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   onKeyDown={(e) => {
@@ -614,32 +685,38 @@ export function ShareInfo({ projectId }: ShareInfoProps) {
                 disabled={isVerifying || !password.trim()}
                 className="w-full"
               >
-                {isVerifying ? "验证中..." : "验证密码并领取"}
+                {isVerifying ? "验证中..." : "验证并领取"}
               </Button>
             </div>
-          ) : (
-            <div className="p-6 space-y-4">
-              <div className="text-center py-4">
-                <Gift className="h-12 w-12 mx-auto mb-3 text-blue-500" />
-                <h3 className="text-lg font-semibold mb-1">
-                  立即领取项目内容
-                </h3>
-                <p className="text-muted-foreground text-sm mb-4 max-w-md mx-auto">
-                  点击下方按钮立即领取该项目的分享内容
-                </p>
-              </div>
-              
-              <Button
-                onClick={handleClaim}
-                disabled={isClaiming}
-                className="w-full"
-                size="lg"
-              >
-                {isClaiming ? "领取中..." : "立即领取"}
-              </Button>
-            </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          // 可以直接领取状态
+          <div className="text-center py-12">
+            <Gift className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              立即领取项目内容
+            </h3>
+            <p className="text-gray-600 mb-8 max-w-md mx-auto">
+              点击下方按钮立即领取该项目的分享内容
+            </p>
+            
+            <Button
+              onClick={handleClaim}
+              disabled={isClaiming}
+              size="lg"
+              className="px-8"
+            >
+              {isClaiming ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                  领取中...
+                </>
+              ) : (
+                "立即领取"
+              )}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -647,53 +724,48 @@ export function ShareInfo({ projectId }: ShareInfoProps) {
 
 function ShareInfoSkeleton() {
   return (
-    <div className="container max-w-3xl mx-auto px-4 py-8">
-      <div className="mb-6">
-        <Skeleton className="h-4 w-24" />
+    <div className="max-w-4xl mx-auto py-8 px-4">
+      {/* 顶部导航骨架 */}
+      <div className="flex items-center justify-between mb-12">
+        <Skeleton className="h-4 w-32" />
+        <Skeleton className="h-6 w-20" />
       </div>
       
-      <div className="space-y-8">
-        <div className="space-y-4">
-          <div className="flex items-start justify-between">
-            <div className="w-full md:w-2/3">
-              <Skeleton className="h-9 w-40 mb-3" />
-              <div className="flex gap-2 mb-4">
-                <Skeleton className="h-5 w-16" />
-                <Skeleton className="h-5 w-20" />
-              </div>
-              <Skeleton className="h-4 w-full mb-1" />
-              <Skeleton className="h-4 w-full mb-1" />
-              <Skeleton className="h-4 w-2/3" />
-            </div>
-            
-            <div className="hidden md:block">
-              <Skeleton className="h-4 w-16 mb-1" />
-              <Skeleton className="h-8 w-12" />
-            </div>
+      {/* 标题区域骨架 */}
+      <div className="mb-8">
+        <div className="flex items-start justify-between gap-8 mb-6">
+          <div className="flex-1 space-y-4">
+            <Skeleton className="h-10 w-3/4" />
+            <Skeleton className="h-6 w-full" />
+            <Skeleton className="h-6 w-2/3" />
           </div>
-          
-          <Skeleton className="h-px w-full" />
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Skeleton className="h-14 w-full" />
-            <Skeleton className="h-14 w-full" />
-            <Skeleton className="h-14 w-full" />
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-8 w-8 rounded-full" />
-            <div>
-              <Skeleton className="h-4 w-24 mb-1" />
-              <Skeleton className="h-3 w-32" />
-            </div>
+          <div className="text-right">
+            <Skeleton className="h-4 w-16 mb-1" />
+            <Skeleton className="h-10 w-16 mb-1" />
+            <Skeleton className="h-4 w-12" />
           </div>
         </div>
         
-        <Skeleton className="h-32 w-full rounded-lg" />
-        
-        <div className="rounded-lg border h-60">
-          <Skeleton className="h-full w-full" />
+        <div className="flex gap-2 mb-8">
+          <Skeleton className="h-6 w-20" />
+          <Skeleton className="h-6 w-24" />
+          <Skeleton className="h-6 w-16" />
         </div>
+      </div>
+      
+      {/* 项目信息骨架 */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 py-6 border-y border-gray-100">
+        {[...Array(4)].map((_, i) => (
+          <div key={i}>
+            <Skeleton className="h-4 w-16 mb-2" />
+            <Skeleton className="h-5 w-24" />
+          </div>
+        ))}
+      </div>
+      
+      {/* 内容区域骨架 */}
+      <div className="space-y-6">
+        <Skeleton className="h-64 w-full" />
       </div>
     </div>
   )

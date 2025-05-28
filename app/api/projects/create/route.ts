@@ -1,25 +1,36 @@
 import { NextRequest, NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
 import crypto from "crypto"
-import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { authenticateUser } from "@/lib/auth-utils"
 import type { ProjectCategory, DistributionMode } from "@prisma/client"
 import { CreateProjectRequest, CreateProjectResponse } from "@/components/project/create/types"
 
-// 单个邀请码记录类型
+/**
+ * 单个邀请码记录接口
+ */
 interface SingleCodeData {
-  content: string
-  contentHash: string
-  projectId: string
-  isClaimed: boolean
+  readonly content: string
+  readonly contentHash: string
+  readonly projectId: string
+  readonly isClaimed: boolean
 }
 
-// 生成邀请码哈希值
+/**
+ * 生成邀请码哈希值
+ * @param content - 邀请码内容
+ * @returns SHA256 哈希值
+ */
 function generateContentHash(content: string): string {
   return crypto.createHash('sha256').update(content).digest('hex')
 }
 
-// 批量创建一码一用记录（优化版本）
+/**
+ * 批量创建一码一用记录（优化版本）
+ * @param projectId - 项目ID
+ * @param inviteCodes - 邀请码列表
+ * @returns 创建的邀请码数量
+ */
 async function createSingleCodeClaimsOptimized(projectId: string, inviteCodes: string[]): Promise<number> {
   // 预处理：生成哈希值和去重
   const uniqueCodes = [...new Set(inviteCodes)]
@@ -58,6 +69,10 @@ async function createSingleCodeClaimsOptimized(projectId: string, inviteCodes: s
   return uniqueCodes.length
 }
 
+/**
+ * 项目创建 API 路由
+ * POST /api/projects/create
+ */
 export async function POST(request: NextRequest) {
   try {
     const body: CreateProjectRequest = await request.json()
@@ -76,18 +91,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 获取当前用户ID
-    const creatorId = await getCurrentUserId(request)
-    if (!creatorId) {
+    // 统一认证检查
+    const authResult = await authenticateUser(request)
+    if (!authResult.success || !authResult.userId) {
       return NextResponse.json<CreateProjectResponse>(
         { 
           success: false,
-          message: "用户未登录或认证失败",
-          error: "用户未登录或认证失败" 
+          message: authResult.error || "用户未登录或认证失败",
+          error: authResult.error || "用户未登录或认证失败" 
         },
-        { status: 401 }
+        { status: authResult.status || 401 }
       )
     }
+
+    const creatorId = authResult.userId
 
     // 处理多个标签
     const tagIds: string[] = []
@@ -268,7 +285,11 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// 数据验证函数
+/**
+ * 数据验证函数
+ * @param data - 项目创建请求数据
+ * @returns 验证错误信息，无错误时返回 null
+ */
 function validateProjectData(data: CreateProjectRequest): string | null {
   // 基本信息验证
   if (!data.name || data.name.trim().length === 0) {
@@ -363,36 +384,4 @@ function validateProjectData(data: CreateProjectRequest): string | null {
   }
 
   return null
-}
-
-// 使用Better Auth获取当前用户ID
-async function getCurrentUserId(request: NextRequest): Promise<string | null> {
-  try {
-    // 使用Better Auth的getSession方法获取当前session
-    const session = await auth.api.getSession({
-      headers: request.headers
-    })
-    
-    // 检查session是否存在且有效
-    if (session?.user?.id) {
-      // 检查用户是否被禁用
-      const user = await prisma.user.findUnique({
-        where: { id: session.user.id },
-        select: { banned: true, banReason: true }
-      })
-      
-      if (user?.banned) {
-        console.log(`用户 ${session.user.id} 已被禁用: ${user.banReason || '无原因'}`)
-        return null
-      }
-      
-      return session.user.id
-    }
-    
-    return null
-    
-  } catch (error) {
-    console.error("获取用户session失败:", error)
-    return null
-  }
 }

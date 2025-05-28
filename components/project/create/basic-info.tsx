@@ -12,68 +12,75 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Check, ChevronsUpDown, X, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getCategoryOptions } from "@/lib/constants"
-import { BasicInfoProps, FormDataUpdater } from "./types"
+import { BasicInfoProps, ProjectCategoryType, CreateProjectTag } from "./types"
 import { toast } from "sonner"
 
 // 从常量文件获取分类选项
 const categories = getCategoryOptions()
 
-interface ProjectTag {
-  id: string
-  name: string
-}
-
+/**
+ * 基本信息配置组件
+ * 用于项目创建流程中的基本信息设置
+ * 
+ * @param formData - 表单数据
+ * @param setFormData - 表单数据更新函数
+ */
 export function BasicInfo({ formData, setFormData }: BasicInfoProps) {
   const [tagComboOpen, setTagComboOpen] = useState(false)
   const [tagSearchValue, setTagSearchValue] = useState("")
-  const [tags, setTags] = useState<ProjectTag[]>([])
+  const [tags, setTags] = useState<CreateProjectTag[]>([])
   const [isLoadingTags, setIsLoadingTags] = useState(false)
   const [isCreatingTag, setIsCreatingTag] = useState(false)
 
-  const updateFormData: FormDataUpdater<typeof formData> = (data) => {
-    setFormData({ ...formData, ...data })
-  }
-
-  const updateField = <T extends string | number | string[] | undefined>(
-    field: keyof typeof formData, 
-    value: T
+  /**
+   * 更新表单字段值
+   * @param field - 字段名
+   * @param value - 字段值
+   */
+  const updateField = <K extends keyof typeof formData>(
+    field: K, 
+    value: typeof formData[K]
   ) => {
-    updateFormData({ [field]: value } as Partial<typeof formData>)
+    setFormData({ [field]: value })
   }
 
-  // 从数据库获取所有标签
+  /**
+   * 从数据库获取所有标签
+   */
   useEffect(() => {
-    const fetchTags = async () => {
+    const fetchTags = async (): Promise<void> => {
       setIsLoadingTags(true)
       try {
-        const response = await fetch('/api/tags');
+        const response = await fetch('/api/tags')
         if (!response.ok) {
-          throw new Error('获取标签失败');
+          throw new Error('获取标签失败')
         }
-        const data = await response.json();
-        setTags(data.tags || []);
+        const data: { tags: CreateProjectTag[] } = await response.json()
+        setTags(data.tags || [])
       } catch (error) {
-        console.error('获取标签出错:', error);
-        toast.error('获取标签列表失败');
+        console.error('获取标签出错:', error)
+        toast.error('获取标签列表失败')
       } finally {
         setIsLoadingTags(false)
       }
-    };
+    }
 
-    fetchTags();
-  }, []);
+    fetchTags()
+  }, [])
 
-  // 创建新标签
-  const createNewTag = async () => {
-    if (!tagSearchValue.trim()) return;
+  /**
+   * 创建新标签
+   */
+  const createNewTag = async (): Promise<void> => {
+    if (!tagSearchValue.trim()) return
     
     // 检查是否已存在
     if (tags.some(tag => tag.name.toLowerCase() === tagSearchValue.trim().toLowerCase())) {
-      toast.error('标签已存在');
-      return;
+      toast.error('标签已存在')
+      return
     }
 
-    setIsCreatingTag(true);
+    setIsCreatingTag(true)
     try {
       const response = await fetch('/api/tags/create', {
         method: 'POST',
@@ -81,47 +88,58 @@ export function BasicInfo({ formData, setFormData }: BasicInfoProps) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ name: tagSearchValue.trim() }),
-      });
+      })
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData: unknown = await response.json()
         
-        // 处理已存在标签的特殊情况（可能是并发创建）
-        if (response.status === 409 && errorData.tag) {
-          // 添加到已选标签
-          addTag(errorData.tag.name);
-          toast.info('该标签已存在，已为你自动选择');
-          return;
+        // 安全断言错误数据
+        if (typeof errorData === 'object' && errorData !== null) {
+          const typedError = errorData as { tag?: CreateProjectTag; error?: string }
+          
+          // 处理已存在标签的特殊情况（可能是并发创建）
+          if (response.status === 409 && typedError.tag) {
+            addTag(typedError.tag.name)
+            toast.info('该标签已存在，已为你自动选择')
+            return
+          }
+          
+          throw new Error(typedError.error || '创建标签失败')
         }
         
-        throw new Error(errorData.error || '创建标签失败');
+        throw new Error('创建标签失败')
       }
 
-      const data = await response.json();
+      const data: { tag: CreateProjectTag } = await response.json()
       
       // 添加新标签到列表
-      const newTag = data.tag;
-      setTags(prev => [...prev, newTag]);
+      const newTag = data.tag
+      setTags(prev => [...prev, newTag])
       
       // 添加到已选标签
-      addTag(newTag.name);
+      addTag(newTag.name)
       
       // 不关闭弹出框，保持显示状态
-      setTagComboOpen(true);
+      setTagComboOpen(true)
       
       // 清空搜索值，但保持弹出框打开
-      setTagSearchValue("");
+      setTagSearchValue("")
       
-      toast.success('创建标签成功');
+      toast.success('创建标签成功')
     } catch (error) {
-      console.error('创建标签出错:', error);
-      toast.error(error instanceof Error ? error.message : '创建标签失败');
+      console.error('创建标签出错:', error)
+      const errorMessage = error instanceof Error ? error.message : '创建标签失败'
+      toast.error(errorMessage)
     } finally {
-      setIsCreatingTag(false);
+      setIsCreatingTag(false)
     }
-  };
+  }
 
-  const addTag = (tagName: string) => {
+  /**
+   * 添加标签到已选列表
+   * @param tagName - 标签名称
+   */
+  const addTag = (tagName: string): void => {
     if (tagName && !formData.selectedTags?.includes(tagName)) {
       updateField("selectedTags", [...(formData.selectedTags || []), tagName])
     }
@@ -129,10 +147,15 @@ export function BasicInfo({ formData, setFormData }: BasicInfoProps) {
     setTagSearchValue("")
   }
 
-  const removeTag = (tagToRemove: string) => {
+  /**
+   * 从已选列表中移除标签
+   * @param tagToRemove - 要移除的标签名称
+   */
+  const removeTag = (tagToRemove: string): void => {
     updateField("selectedTags", formData.selectedTags?.filter(tag => tag !== tagToRemove) || [])
   }
 
+  // 过滤可选标签（排除已选择的）
   const filteredTags = tags.filter(tag => 
     tag.name.toLowerCase().includes(tagSearchValue.toLowerCase()) &&
     !formData.selectedTags?.includes(tag.name)
@@ -267,7 +290,7 @@ export function BasicInfo({ formData, setFormData }: BasicInfoProps) {
           </Label>
           <Select 
             value={formData.category || "AI"} 
-            onValueChange={(value) => updateField("category", value)}
+            onValueChange={(value) => updateField("category", value as ProjectCategoryType)}
           >
             <SelectTrigger className="h-10 shadow-none">
               <SelectValue placeholder="选择分类" />

@@ -1,7 +1,7 @@
 'use client';
 
-import { GalleryVerticalEnd } from "lucide-react"
-import { useState } from "react"
+import { AlertTriangle, GalleryVerticalEnd } from "lucide-react"
+import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -9,43 +9,63 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import Image from "next/image"
 import { authClient } from "@/lib/auth-client"
-import { useFormError } from "@/lib/hooks/useFormError"
-import { ErrorDisplay } from "./error-display"
-import { ErrorMessages } from "@/lib/types/auth"
+import { getChineseErrorMessage } from "@/lib/auth-utils"
 
-/**
- * 登录表单组件属性接口
- */
-interface LoginFormProps extends React.ComponentPropsWithoutRef<"div"> {
-  /**
-   * 初始错误消息
-   */
-  initialError?: string | null;
-}
-
-/**
- * 登录表单组件
- * 
- * @param className - 组件CSS类名
- * @param initialError - 初始错误消息
- * @param props - 其他div元素属性
- */
 export function LoginForm({
   className,
   initialError,
   ...props
-}: LoginFormProps) {
+}: React.ComponentPropsWithoutRef<"div"> & {
+  initialError?: string | null;
+}) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const { error, setError } = useFormError(initialError);
+  const [error, setError] = useState<string | null>(initialError || null);
 
-  /**
-   * 检查用户是否被禁用
-   * 
-   * @param email - 用户邮箱
-   * @throws 如果用户被禁用则抛出错误
-   */
+  // 当initialError变化时更新error状态
+  useEffect(() => {
+    if (initialError) {
+      setError(initialError);
+    }
+  }, [initialError]);
+
+  // 统一错误自动消失功能：5秒后自动消失
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        setError(null);
+      }, 5000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
+  // 统一错误交互清除机制：点击页面、按ESC键都会清除
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if (error) {
+        setError(null);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && error) {
+        setError(null);
+      }
+    };
+
+    if (error) {
+      document.addEventListener('click', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [error]);
+
   const checkUserBanned = async (email: string) => {
     const response = await fetch('/api/auth/check-banned', {
       method: 'POST',
@@ -61,11 +81,6 @@ export function LoginForm({
     }
   };
 
-  /**
-   * 处理表单提交
-   * 
-   * @param e - 表单提交事件
-   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -83,25 +98,14 @@ export function LoginForm({
       });
       
       if (error) {
-        // 处理常见错误消息的中文翻译
-        const errorMessages: ErrorMessages = {
-          'Invalid email': '邮箱或密码错误',
-          'Invalid email or password': '邮箱或密码错误',
-          'Email not verified': '邮箱未验证',
-          'Account is disabled': '账户已被禁用',
-          'Too many attempts': '尝试次数过多，请稍后再试'
-        };
-        
-        const chineseError = error.message ? (errorMessages[error.message] || error.message) : '登录失败';
+        const chineseError = getChineseErrorMessage(error.message);
         setError(chineseError);
       } else {
         window.location.href = '/dashboard';
       }
     } catch (err: unknown) {
-      // 断言error为Error类型以安全地访问message属性
-      const errorObj = err as Error;
-      const errorMessage = errorObj.message || '登录过程中发生错误';
-      
+      // 处理账户禁用错误
+      const errorMessage = err instanceof Error ? err.message : '登录过程中发生错误';
       if (errorMessage.includes('Account is disabled')) {
         setError(errorMessage.replace('Account is disabled', '账户已被禁用'));
       } else {
@@ -110,24 +114,6 @@ export function LoginForm({
       console.error(err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  /**
-   * 处理Linux Do登录
-   */
-  const handleLinuxDoLogin = async (e: React.MouseEvent) => {
-    e.preventDefault(); // 阻止默认行为
-    e.stopPropagation(); // 阻止事件冒泡
-    if (error) setError(null); // 清除错误
-    try {
-      await authClient.signIn.oauth2({
-        providerId: "linuxdo",
-        callbackURL: "/dashboard?sync=true", // 添加同步参数
-      });
-    } catch (err) {
-      console.error('Linux Do 登录失败:', err);
-      setError('Linux Do 登录失败，请重试');
     }
   };
 
@@ -152,7 +138,20 @@ export function LoginForm({
           type="button"
           variant="outline" 
           className="w-full" 
-          onClick={handleLinuxDoLogin}
+          onClick={async (e) => {
+            e.preventDefault(); // 阻止默认行为
+            e.stopPropagation(); // 阻止事件冒泡
+            if (error) setError(null); // 清除错误
+            try {
+              await authClient.signIn.oauth2({
+                providerId: "linuxdo",
+                callbackURL: "/dashboard?sync=true", // 添加同步参数
+              });
+            } catch (err) {
+              console.error('Linux Do 登录失败:', err);
+              setError('Linux Do 登录失败，请重试');
+            }
+          }}
         >
           <Image src="/linuxdo.png" alt="Linux Do" width={20} height={20} />
           使用 Linux Do 登陆
@@ -199,8 +198,14 @@ export function LoginForm({
           {loading ? '登录中...' : '登录'}
         </Button>
         
-        {/* 使用共享错误显示组件 */}
-        <ErrorDisplay error={error} />
+        {/* 错误提示容器 - 固定高度避免布局跳动 */}
+        <div className={`transition-all duration-300 ease-in-out overflow-hidden ${
+          error ? 'max-h-20 opacity-100' : 'max-h-0 opacity-0'
+        }`}>
+          <div className="p-2 bg-red-100 border border-red-200 text-red-700 rounded text-xs font-bold text-center flex items-center justify-center gap-1">
+            <AlertTriangle className="h-4 w-4" /> {error || ''}
+          </div>
+        </div>
       </form>
 
       <div className="text-balance text-center text-xs text-muted-foreground [&_a]:underline [&_a]:underline-offset-4 hover:[&_a]:text-primary  ">

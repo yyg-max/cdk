@@ -9,14 +9,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
-import { ExtendedUser } from "./types"
+import { AccountComponentProps } from "./types"
 
-interface BasicInfoProps {
-  user?: ExtendedUser
-  onUpdateSuccess?: () => void
-}
-
-export function BasicInfo({ user, onUpdateSuccess }: BasicInfoProps) {
+export function BasicInfo({ user, onUpdateSuccess }: AccountComponentProps) {
   // 表单状态 - 确保初始值不为undefined
   const [nickname, setNickname] = useState(user?.nickname || user?.name || "")
   const [email, setEmail] = useState(user?.email || "")

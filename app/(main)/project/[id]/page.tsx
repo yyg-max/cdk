@@ -1,13 +1,11 @@
 "use client"
 
-import { Metadata } from "next"
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import ProjectEdit from "@/components/project/project-edit"
 import { useSession } from "@/lib/auth-client"
 import { toast } from "sonner"
-
-
+import type { Project } from "@/components/project/read/types"
 
 export default function ProjectPage() {
   const params = useParams()
@@ -15,7 +13,7 @@ export default function ProjectPage() {
   const id = params.id as string
   
   const { data: session, isPending } = useSession()
-  const [project, setProject] = useState<any>(null)
+  const [project, setProject] = useState<Project | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   
@@ -28,9 +26,10 @@ export default function ProjectPage() {
     if (session?.user && !project && !error) {
       fetchProjectDetails()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, isPending, id])
   
-  const fetchProjectDetails = async () => {
+  const fetchProjectDetails = async (): Promise<void> => {
     try {
       setIsLoading(true)
       const response = await fetch(`/api/projects/edit?id=${id}`, {
@@ -43,27 +42,57 @@ export default function ProjectPage() {
           return
         }
         
-        const errorData = await response.json()
-        
-        if (response.status === 403) {
-          throw new Error(errorData.error || "无权编辑此项目")
+        let errorData: unknown
+        try {
+          errorData = await response.json()
+        } catch {
+          throw new Error("服务器响应格式无效")
         }
         
-        throw new Error(errorData.error || "获取项目详情失败")
+        if (response.status === 403) {
+          const error = errorData && typeof errorData === 'object' && errorData !== null
+            ? (errorData as Record<string, unknown>).error
+            : "无权编辑此项目"
+          throw new Error(typeof error === 'string' ? error : "无权编辑此项目")
+        }
+        
+        const error = errorData && typeof errorData === 'object' && errorData !== null
+          ? (errorData as Record<string, unknown>).error
+          : "获取项目详情失败"
+        throw new Error(typeof error === 'string' ? error : "获取项目详情失败")
       }
       
-      const data = await response.json()
+      let data: unknown
+      try {
+        data = await response.json()
+      } catch {
+        throw new Error("服务器响应格式无效")
+      }
+      
+      // 安全类型断言
+      if (!data || typeof data !== 'object' || data === null) {
+        throw new Error("服务器响应数据无效")
+      }
+      
+      const responseData = data as Record<string, unknown>
+      
+      if (!responseData.data || typeof responseData.data !== 'object' || responseData.data === null) {
+        throw new Error("项目数据格式无效")
+      }
+      
+      const projectData = (responseData.data as Record<string, unknown>).project as Project
       
       // 判断是否为项目创建者
-      if (!data.data.project.isCreator) {
+      if (!projectData.isCreator) {
         throw new Error("只有项目创建者才能编辑项目")
       }
       
-      setProject(data.data.project)
-    } catch (error: any) {
+      setProject(projectData)
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "获取项目详情失败"
       console.error("获取项目详情失败:", error)
-      setError(error.message || "获取项目详情失败")
-      toast.error(error.message || "获取项目详情失败")
+      setError(errorMessage)
+      toast.error(errorMessage)
       
       // 3秒后跳转到dashboard
       setTimeout(() => {

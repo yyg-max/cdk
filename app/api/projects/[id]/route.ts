@@ -78,6 +78,18 @@ function transformProject(project: ProjectWithIncludes) {
   }
 }
 
+/**
+ * 获取项目详情 API
+ * 
+ * 此API用于项目分享页面，允许查看所有状态的项目：
+ * - 公开/私有项目都可查看
+ * - 活跃/非活跃状态都可查看
+ * - 这是设计决定：分享链接应该始终有效，不受项目状态变更影响
+ * 
+ * @param request - NextRequest
+ * @param params - 路由参数，包含项目ID
+ * @returns 项目详情数据或错误信息
+ */
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -92,11 +104,11 @@ export async function GET(
       )
     }
 
-    // 查询项目详情
+    // 查询项目详情 - 移除isPublic限制，允许查看所有状态的项目
     const project = await prisma.shareProject.findUnique({
       where: {
         id: projectId,
-        isPublic: true // 只返回公开的项目
+        // 注意：不再限制 isPublic，分享页面应支持查看所有项目
       },
       include: {
         tags: {
@@ -128,7 +140,7 @@ export async function GET(
 
     if (!project) {
       return NextResponse.json(
-        { error: "项目不存在或不公开" },
+        { error: "项目不存在" },
         { status: 404 }
       )
     }

@@ -15,14 +15,10 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 
-import { ExtendedUser } from "./types"
+import { AccountComponentProps } from "./types"
+import Image from "next/image"
 
-interface LinuxDoAuthProps {
-  user?: ExtendedUser
-  onUpdateSuccess?: () => void
-}
-
-export function LinuxDoAuth({ user, onUpdateSuccess }: LinuxDoAuthProps) {
+export function LinuxDoAuth({ user, onUpdateSuccess }: AccountComponentProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [isUpdatingAutoSync, setIsUpdatingAutoSync] = useState(false)
 
@@ -181,10 +177,12 @@ export function LinuxDoAuth({ user, onUpdateSuccess }: LinuxDoAuthProps) {
           <div className="text-center space-y-4">
             <div className="flex justify-center">
               <div className="h-16 w-16 rounded-full bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center">
-                <img
+                <Image
                   src="/linuxdo.png"
                   alt="Linux Do"
                   className="h-10 w-10 rounded"
+                  width={40}
+                  height={40}
                 />
               </div>
             </div>
@@ -244,10 +242,12 @@ export function LinuxDoAuth({ user, onUpdateSuccess }: LinuxDoAuthProps) {
         <div className="flex items-center gap-4 mb-6 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200/50 dark:border-orange-700/50">
           <div className="flex-shrink-0">
             <div className="h-12 w-12 rounded-full bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center">
-              <img
+              <Image
                 src="/linuxdo.png"
                 alt="Linux Do"
                 className="h-8 w-8 rounded"
+                width={40}
+                height={40}
               />
             </div>
           </div>

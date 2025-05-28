@@ -597,7 +597,7 @@ export default function ProjectInfo({ project, isOpen, onClose }: ProjectInfoPro
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => window.open(project.usageUrl, '_blank')}
+                onClick={() => project.usageUrl && window.open(project.usageUrl, '_blank')}
                 className="h-8 border-gray-200 text-gray-700 hover:bg-gray-100 hover:text-gray-900"
               >
                 <ExternalLink className="w-3.5 h-3.5 mr-1.5" />

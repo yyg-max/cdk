@@ -3,40 +3,35 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 import crypto from "crypto"
-import type { Prisma, ProjectCategory, DistributionMode, ProjectStatus } from "@prisma/client"
+import type { 
+  Prisma, 
+  ProjectCategory, 
+  ProjectStatus 
+} from "@prisma/client"
 
-// 编辑项目请求类型
-interface EditProjectRequest {
-  id: string
-  name?: string
-  description?: string
-  category?: string
-  tagId?: string
-  usageUrl?: string
-  totalQuota?: number
-  tutorial?: string
-  distributionMode?: string
-  isPublic?: boolean
-  claimPassword?: string | null
-  inviteCodes?: string | null
-  newInviteCodes?: string[] // 新增的邀请码（一码一用模式）
-  question1?: string | null
-  question2?: string | null
-  startTime?: Date
-  endTime?: Date | null
-  requireLinuxdo?: boolean
-  minTrustLevel?: number
-  minRiskThreshold?: number
-  status?: string
-}
-
-// 生成邀请码哈希值
+/**
+ * 生成邀请码哈希值
+ * 
+ * @description 为邀请码生成 SHA-256 哈希值，用于快速查找和去重
+ * @param content - 邀请码内容
+ * @returns 哈希值字符串
+ */
 function generateContentHash(content: string): string {
   return crypto.createHash('sha256').update(content).digest('hex')
 }
 
-// 批量创建一码一用记录（优化版本）
-async function createSingleCodeClaimsOptimized(projectId: string, inviteCodes: string[]) {
+/**
+ * 批量创建一码一用记录（优化版本）
+ * 
+ * @description 使用事务批量插入邀请码记录，确保数据一致性
+ * @param projectId - 项目ID
+ * @param inviteCodes - 邀请码数组
+ * @returns 创建的记录数量
+ */
+async function createSingleCodeClaimsOptimized(
+  projectId: string, 
+  inviteCodes: readonly string[]
+): Promise<number> {
   // 预处理：生成哈希值和去重
   const uniqueCodes = [...new Set(inviteCodes)]
   const codeData = uniqueCodes.map(code => ({
@@ -74,7 +69,24 @@ async function createSingleCodeClaimsOptimized(projectId: string, inviteCodes: s
   return uniqueCodes.length
 }
 
-export async function PUT(request: NextRequest) {
+/**
+ * 项目编辑 API - PUT 方法
+ * 
+ * @description 更新项目信息，支持基本信息、分发设置、领取限制等的修改
+ * @param request - Next.js 请求对象
+ * @returns Promise<NextResponse> - 更新结果
+ * 
+ * @example
+ * PUT /api/projects/edit
+ * {
+ *   "id": "project-123",
+ *   "name": "新项目名称",
+ *   "description": "项目描述",
+ *   "category": "AI",
+ *   "status": "ACTIVE"
+ * }
+ */
+export async function PUT(request: NextRequest): Promise<NextResponse> {
   try {
     // 获取当前用户
     const session = await auth.api.getSession({
@@ -89,10 +101,29 @@ export async function PUT(request: NextRequest) {
     }
     
     const userId = session.user.id
-    const body: EditProjectRequest = await request.json()
+    
+    // 解析请求体
+    let requestBody: unknown
+    try {
+      requestBody = await request.json()
+    } catch {
+      return NextResponse.json(
+        { success: false, error: "请求体格式无效" },
+        { status: 400 }
+      )
+    }
+    
+    if (!requestBody || typeof requestBody !== 'object' || requestBody === null) {
+      return NextResponse.json(
+        { success: false, error: "请求体不能为空" },
+        { status: 400 }
+      )
+    }
+    
+    const body = requestBody as Record<string, unknown>
     
     // 验证项目ID
-    if (!body.id) {
+    if (!body.id || typeof body.id !== 'string') {
       return NextResponse.json(
         { success: false, error: "缺少项目ID" },
         { status: 400 }
@@ -132,20 +163,20 @@ export async function PUT(request: NextRequest) {
     const updateData: Prisma.ShareProjectUpdateInput = {}
     
     // 基本信息
-    if (body.name !== undefined) updateData.name = body.name
-    if (body.description !== undefined) updateData.description = body.description
+    if (body.name !== undefined) updateData.name = body.name as string
+    if (body.description !== undefined) updateData.description = body.description as string
     if (body.category !== undefined) updateData.category = body.category as ProjectCategory
-    // tagId已经改为多对多关系，需要单独处理
-    if (body.usageUrl !== undefined) updateData.usageUrl = body.usageUrl || null
-    if (body.tutorial !== undefined) updateData.tutorial = body.tutorial || null
+    if (body.usageUrl !== undefined) updateData.usageUrl = (body.usageUrl as string) || null
+    if (body.tutorial !== undefined) updateData.tutorial = (body.tutorial as string) || null
     
     // 数量限制
     const originalTotalQuota = project.totalQuota;
-    let newInviteCodes: string[] = [];
+    let newInviteCodes: readonly string[] = [];
     
     if (body.totalQuota !== undefined) {
+      const totalQuota = body.totalQuota as number
       const claimedCount = project.claimedCount || 0
-      if (body.totalQuota < claimedCount) {
+      if (totalQuota < claimedCount) {
         return NextResponse.json(
           { success: false, error: `总数量不能小于已领取数量 ${claimedCount}` },
           { status: 400 }
@@ -153,24 +184,25 @@ export async function PUT(request: NextRequest) {
       }
       
       // 一码一用模式处理新增邀请码
-      if (project.distributionMode === "SINGLE" && body.totalQuota > originalTotalQuota && body.newInviteCodes) {
-        const additionalQuota = body.totalQuota - originalTotalQuota;
+      if (project.distributionMode === "SINGLE" && totalQuota > originalTotalQuota && body.newInviteCodes) {
+        const additionalQuota = totalQuota - originalTotalQuota;
+        const inviteCodes = body.newInviteCodes as string[]
         
         // 验证新增邀请码数量是否匹配新增配额
-        if (body.newInviteCodes.length !== additionalQuota) {
+        if (inviteCodes.length !== additionalQuota) {
           return NextResponse.json(
-            { success: false, error: `新增邀请码数量(${body.newInviteCodes.length})与新增配额(${additionalQuota})不一致` },
+            { success: false, error: `新增邀请码数量(${inviteCodes.length})与新增配额(${additionalQuota})不一致` },
             { status: 400 }
           )
         }
         
-        newInviteCodes = body.newInviteCodes;
+        newInviteCodes = inviteCodes;
         
         // 更新项目中存储的所有邀请码
         let existingCodes: string[] = [];
         if (project.inviteCodes) {
           try {
-            existingCodes = JSON.parse(project.inviteCodes);
+            existingCodes = JSON.parse(project.inviteCodes) as string[];
           } catch (e) {
             console.error("解析现有邀请码失败:", e);
             existingCodes = [];
@@ -182,20 +214,21 @@ export async function PUT(request: NextRequest) {
         updateData.inviteCodes = JSON.stringify(allCodes);
       }
       
-      updateData.totalQuota = body.totalQuota;
+      updateData.totalQuota = totalQuota;
     } else if (body.newInviteCodes && project.distributionMode === "SINGLE") {
       // 如果只提供了新邀请码但没有提供totalQuota
-      const additionalQuota = body.newInviteCodes.length;
+      const inviteCodes = body.newInviteCodes as string[]
+      const additionalQuota = inviteCodes.length;
       const newTotalQuota = originalTotalQuota + additionalQuota;
       
       updateData.totalQuota = newTotalQuota;
-      newInviteCodes = body.newInviteCodes;
+      newInviteCodes = inviteCodes;
       
       // 更新项目中存储的所有邀请码
       let existingCodes: string[] = [];
       if (project.inviteCodes) {
         try {
-          existingCodes = JSON.parse(project.inviteCodes);
+          existingCodes = JSON.parse(project.inviteCodes) as string[];
         } catch (e) {
           console.error("解析现有邀请码失败:", e);
           existingCodes = [];
@@ -207,26 +240,15 @@ export async function PUT(request: NextRequest) {
       updateData.inviteCodes = JSON.stringify(allCodes);
     }
     
-    // 分发模式
-    if (body.distributionMode !== undefined) {
-      // 分发模式不能随意修改，需要检查是否已有领取
-      if (project.distributionMode !== body.distributionMode && project.claimedCount > 0) {
-        return NextResponse.json(
-          { success: false, error: "已有用户领取，无法修改分发模式" },
-          { status: 400 }
-        )
-      }
-      updateData.distributionMode = body.distributionMode as DistributionMode
-    }
-    
     // 可见性和密码
-    if (body.isPublic !== undefined) updateData.isPublic = body.isPublic
+    if (body.isPublic !== undefined) updateData.isPublic = body.isPublic as boolean
     
     // 密码处理
     if (body.claimPassword !== undefined) {
-      if (body.claimPassword) {
+      const claimPassword = body.claimPassword as string | null
+      if (claimPassword) {
         // 加密新密码
-        const hashedPassword = await bcrypt.hash(body.claimPassword, 10)
+        const hashedPassword = await bcrypt.hash(claimPassword, 10)
         updateData.claimPassword = hashedPassword
       } else {
         // 移除密码
@@ -236,28 +258,28 @@ export async function PUT(request: NextRequest) {
     
     // 邀请码（一码多用模式或手动邀请模式）
     if (body.inviteCodes !== undefined && project.distributionMode !== "SINGLE") {
-      updateData.inviteCodes = body.inviteCodes
+      updateData.inviteCodes = body.inviteCodes as string
     }
     
     // 问题
-    if (body.question1 !== undefined) updateData.question1 = body.question1 || null
-    if (body.question2 !== undefined) updateData.question2 = body.question2 || null
+    if (body.question1 !== undefined) updateData.question1 = (body.question1 as string) || null
+    if (body.question2 !== undefined) updateData.question2 = (body.question2 as string) || null
     
     // 时间设置
-    if (body.startTime !== undefined) updateData.startTime = new Date(body.startTime)
-    if (body.endTime !== undefined) updateData.endTime = body.endTime ? new Date(body.endTime) : null
+    if (body.startTime !== undefined) updateData.startTime = new Date(body.startTime as string)
+    if (body.endTime !== undefined) updateData.endTime = body.endTime ? new Date(body.endTime as string) : null
     
     // 安全设置
-    if (body.requireLinuxdo !== undefined) updateData.requireLinuxdo = body.requireLinuxdo
-    if (body.minTrustLevel !== undefined) updateData.minTrustLevel = body.minTrustLevel
-    if (body.minRiskThreshold !== undefined) updateData.minRiskThreshold = body.minRiskThreshold
+    if (body.requireLinuxdo !== undefined) updateData.requireLinuxdo = body.requireLinuxdo as boolean
+    if (body.minTrustLevel !== undefined) updateData.minTrustLevel = body.minTrustLevel as number
+    if (body.minRiskThreshold !== undefined) updateData.minRiskThreshold = body.minRiskThreshold as number
     
     // 状态
     if (body.status !== undefined) updateData.status = body.status as ProjectStatus
     
     // 更新项目
     const updatedProject = await prisma.shareProject.update({
-      where: { id: body.id },
+      where: { id: body.id as string },
       data: updateData,
       include: {
         tags: {
@@ -272,6 +294,17 @@ export async function PUT(request: NextRequest) {
             nickname: true,
             image: true
           }
+        },
+        _count: {
+          select: {
+            singleCodeClaims: {
+              where: { isClaimed: true }
+            },
+            multiCodeClaims: true,
+            manualApplications: {
+              where: { status: 'APPROVED' }
+            }
+          }
         }
       }
     })
@@ -282,27 +315,72 @@ export async function PUT(request: NextRequest) {
       console.log(`一码一用模式：已添加 ${createdCount} 个新邀请码记录`);
     }
     
+    // 计算实际领取数量
+    const actualClaimedCount = updatedProject._count.singleCodeClaims + 
+                             updatedProject._count.multiCodeClaims + 
+                             updatedProject._count.manualApplications
+    
+    // 计算剩余名额
+    const remainingQuota = Math.max(0, updatedProject.totalQuota - actualClaimedCount)
+    
     return NextResponse.json({
       success: true,
       data: {
         project: {
-          ...updatedProject,
-          hasPassword: !!updatedProject.claimPassword
+          id: updatedProject.id,
+          name: updatedProject.name,
+          description: updatedProject.description,
+          category: updatedProject.category,
+          tags: updatedProject.tags.map(tagRelation => ({
+            id: tagRelation.tag.id,
+            name: tagRelation.tag.name
+          })),
+          usageUrl: updatedProject.usageUrl,
+          totalQuota: updatedProject.totalQuota,
+          claimedCount: actualClaimedCount,
+          remainingQuota,
+          tutorial: updatedProject.tutorial,
+          distributionMode: updatedProject.distributionMode,
+          isPublic: updatedProject.isPublic,
+          startTime: updatedProject.startTime.toISOString(),
+          endTime: updatedProject.endTime?.toISOString() || null,
+          requireLinuxdo: updatedProject.requireLinuxdo,
+          minTrustLevel: updatedProject.minTrustLevel,
+          minRiskThreshold: updatedProject.minRiskThreshold,
+          status: updatedProject.status,
+          createdAt: updatedProject.createdAt.toISOString(),
+          updatedAt: updatedProject.updatedAt.toISOString(),
+          hasPassword: !!updatedProject.claimPassword,
+          creator: updatedProject.creator,
+          isCreator: true,
+          inviteCodes: updatedProject.inviteCodes,
+          question1: updatedProject.question1,
+          question2: updatedProject.question2
         }
       }
     })
     
   } catch (error) {
     console.error("编辑项目失败:", error)
+    const errorMessage = error instanceof Error ? error.message : "编辑项目时发生未知错误"
     return NextResponse.json(
-      { success: false, error: "服务器内部错误，请稍后重试" },
+      { success: false, error: "服务器内部错误，请稍后重试", message: errorMessage },
       { status: 500 }
     )
   }
 }
 
-// 获取项目详情（仅创建者可获取完整信息，包括邀请码等）
-export async function GET(request: NextRequest) {
+/**
+ * 获取项目详情 API - GET 方法
+ * 
+ * @description 获取项目详情信息，仅创建者可获取完整信息（包括邀请码等敏感数据）
+ * @param request - Next.js 请求对象
+ * @returns Promise<NextResponse> - 项目详情响应
+ * 
+ * @example
+ * GET /api/projects/edit?id=project-123
+ */
+export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const { searchParams } = new URL(request.url)
     const projectId = searchParams.get('id')
@@ -437,8 +515,9 @@ export async function GET(request: NextRequest) {
     
   } catch (error) {
     console.error("获取项目详情失败:", error)
+    const errorMessage = error instanceof Error ? error.message : "获取项目详情时发生未知错误"
     return NextResponse.json(
-      { success: false, error: "服务器内部错误，请稍后重试" },
+      { success: false, error: "服务器内部错误，请稍后重试", message: errorMessage },
       { status: 500 }
     )
   }

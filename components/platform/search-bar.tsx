@@ -14,7 +14,6 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { X, ChevronDown, SlidersHorizontal, Loader2 } from "lucide-react"
-import { Project } from "@/hooks/use-platform-data"
 import {
   Select,
   SelectContent,
@@ -30,7 +29,7 @@ import {
 } from "@/components/ui/popover"
 import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Project as ProjectCardProject } from "./project-card"
+import type { Project } from "@/components/project/read/types"
 
 // 分类选项
 const CATEGORIES = [
@@ -84,6 +83,17 @@ interface FilterOptions {
   tags: string[];
 }
 
+/**
+ * 搜索筛选组件
+ * 
+ * 提供项目搜索和多维度筛选功能，支持：
+ * - 关键词搜索
+ * - 分类、分发模式、认证要求等多维度筛选
+ * - 分页加载和实时筛选
+ * - URL状态同步
+ * 
+ * @returns React 函数组件
+ */
 export function SearchFilterBar() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -639,7 +649,7 @@ export function SearchFilterBar() {
                 <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {filteredResults.map((project) => (
-                      <ProjectCard key={project.id} project={project as unknown as ProjectCardProject} />
+                      <ProjectCard key={project.id} project={project} />
                     ))}
                   </div>
                   
