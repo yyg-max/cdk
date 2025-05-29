@@ -2,6 +2,7 @@ import { WelcomeBanner } from "@/components/platform/welcome-banner"
 import { CategoryCarousel } from "@/components/platform/category-carousel"
 import { SearchFilterBar } from "@/components/platform/search-bar"
 import { PlatformProvider } from "@/providers/platform-provider"
+import { Suspense } from "react"
 
 export default function PlatformPage() {
   return (
@@ -13,7 +14,9 @@ export default function PlatformPage() {
           <WelcomeBanner />
           
           {/* 搜索和筛选栏 */}
-          <SearchFilterBar />
+          <Suspense fallback={<div className="h-16 bg-gray-200 animate-pulse rounded-lg" />}>
+            <SearchFilterBar />
+          </Suspense>
           
           {/* 按分类展示项目 */}
           <div className="max-w-full overflow-hidden">
