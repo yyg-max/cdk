@@ -43,10 +43,10 @@ export async function GET(request: NextRequest) {
     const hasPassword = !!(credentialAccount && credentialAccount.password)
 
     const responseData: PasswordStatusResponse = {
-      hasPassword,
-      isThirdPartyUser: userSource === 'linuxdo',
-      needsCurrentPassword: hasPassword // 如果有密码就需要验证当前密码
-    }
+        hasPassword,
+        isThirdPartyUser: userSource === 'linuxdo',
+        needsCurrentPassword: hasPassword // 如果有密码就需要验证当前密码
+      }
 
     return NextResponse.json({
       success: true,

@@ -213,7 +213,7 @@ export function EditDistributionContent({ formData, setFormData, project }: Edit
   const newCodesCount = formData.newInviteCodes.split('\n').filter(Boolean).length
   const originalCodesCount = inviteCodesCount - newCodesCount
   const isQuotaFull = newCodesCount >= formData.additionalQuota
-
+  
   return (
     <div className="space-y-4">
       {/* 分发模式显示 */}

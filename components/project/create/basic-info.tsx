@@ -96,14 +96,14 @@ export function BasicInfo({ formData, setFormData }: BasicInfoProps) {
         // 安全断言错误数据
         if (typeof errorData === 'object' && errorData !== null) {
           const typedError = errorData as { tag?: CreateProjectTag; error?: string }
-          
-          // 处理已存在标签的特殊情况（可能是并发创建）
+        
+        // 处理已存在标签的特殊情况（可能是并发创建）
           if (response.status === 409 && typedError.tag) {
             addTag(typedError.tag.name)
             toast.info('该标签已存在，已为你自动选择')
             return
-          }
-          
+        }
+        
           throw new Error(typedError.error || '创建标签失败')
         }
         

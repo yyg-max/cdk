@@ -40,7 +40,7 @@ export async function DELETE(req: NextRequest): Promise<NextResponse<ProjectDele
         { status: authResult.status || 401 }
       )
     }
-
+    
     const userId = authResult.userId!
 
     // 解析请求体，使用类型安全的方式

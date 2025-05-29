@@ -331,8 +331,8 @@ export default function ProjectList() {
       if (filters.keyword) params.append('keyword', filters.keyword);
       
       // 排序参数
-      params.append('sortBy', sort.sortBy);
-      params.append('sortOrder', sort.sortOrder);
+        params.append('sortBy', sort.sortBy);
+        params.append('sortOrder', sort.sortOrder);
       
       const response = await fetch(`/api/projects/search?${params.toString()}`, { signal });
       
@@ -391,14 +391,14 @@ export default function ProjectList() {
           setProjects(projects);
           
           const paginationData = responseData.pagination as Record<string, unknown>;
-          setPagination(prev => ({
-            ...prev,
+        setPagination(prev => ({
+          ...prev,
             totalCount: typeof paginationData.totalCount === 'number' ? paginationData.totalCount : 0,
             totalPages: typeof paginationData.totalPages === 'number' ? paginationData.totalPages : 0,
             hasNext: Boolean(paginationData.hasNext),
             hasPrev: Boolean(paginationData.hasPrev)
-          }));
-        } else {
+        }));
+      } else {
           console.error('API 响应数据结构无效: 缺少必要的字段');
         }
       } else {

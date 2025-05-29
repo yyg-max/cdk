@@ -154,8 +154,8 @@ export interface ProjectUpdateResponse {
   success: boolean
   /** 更新后的项目数据 */
   data?: {
-    project: Project
-  }
+  project: Project
+}
   /** 错误信息 */
   error?: string
   /** 附加消息 */

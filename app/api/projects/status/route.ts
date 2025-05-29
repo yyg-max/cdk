@@ -191,12 +191,12 @@ export async function GET(request: NextRequest): Promise<NextResponse<ProjectSta
       recentClaims = singleClaims
         .filter(claim => claim.claimer && claim.claimedAt) // 过滤无效记录
         .map(claim => ({
-          id: claim.id,
-          claimerId: claim.claimerId as string,
-          claimerName: claim.claimer?.nickname || claim.claimer?.name || '未知用户',
+        id: claim.id,
+        claimerId: claim.claimerId as string,
+        claimerName: claim.claimer?.nickname || claim.claimer?.name || '未知用户',
           claimedAt: claim.claimedAt!.toISOString(),
-          type: 'single' as const
-        }))
+        type: 'single' as const
+      }))
     } 
     else if (distributionMode === 'MULTI') {
       // 获取一码多用记录
@@ -260,14 +260,14 @@ export async function GET(request: NextRequest): Promise<NextResponse<ProjectSta
     
     // 构建响应数据
     const responseData: ProjectClaimsData = {
-      singleCodeClaimsCount,
-      multiCodeClaimsCount,
-      manualApplicationsCount,
-      pendingApplicationsCount,
-      recentClaims,
-      hasMore,
-      totalCount
-    }
+        singleCodeClaimsCount,
+        multiCodeClaimsCount,
+        manualApplicationsCount,
+        pendingApplicationsCount,
+        recentClaims,
+        hasMore,
+        totalCount
+      }
     
     // 返回结果
     return NextResponse.json({

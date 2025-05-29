@@ -232,19 +232,19 @@ export function DistributionContent({ formData, setFormData, totalQuota }: Distr
           {/* 邀请码管理 */}
           <div className="space-y-3 p-3 rounded-lg border border-dashed bg-muted/30">
             {/* 设置密码 */}
-            <div className="space-y-2">
+          <div className="space-y-2">
               <Label htmlFor="claimPassword" className="text-sm font-medium">
                 设置密码<span className="text-muted-foreground">（可选）</span>
               </Label>
-              <Input
-                id="claimPassword"
-                placeholder="至少6位，用户需要输入密码才能领取"
-                value={formData.claimPassword || ""}
+            <Input
+              id="claimPassword"
+              placeholder="至少6位，用户需要输入密码才能领取"
+              value={formData.claimPassword || ""}
                 onChange={(e) => updateField("claimPassword", e.target.value)}
-                minLength={6}
-                className="h-10 shadow-none"
-              />
-            </div>
+              minLength={6}
+              className="h-10 shadow-none"
+            />
+          </div>
             
             <div className="flex items-center">
               <Label className="text-sm font-medium">邀请码/链接 <span className="text-red-500">*</span></Label>

@@ -256,7 +256,7 @@ export interface ProjectInfoProps extends BaseComponentProps<Project> {
   isOpen: boolean
   /** 关闭对话框的回调函数 */
   onClose: () => void
-}
+} 
 
 /**
  * 项目列表组件属性

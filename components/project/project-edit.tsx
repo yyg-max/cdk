@@ -390,8 +390,8 @@ export default function ProjectEdit({ project }: ProjectEditProps) {
       
       if (updateResponse.success) {
         toast.success('项目更新成功')
-        // 重新加载页面以获取最新数据
-        router.refresh()
+      // 重新加载页面以获取最新数据
+      router.refresh()
       } else {
         const errorMessage = updateResponse.error || '更新失败'
         throw new Error(errorMessage)
