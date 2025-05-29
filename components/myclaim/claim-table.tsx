@@ -14,16 +14,12 @@ import {
   useReactTable,
 } from "@tanstack/react-table"
 import {
-  CheckCircle2Icon,
   ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  ChevronsLeftIcon,
-  ChevronsRightIcon,
   CopyIcon,
   ExternalLinkIcon,
   EyeIcon,
-  EyeOffIcon,
   ColumnsIcon,
   SearchIcon,
 } from "lucide-react"
@@ -290,11 +286,6 @@ export function ClaimTable({ data = [] }: { data: ClaimRecord[] }) {
       setLoadingContent(prev => ({ ...prev, [record.id]: false }))
     }
   }, [codeContent, loadingContent])
-  
-  // 切换邀请码可见性
-  const toggleCodeVisibility = (id: string) => {
-    setShowContent(prev => ({ ...prev, [id]: !prev[id] }))
-  }
   
   // 复制到剪贴板
   const copyToClipboard = (text?: string) => {

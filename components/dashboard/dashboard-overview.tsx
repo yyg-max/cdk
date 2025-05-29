@@ -27,7 +27,6 @@ import {
   CartesianGrid,
   XAxis,
   YAxis,
-  ResponsiveContainer,
 } from "recharts"
 import {
   Users,
@@ -40,7 +39,6 @@ import {
   Target,
   Zap,
   RefreshCw,
-  Eye,
   ArrowUpRight,
   ArrowDownRight,
   Minus,
@@ -197,17 +195,6 @@ const modeChartConfig = {
   MANUAL: {
     label: "手动邀请",
     color: "hsl(var(--chart-3))",
-  },
-} satisfies ChartConfig
-
-const sourceChartConfig = {
-  "Linux Do": {
-    label: "Linux Do",
-    color: "hsl(var(--chart-1))",
-  },
-  "邮箱注册": {
-    label: "邮箱注册",
-    color: "hsl(var(--chart-2))",
   },
 } satisfies ChartConfig
 
@@ -611,7 +598,7 @@ export function DashboardOverview() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {stats.userStats.sourceDistribution.map((item, index) => {
+              {stats.userStats.sourceDistribution.map((item) => {
                 const percentage = (item.value / stats.userStats.total) * 100
                 return (
                   <div key={item.name} className="space-y-2">

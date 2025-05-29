@@ -10,7 +10,9 @@ export async function GET(request: NextRequest) {
     const startDate = new Date()
     startDate.setDate(startDate.getDate() - days)
 
-    // 并行查询所有统计数据
+    // 按批次查询数据，避免同时打开过多连接
+    
+    // 批次1：基础计数统计
     const [
       // 用户统计
       totalUsers,
@@ -21,33 +23,10 @@ export async function GET(request: NextRequest) {
       // 项目统计
       totalProjects,
       activeProjects,
-      projectsByCategory,
-      projectsByMode,
-      projectsByStatus,
-      newProjects,
       
       // 领取统计
       totalSingleClaims,
       totalMultiClaims,
-      recentSingleClaims,
-      recentMultiClaims,
-      
-      // 申请统计
-      totalApplications,
-      pendingApplications,
-      approvedApplications,
-      rejectedApplications,
-      
-      // 趋势数据
-      userTrend,
-      projectTrend,
-      claimTrend,
-      
-      // 热门数据
-      popularProjects,
-      activeCreators,
-      activeClaimers,
-      popularTags
     ] = await Promise.all([
       // 用户统计
       prisma.user.count(),
@@ -66,27 +45,30 @@ export async function GET(request: NextRequest) {
       prisma.shareProject.count({
         where: { status: "ACTIVE" }
       }),
-      prisma.shareProject.groupBy({
-        by: ['category'],
-        _count: { id: true }
-      }),
-      prisma.shareProject.groupBy({
-        by: ['distributionMode'],
-        _count: { id: true }
-      }),
-      prisma.shareProject.groupBy({
-        by: ['status'],
-        _count: { id: true }
-      }),
-      prisma.shareProject.count({
-        where: { createdAt: { gte: startDate } }
-      }),
       
       // 领取统计
       prisma.singleCodeClaim.count({
         where: { isClaimed: true }
       }),
       prisma.multiCodeClaim.count(),
+    ]);
+
+    // 批次2：更多计数统计
+    const [
+      // 项目相关
+      newProjects,
+      recentSingleClaims,
+      recentMultiClaims,
+      
+      // 申请统计
+      totalApplications,
+      pendingApplications,
+      approvedApplications,
+      rejectedApplications,
+    ] = await Promise.all([
+      prisma.shareProject.count({
+        where: { createdAt: { gte: startDate } }
+      }),
       prisma.singleCodeClaim.count({
         where: { 
           isClaimed: true,
@@ -108,8 +90,34 @@ export async function GET(request: NextRequest) {
       prisma.manualApplication.count({
         where: { status: "REJECTED" }
       }),
-      
-      // 趋势数据（按天）
+    ]);
+
+    // 批次3：分组查询
+    const [
+      projectsByCategory,
+      projectsByMode,
+      projectsByStatus,
+    ] = await Promise.all([
+      prisma.shareProject.groupBy({
+        by: ['category'],
+        _count: { id: true }
+      }),
+      prisma.shareProject.groupBy({
+        by: ['distributionMode'],
+        _count: { id: true }
+      }),
+      prisma.shareProject.groupBy({
+        by: ['status'],
+        _count: { id: true }
+      }),
+    ]);
+
+    // 批次4：趋势数据
+    const [
+      userTrend,
+      projectTrend,
+      claimTrend,
+    ] = await Promise.all([
       prisma.$queryRaw<Array<{date: string, count: bigint}>>`
         SELECT DATE(createdAt) as date, COUNT(*) as count
         FROM user 
@@ -134,7 +142,15 @@ export async function GET(request: NextRequest) {
         GROUP BY DATE(claimedAt)
         ORDER BY date
       `,
-      
+    ]);
+
+    // 批次5：热门数据
+    const [
+      popularProjects,
+      activeCreators,
+      activeClaimers,
+      popularTags
+    ] = await Promise.all([
       // 热门项目
       prisma.$queryRaw<Array<{
         id: string, 
@@ -182,10 +198,10 @@ export async function GET(request: NextRequest) {
           COUNT(*) as claimedCount
         FROM user u
         JOIN (
-          SELECT userId, claimedAt FROM single_code_claim WHERE isClaimed = true
+          SELECT claimerId, claimedAt FROM single_code_claim WHERE isClaimed = true
           UNION ALL
-          SELECT userId, claimedAt FROM multi_code_claim
-        ) as all_claims ON u.id = all_claims.userId
+          SELECT claimerId, claimedAt FROM multi_code_claim
+        ) as all_claims ON u.id = all_claims.claimerId
         WHERE all_claims.claimedAt >= ${startDate}
         GROUP BY u.id, u.name
         ORDER BY claimedCount DESC
@@ -208,11 +224,11 @@ export async function GET(request: NextRequest) {
         ORDER BY projectCount DESC
         LIMIT 10
       `
-    ])
+    ]);
 
     // 计算领取成功率
-    const totalCodes = await prisma.singleCodeClaim.count()
-    const claimRate = totalCodes > 0 ? (totalSingleClaims / totalCodes * 100) : 0
+    const totalCodes = await prisma.singleCodeClaim.count();
+    const claimRate = totalCodes > 0 ? (totalSingleClaims / totalCodes * 100) : 0;
 
     // 格式化趋势数据
     const formatTrendData = (data: Array<{date: string, count: bigint}>) => {

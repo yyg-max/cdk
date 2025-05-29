@@ -225,7 +225,7 @@ export async function GET(request: NextRequest) {
     // 转换为API响应格式 - 按分类的日统计
     const categoryStats = []
     for (const [day, categoryCounts] of categoryDailyStatsMap.entries()) {
-      const dayData: any = { month: day } // 使用与前端一致的字段名
+      const dayData: { month: string; [key: string]: number | string } = { month: day } // 使用与前端一致的字段名
       
       // 添加每个分类的计数
       for (const [category, count] of categoryCounts.entries()) {

@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Area, AreaChart, CartesianGrid, Legend, Tooltip, XAxis, YAxis } from "recharts"
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import {
@@ -48,15 +48,6 @@ interface ClaimChartProps {
 }
 
 // 为图表准备默认数据 - 按天
-const defaultDailyData = Array.from({ length: 7 }, (_, i) => {
-  const date = new Date()
-  date.setDate(date.getDate() - 6 + i)
-  return {
-    month: formatDateString(date),
-    count: 0
-  }
-})
-
 // 为分类图表准备默认数据 - 按天
 const defaultCategoryData = Array.from({ length: 7 }, (_, i) => {
   const date = new Date()
@@ -152,9 +143,16 @@ function formatDateForDisplay(dateStr: string, timeRange: string): string {
   }
 }
 
+// 格式化后的数据项接口
+interface FormattedDataItem {
+  date: string
+  fullDate: string
+  [key: string]: string | number | undefined
+}
+
 // 数据聚合函数：将日数据聚合为月数据
-function aggregateDataByMonth(dailyData: any[], isCategory: boolean = false) {
-  const monthlyMap = new Map<string, any>()
+function aggregateDataByMonth(dailyData: (DailyStats | CategoryStats)[], isCategory: boolean = false): (DailyStats | CategoryStats)[] {
+  const monthlyMap = new Map<string, Record<string, string | number>>()
   
   dailyData.forEach(item => {
     const date = new Date(item.month)
@@ -186,21 +184,24 @@ function aggregateDataByMonth(dailyData: any[], isCategory: boolean = false) {
     if (isCategory) {
       // 聚合分类数据
       Object.keys(item).forEach(key => {
-        if (key !== 'month' && typeof item[key] === 'number') {
-          existing[key] = (existing[key] || 0) + item[key]
+        if (key !== 'month' && typeof (item as Record<string, unknown>)[key] === 'number') {
+          const currentValue = existing[key] as number || 0
+          const itemValue = (item as Record<string, unknown>)[key] as number
+          existing[key] = currentValue + itemValue
         }
       })
     } else {
       // 聚合总计数据
-      existing.count += item.count
+      const existingCount = existing.count as number
+      const itemCount = (item as DailyStats).count
+      existing.count = existingCount + itemCount
     }
   })
   
-  return Array.from(monthlyMap.values()).sort((a, b) => a.month.localeCompare(b.month))
+  return Array.from(monthlyMap.values()).sort((a, b) => (a.month as string).localeCompare(b.month as string)) as (DailyStats | CategoryStats)[]
 }
 
 export function ClaimChartInteractive({ 
-  data = defaultDailyData, 
   categoryData = defaultCategoryData,
   isLoading = false 
 }: ClaimChartProps) {
@@ -251,7 +252,7 @@ export function ClaimChartInteractive({
     
     // 对于3个月范围，聚合为月数据
     if (timeRange === "90d") {
-      return aggregateDataByMonth(filtered, true)
+      return aggregateDataByMonth(filtered, true) as CategoryStats[]
     }
     
     return filtered
@@ -260,7 +261,7 @@ export function ClaimChartInteractive({
   // 转换日期显示格式
   const formattedCategoryData = React.useMemo(() => {
     return filteredCategoryData.map(item => {
-      const formattedItem: any = {
+      const formattedItem: FormattedDataItem = {
         date: formatDateForDisplay(item.month, timeRange),
         fullDate: item.month
       }
@@ -310,17 +311,9 @@ export function ClaimChartInteractive({
     return counts
   }, [filteredCategoryData])
 
-  // 计算总计数据
-  const totalCount = React.useMemo(() => {
-    return Object.values(categoryCounts).reduce((sum, count) => sum + count, 0)
-  }, [categoryCounts])
-
   // 自定义工具提示格式化器
-  const dateFormatter = (value: string, item: any) => {
-    if (item && item.payload && item.payload.fullDate) {
-      return item.payload.fullDate
-    }
-    return value
+  const dateFormatter = (value: unknown) => {
+    return String(value)
   }
 
   // 根据选择的时间范围和数据量计算X轴刻度间隔
