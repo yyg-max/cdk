@@ -138,19 +138,27 @@ export function LoginForm({
           type="button"
           variant="outline" 
           className="w-full" 
-          onClick={async (e) => {
+          onClick={(e) => {
+            // 在异步操作前立即处理所有同步操作
             e.preventDefault(); // 阻止默认行为
             e.stopPropagation(); // 阻止事件冒泡
             if (error) setError(null); // 清除错误
-            try {
-              await authClient.signIn.oauth2({
-                providerId: "linuxdo",
-                callbackURL: "/dashboard?sync=true", // 添加同步参数
-              });
-            } catch (err) {
-              console.error('Linux Do 登录失败:', err);
-              setError('Linux Do 登录失败，请重试');
-            }
+            
+            // 异步操作放在单独的函数中，不使用事件对象
+            const handleLinuxDoLogin = async () => {
+              try {
+                await authClient.signIn.oauth2({
+                  providerId: "linuxdo",
+                  callbackURL: "/dashboard?sync=true", // 添加同步参数
+                });
+              } catch (err) {
+                console.error('Linux Do 登录失败:', err);
+                setError('Linux Do 登录失败，请重试');
+              }
+            };
+            
+            // 立即调用异步函数
+            handleLinuxDoLogin();
           }}
         >
           <Image src="/linuxdo.png" alt="Linux Do" width={20} height={20} />
