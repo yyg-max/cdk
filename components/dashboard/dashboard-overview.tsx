@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -266,7 +266,7 @@ export function DashboardOverview() {
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
 
   // 获取统计数据
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       setLoading(true)
       const response = await fetch(`/api/dashboard/stats?days=${timeRange}`)
@@ -287,17 +287,17 @@ export function DashboardOverview() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [timeRange])
 
   useEffect(() => {
     fetchStats()
-  }, [timeRange])
+  }, [fetchStats])
 
   // 自动刷新（每5分钟）
   useEffect(() => {
     const interval = setInterval(fetchStats, 5 * 60 * 1000)
     return () => clearInterval(interval)
-  }, [timeRange])
+  }, [fetchStats])
 
   if (loading || !stats) {
     return (

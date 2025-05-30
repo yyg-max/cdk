@@ -5,10 +5,8 @@ import {
   SquareArrowUpRight,
   BarChartIcon,
   FolderIcon,
-  HelpCircleIcon,
   LayoutDashboardIcon,
   ShoppingBag,
-  SearchIcon,
   SettingsIcon,
   FileIcon,
 } from "lucide-react"
@@ -28,7 +26,6 @@ import {
 } from "@/components/ui/sidebar"
 import { useSession } from "@/lib/auth-client"
 import { RollingText } from '@/components/animate-ui/text/rolling';
-import { Badge } from "@/components/ui/badge";
 
 // 定义扩展的用户类型接口
 interface ExtendedUser {
