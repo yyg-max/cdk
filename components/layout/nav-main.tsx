@@ -41,7 +41,7 @@ export function NavMain({
               variant="outline"
               asChild
             >
-              <Link href="https://github.com/chenyme/Chenyme-AAVT" target="_blank">
+              <Link href="https://github.com/linux-do/cdk" target="_blank">
                 <GithubIcon />
               </Link>
             </Button>

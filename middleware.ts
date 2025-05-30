@@ -5,7 +5,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // 需要身份验证的路径
-  const protectedPaths = ['/dashboard', '/account', '/project']
+  const protectedPaths = ['/dashboard', '/account', '/project', '/platform']
   
   // 检查当前路径是否需要保护
   const isProtectedPath = protectedPaths.some(path => 

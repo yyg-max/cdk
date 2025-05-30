@@ -257,11 +257,7 @@ export async function GET(request: NextRequest) {
         new: newUsers,
         linuxdo: linuxdoUsers,
         signup: totalUsers - linuxdoUsers,
-        banned: bannedUsers,
-        sourceDistribution: [
-          { name: "Linux Do", value: linuxdoUsers },
-          { name: "邮箱注册", value: totalUsers - linuxdoUsers }
-        ]
+        banned: bannedUsers
       },
       
       projectStats: {

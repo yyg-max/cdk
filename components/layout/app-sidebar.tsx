@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/sidebar"
 import { useSession } from "@/lib/auth-client"
 import { RollingText } from '@/components/animate-ui/text/rolling';
+import { Badge } from "@/components/ui/badge";
 
 // 定义扩展的用户类型接口
 interface ExtendedUser {
@@ -74,30 +75,30 @@ const data = {
       url: "/account",
       icon: SettingsIcon,
     },
-    {
-      title: "帮助中心",
-      url: "/help",
-      icon: HelpCircleIcon,
-    },
-    {
-      title: "功能搜索",
-      url: "#",
-      icon: SearchIcon,
-    },
+    // {
+    //   title: "帮助中心",
+    //   url: "/help",
+    //   icon: HelpCircleIcon,
+    // },
+    // {
+    //   title: "功能搜索",
+    //   url: "#",
+    //   icon: SearchIcon,
+    // },
   ],
   documents: [
     {
-      name: "Data Library",
+      name: "测试数据1",
       url: "#",
       icon: FileIcon,
     },
     {
-      name: "Reports",
+      name: "测试数据2",
       url: "#",
       icon: FileIcon
     },
     {
-      name: "Word Assistant",
+      name: "测试数据3",
       url: "#",
       icon: FileIcon,
     },
@@ -140,13 +141,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <SquareArrowUpRight className="h-5 w-5" />
                 <RollingText 
                   className="text-base font-semibold" 
-                  text="FastShare" 
+                  text="Linux Do CDK" 
                   loop={true} 
                   loopDelay={6000}
                   inViewOnce={false}
                   transition={{ duration: 0.5, delay: 0.1, ease: 'easeOut' }}
                 />
-                <span className="text-xs text-muted-foreground mr-2">v.0.0.1</span>
+                <span className="text-xs text-muted-foreground">v 0.0.1 - Beta</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>

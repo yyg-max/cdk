@@ -96,7 +96,7 @@ export default function ProjectPage() {
       
       // 3秒后跳转到dashboard
       setTimeout(() => {
-        router.push('/dashboard')
+        router.push('/project')
       }, 3000)
     } finally {
       setIsLoading(false)

@@ -30,7 +30,7 @@ export default function ProjectErrorPage({
           重试
         </Button>
         <Button asChild>
-          <Link href="/dashboard">
+          <Link href="/platform">
             返回主页
           </Link>
         </Button>

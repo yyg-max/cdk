@@ -16,8 +16,8 @@ const notoSansSC = Noto_Sans_SC({
 })
 
 export const metadata: Metadata = {
-  title: "FastShare",
-  description: "快速分享平台 - 让分享变得更简单",
+  title: "Linux Do CDK",
+  description: "Linux Do 社区 CDK 快速分享平台 - 让分享变得更简单",
 };
 
 export default function RootLayout({

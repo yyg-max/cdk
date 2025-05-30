@@ -77,7 +77,7 @@ export default function ProjectEdit({ project }: ProjectEditProps) {
    */
   useEffect(() => {
     if (!project.isCreator) {
-      router.push('/dashboard')
+      router.push('/platform')
     }
   }, [project.isCreator, router])
   

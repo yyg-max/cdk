@@ -89,7 +89,7 @@ export function SignupForm({
         const chineseError = error.message ? (errorMessages[error.message] || error.message) : '注册失败';
         setError(chineseError);
       } else {
-        window.location.href = '/dashboard';
+        window.location.href = '/platform';
       }
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : '注册过程中发生错误';
@@ -113,7 +113,7 @@ export function SignupForm({
                 <GalleryVerticalEnd className="size-6" />
               </div>
             </Link>
-            <h1 className="text-xl font-bold">创建 FastShare 账户</h1>
+            <h1 className="text-xl font-bold">创建 Linux Do CDK 账户</h1>
             <p className="text-sm text-gray-500">请填写以下信息创建您的账户</p>
           </div>
 
@@ -181,7 +181,7 @@ export function SignupForm({
         </div>
       </form>
       <div className="text-balance text-center text-xs text-muted-foreground [&_a]:underline [&_a]:underline-offset-4 hover:[&_a]:text-primary  ">
-        注册即表示您同意 FastShare 平台的 <a href="#">服务条款</a>{" "}
+        注册即表示您同意 Linux Do CDK 平台的 <a href="#">服务条款</a>{" "}
         和 <a href="#">隐私政策</a>
       </div>
       <div className="text-center text-sm">

@@ -4,7 +4,6 @@ import * as React from "react"
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 import {
   ChartConfig,
@@ -42,6 +41,7 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Minus,
+  BarChart3,
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -64,7 +64,6 @@ interface DashboardStats {
     linuxdo: number
     signup: number
     banned: number
-    sourceDistribution: Array<{ name: string, value: number }>
   }
   projectStats: {
     total: number
@@ -228,27 +227,29 @@ function StatCard({
   }[changeType]
 
   const changeColor = {
-    positive: "text-emerald-600",
-    negative: "text-red-600", 
-    neutral: "text-muted-foreground",
+    positive: "text-green-600 dark:text-green-400",
+    negative: "text-red-600 dark:text-red-400", 
+    neutral: "text-gray-500 dark:text-gray-400",
   }[changeType]
 
   const ChangeIcon = changeIcon
 
   return (
-    <Card className="border-0 shadow-sm bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900/50 dark:to-gray-800/50">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
+    <Card className="bg-gray-50/50 dark:bg-gray-900/50 rounded-lg shadow-inner border-0">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 p-6 pb-4">
+        <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
           {title}
         </CardTitle>
-        <Icon className="h-4 w-4 text-muted-foreground" />
+        <div className="h-8 w-8 rounded-md bg-white dark:bg-gray-800 flex items-center justify-center shadow-sm">
+          <Icon className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+        </div>
       </CardHeader>
-      <CardContent className="pb-3">
-        <div className="text-2xl font-bold tracking-tight">
+      <CardContent className="px-6 pb-6">
+        <div className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-1 tracking-tight">
           {formatValue(value)}{suffix}
         </div>
         {change !== undefined && (
-          <div className={`flex items-center text-xs ${changeColor} mt-1`}>
+          <div className={`flex items-center text-xs ${changeColor} font-medium`}>
             <ChangeIcon className="mr-1 h-3 w-3" />
             {typeof change === 'number' ? change.toLocaleString() : change}
           </div>
@@ -303,13 +304,13 @@ export function DashboardOverview() {
       <div className="space-y-8">
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <Card key={i} className="animate-pulse border-0 shadow-sm">
-              <CardHeader className="pb-3">
-                <div className="h-4 bg-muted rounded-md w-20"></div>
+            <Card key={i} className="bg-gray-50/50 dark:bg-gray-900/50 rounded-lg shadow-inner border-0 animate-pulse">
+              <CardHeader className="p-6 pb-4">
+                <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-20"></div>
               </CardHeader>
-              <CardContent className="pb-3">
-                <div className="h-8 bg-muted rounded-md w-16 mb-2"></div>
-                <div className="h-3 bg-muted/50 rounded-md w-24"></div>
+              <CardContent className="px-6 pb-6">
+                <div className="h-7 bg-gray-200 dark:bg-gray-800 rounded w-16 mb-2"></div>
+                <div className="h-3 bg-gray-100 dark:bg-gray-900 rounded w-24"></div>
               </CardContent>
             </Card>
           ))}
@@ -391,14 +392,16 @@ export function DashboardOverview() {
 
       {/* 趋势图表 */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="border-0 shadow-sm">
-          <CardHeader className="pb-6">
-            <CardTitle className="text-lg font-semibold flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-chart-1" />
+        <Card className="bg-gray-50/50 dark:bg-gray-900/50 rounded-lg shadow-inner border-0">
+          <CardHeader className="p-6 pb-4">
+            <CardTitle className="text-lg font-semibold flex items-center gap-3 text-gray-900 dark:text-gray-100">
+              <div className="h-8 w-8 rounded-md bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shadow-sm">
+                <TrendingUp className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              </div>
               用户增长趋势
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-6 pb-6">
             <ChartContainer config={trendChartConfig} className="h-[300px]">
               <AreaChart
                 accessibilityLayer
@@ -442,14 +445,16 @@ export function DashboardOverview() {
           </CardContent>
         </Card>
 
-        <Card className="border-0 shadow-sm">
-          <CardHeader className="pb-6">
-            <CardTitle className="text-lg font-semibold flex items-center gap-2">
-              <Activity className="w-5 h-5 text-chart-2" />
+        <Card className="bg-gray-50/50 dark:bg-gray-900/50 rounded-lg shadow-inner border-0">
+          <CardHeader className="p-6 pb-4">
+            <CardTitle className="text-lg font-semibold flex items-center gap-3 text-gray-900 dark:text-gray-100">
+              <div className="h-8 w-8 rounded-md bg-green-100 dark:bg-green-900/30 flex items-center justify-center shadow-sm">
+                <Activity className="w-4 h-4 text-green-600 dark:text-green-400" />
+              </div>
               领取活动趋势
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-6 pb-6">
             <ChartContainer config={claimTrendChartConfig} className="h-[300px]">
               <LineChart
                 accessibilityLayer
@@ -501,13 +506,13 @@ export function DashboardOverview() {
       </div>
 
       {/* 分布图表 */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="border-0 shadow-sm">
-          <CardHeader className="pb-6">
-            <CardTitle className="text-lg font-semibold">项目分类分布</CardTitle>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card className="bg-gray-50/50 dark:bg-gray-900/50 rounded-lg shadow-inner border-0">
+          <CardHeader className="p-6 pb-4">
+            <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">项目分类分布</CardTitle>
           </CardHeader>
-          <CardContent>
-            <ChartContainer config={categoryChartConfig} className="h-[250px]">
+          <CardContent className="px-6 pb-6">
+            <ChartContainer config={categoryChartConfig} className="h-[250px] w-full">
               <PieChart>
                 <ChartTooltip
                   cursor={false}
@@ -540,34 +545,25 @@ export function DashboardOverview() {
           </CardContent>
         </Card>
 
-        <Card className="border-0 shadow-sm">
-          <CardHeader className="pb-6">
-            <CardTitle className="text-lg font-semibold">分发模式分布</CardTitle>
+        <Card className="bg-gray-50/50 dark:bg-gray-900/50 rounded-lg shadow-inner border-0">
+          <CardHeader className="p-6 pb-4">
+            <CardTitle className="text-lg font-semibold flex items-center gap-3 text-gray-900 dark:text-gray-100">
+              <div className="h-8 w-8 rounded-md bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center shadow-sm">
+                <BarChart3 className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+              </div>
+              分发模式统计
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <ChartContainer config={modeChartConfig} className="h-[250px]">
-              <BarChart
-                accessibilityLayer
-                data={stats.projectStats.byMode.map(item => ({
-                  mode: item.mode,
-                  count: item.count,
-                  fill: `var(--color-${item.mode})`,
-                }))}
-                margin={{
-                  left: 12,
-                  right: 12,
-                  top: 12,
-                  bottom: 12,
-                }}
-              >
+          <CardContent className="px-6 pb-6">
+            <ChartContainer config={modeChartConfig} className="h-[300px] w-full">
+              <BarChart data={stats.projectStats.byMode}>
                 <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--muted))" />
                 <XAxis
                   dataKey="mode"
                   tickLine={false}
+                  tickMargin={10}
                   axisLine={false}
-                  tickMargin={8}
-                  tick={{ fontSize: 12 }}
-                  tickFormatter={(value) => MODE_NAMES[value as keyof typeof MODE_NAMES] || value}
+                  tickFormatter={(value) => MODE_NAMES[value as keyof typeof MODE_NAMES]}
                 />
                 <YAxis
                   tickLine={false}
@@ -591,62 +587,35 @@ export function DashboardOverview() {
             </ChartContainer>
           </CardContent>
         </Card>
-
-        <Card className="border-0 shadow-sm">
-          <CardHeader className="pb-6">
-            <CardTitle className="text-lg font-semibold">用户来源分布</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {stats.userStats.sourceDistribution.map((item) => {
-                const percentage = (item.value / stats.userStats.total) * 100
-                return (
-                  <div key={item.name} className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="font-medium">{item.name}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground">
-                          {percentage.toFixed(1)}%
-                        </span>
-                        <span className="font-medium">
-                          {item.value.toLocaleString()}
-                        </span>
-                      </div>
-                    </div>
-                    <Progress value={percentage} className="h-2" />
-                  </div>
-                )
-              })}
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* 热门数据 */}
       <div className="grid gap-6 lg:grid-cols-4">
-        <Card className="border-0 shadow-sm">
-          <CardHeader className="pb-6">
-            <CardTitle className="text-lg font-semibold flex items-center gap-2">
-              <Award className="w-5 h-5 text-amber-500" />
+        <Card className="bg-gray-50/50 dark:bg-gray-900/50 rounded-lg shadow-inner border-0">
+          <CardHeader className="p-6 pb-4">
+            <CardTitle className="text-lg font-semibold flex items-center gap-3 text-gray-900 dark:text-gray-100">
+              <div className="h-8 w-8 rounded-md bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center shadow-sm">
+                <Award className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+              </div>
               热门项目
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-6 pb-6">
             <div className="space-y-4">
               {stats.popular.projects.map((project, index) => (
                 <div key={project.id} className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg border bg-muted/50">
-                    <span className="text-sm font-bold text-muted-foreground">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white dark:bg-gray-800 flex-shrink-0 shadow-sm">
+                    <span className="text-sm font-bold text-gray-600 dark:text-gray-400">
                       {index + 1}
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{project.name}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-sm font-medium truncate text-gray-900 dark:text-gray-100">{project.name}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
                       {CATEGORY_NAMES[project.category as keyof typeof CATEGORY_NAMES]}
                     </p>
                   </div>
-                  <Badge variant="secondary" className="text-xs">
+                  <Badge variant="secondary" className="text-xs flex-shrink-0">
                     {project.claimedCount}
                   </Badge>
                 </div>
@@ -655,29 +624,31 @@ export function DashboardOverview() {
           </CardContent>
         </Card>
 
-        <Card className="border-0 shadow-sm">
-          <CardHeader className="pb-6">
-            <CardTitle className="text-lg font-semibold flex items-center gap-2">
-              <Zap className="w-5 h-5 text-blue-500" />
+        <Card className="bg-gray-50/50 dark:bg-gray-900/50 rounded-lg shadow-inner border-0">
+          <CardHeader className="p-6 pb-4">
+            <CardTitle className="text-lg font-semibold flex items-center gap-3 text-gray-900 dark:text-gray-100">
+              <div className="h-8 w-8 rounded-md bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shadow-sm">
+                <Zap className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              </div>
               活跃创建者
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-6 pb-6">
             <div className="space-y-4">
               {stats.popular.creators.map((creator, index) => (
                 <div key={creator.creatorId} className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg border bg-muted/50">
-                    <span className="text-sm font-bold text-muted-foreground">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white dark:bg-gray-800 flex-shrink-0 shadow-sm">
+                    <span className="text-sm font-bold text-gray-600 dark:text-gray-400">
                       {index + 1}
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{creator.creatorName}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-sm font-medium truncate text-gray-900 dark:text-gray-100">{creator.creatorName}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
                       {creator.projectCount} 个项目
                     </p>
                   </div>
-                  <Badge variant="outline" className="text-xs">
+                  <Badge variant="outline" className="text-xs flex-shrink-0">
                     {creator.totalClaims}
                   </Badge>
                 </div>
@@ -686,29 +657,31 @@ export function DashboardOverview() {
           </CardContent>
         </Card>
 
-        <Card className="border-0 shadow-sm">
-          <CardHeader className="pb-6">
-            <CardTitle className="text-lg font-semibold flex items-center gap-2">
-              <Download className="w-5 h-5 text-green-500" />
+        <Card className="bg-gray-50/50 dark:bg-gray-900/50 rounded-lg shadow-inner border-0">
+          <CardHeader className="p-6 pb-4">
+            <CardTitle className="text-lg font-semibold flex items-center gap-3 text-gray-900 dark:text-gray-100">
+              <div className="h-8 w-8 rounded-md bg-green-100 dark:bg-green-900/30 flex items-center justify-center shadow-sm">
+                <Download className="w-4 h-4 text-green-600 dark:text-green-400" />
+              </div>
               活跃领取者
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-6 pb-6">
             <div className="space-y-4">
               {stats.popular.claimers.map((claimer, index) => (
                 <div key={claimer.userId} className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg border bg-muted/50">
-                    <span className="text-sm font-bold text-muted-foreground">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white dark:bg-gray-800 flex-shrink-0 shadow-sm">
+                    <span className="text-sm font-bold text-gray-600 dark:text-gray-400">
                       {index + 1}
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{claimer.userName}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-sm font-medium truncate text-gray-900 dark:text-gray-100">{claimer.userName}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
                       {claimer.claimedCount} 次领取
                     </p>
                   </div>
-                  <Badge variant="outline" className="text-xs">
+                  <Badge variant="outline" className="text-xs flex-shrink-0">
                     {claimer.claimedCount}
                   </Badge>
                 </div>
@@ -717,16 +690,16 @@ export function DashboardOverview() {
           </CardContent>
         </Card>
 
-        <Card className="border-0 shadow-sm">
-          <CardHeader className="pb-6">
-            <CardTitle className="text-lg font-semibold">热门标签</CardTitle>
+        <Card className="bg-gray-50/50 dark:bg-gray-900/50 rounded-lg shadow-inner border-0">
+          <CardHeader className="p-6 pb-4">
+            <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">热门标签</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-6 pb-6">
             <div className="flex flex-wrap gap-2">
               {stats.popular.tags.map((tag) => (
                 <Badge key={tag.tagName} variant="outline" className="text-xs">
                   {tag.tagName}
-                  <span className="ml-1 text-muted-foreground">
+                  <span className="ml-1 text-gray-500 dark:text-gray-400">
                     {tag.projectCount}
                   </span>
                 </Badge>
@@ -737,38 +710,40 @@ export function DashboardOverview() {
       </div>
 
       {/* 申请状态统计 */}
-      <Card className="border-0 shadow-sm">
-        <CardHeader className="pb-6">
-          <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <FileText className="w-5 h-5 text-purple-500" />
+      <Card className="bg-gray-50/50 dark:bg-gray-900/50 rounded-lg shadow-inner border-0">
+        <CardHeader className="p-6 pb-4">
+          <CardTitle className="text-lg font-semibold flex items-center gap-3 text-gray-900 dark:text-gray-100">
+            <div className="h-8 w-8 rounded-md bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shadow-sm">
+              <FileText className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+            </div>
             申请状态统计
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-6 pb-6">
           <div className="grid gap-6 md:grid-cols-4">
             <div className="text-center space-y-2">
-              <div className="text-3xl font-bold tracking-tight">
+              <div className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
                 {stats.applicationStats.total.toLocaleString()}
               </div>
-              <p className="text-sm text-muted-foreground">总申请数</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">总申请数</p>
             </div>
             <div className="text-center space-y-2">
               <div className="text-3xl font-bold tracking-tight text-amber-600">
                 {stats.applicationStats.pending.toLocaleString()}
               </div>
-              <p className="text-sm text-muted-foreground">待处理</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">待处理</p>
             </div>
             <div className="text-center space-y-2">
               <div className="text-3xl font-bold tracking-tight text-emerald-600">
                 {stats.applicationStats.approved.toLocaleString()}
               </div>
-              <p className="text-sm text-muted-foreground">已通过</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">已通过</p>
             </div>
             <div className="text-center space-y-2">
               <div className="text-3xl font-bold tracking-tight text-red-600">
                 {stats.applicationStats.rejected.toLocaleString()}
               </div>
-              <p className="text-sm text-muted-foreground">已拒绝</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">已拒绝</p>
             </div>
           </div>
         </CardContent>

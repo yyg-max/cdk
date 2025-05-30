@@ -94,14 +94,14 @@ export function LoginForm({
         email,
         password,
         rememberMe: true, // 默认记住登录状态
-        callbackURL: '/dashboard'
+        callbackURL: '/platform'
       });
       
       if (error) {
         const chineseError = getChineseErrorMessage(error.message);
         setError(chineseError);
       } else {
-        window.location.href = '/dashboard';
+        window.location.href = '/platform';
       }
     } catch (err: unknown) {
       // 处理账户禁用错误
@@ -129,7 +129,7 @@ export function LoginForm({
             <GalleryVerticalEnd className="size-6" />
           </div>
         </Link>
-        <h1 className="text-xl font-bold">欢迎使用 FastShare</h1>
+        <h1 className="text-xl font-bold">欢迎使用 Linux Do CDK</h1>
       </div>
 
       {/* 第三方登录按钮 - 移到表单外面 */}
@@ -149,7 +149,7 @@ export function LoginForm({
               try {
                 await authClient.signIn.oauth2({
                   providerId: "linuxdo",
-                  callbackURL: "/dashboard?sync=true", // 添加同步参数
+                  callbackURL: "/platform?sync=true", // 添加同步参数
                 });
               } catch (err) {
                 console.error('Linux Do 登录失败:', err);
@@ -217,7 +217,7 @@ export function LoginForm({
       </form>
 
       <div className="text-balance text-center text-xs text-muted-foreground [&_a]:underline [&_a]:underline-offset-4 hover:[&_a]:text-primary  ">
-        登陆即表示您同意 FastShare 平台的 <a href="#">服务条款</a>{" "}
+        登陆即表示您同意 Linux Do CDK 平台的 <a href="#">服务条款</a>{" "}
         和 <a href="#">隐私政策</a>
       </div>
       <div className="text-center text-sm">
