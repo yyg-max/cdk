@@ -111,6 +111,7 @@ type BasicUserInfo struct {
 	Nickname   string     `json:"nickname"`
 	TrustLevel TrustLevel `json:"trust_level"`
 	AvatarUrl  string     `json:"avatar_url"`
+	Score      int8       `json:"score"`
 }
 
 type UserInfoResponse struct {
@@ -143,6 +144,7 @@ func UserInfo(c *gin.Context) {
 				Nickname:   user.Nickname,
 				TrustLevel: user.TrustLevel,
 				AvatarUrl:  user.AvatarUrl,
+				Score:      user.Score,
 			},
 		},
 	)
