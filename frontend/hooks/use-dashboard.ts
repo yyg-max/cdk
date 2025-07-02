@@ -102,7 +102,6 @@ export function useDashboard(days: number): UseDashboardReturn {
    * @param forceRefresh - 是否强制刷新（忽略缓存）
    */
   const fetchData = useCallback(async (forceLoading = false, forceRefresh = false) => {
-    // 如果不是强制刷新，先检查缓存
     if (!forceRefresh) {
       const cached = getCachedData(days);
       if (cached) {
@@ -116,7 +115,6 @@ export function useDashboard(days: number): UseDashboardReturn {
       }
     }
 
-    // 只有初次加载或强制刷新时才显示loading状态
     if (isInitialLoading || forceLoading) {
       setIsLoading(true);
     }
@@ -126,14 +124,12 @@ export function useDashboard(days: number): UseDashboardReturn {
     try {
       const newData = await DashboardService.getAllDashboardData(days);
       const updateTime = new Date().toLocaleTimeString();
-      
-      // 缓存数据
+
       setCachedData(days, newData, updateTime);
-      
+
       setData(newData);
       setLastUpdate(updateTime);
 
-      // 首次加载完成后，设置为false
       if (isInitialLoading) {
         setIsInitialLoading(false);
       }
@@ -141,19 +137,16 @@ export function useDashboard(days: number): UseDashboardReturn {
       const errorMessage = err instanceof Error ? err.message : '获取仪表盘数据失败';
       setError(new Error(errorMessage));
 
-      // 错误时使用默认数据，避免页面崩溃
       setData((prevData) => prevData || defaultData);
     } finally {
       setIsLoading(false);
     }
   }, [days, isInitialLoading, defaultData, getCachedData, setCachedData]);
 
-  // 当天数改变时重新获取数据
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  // 强制刷新方法（忽略缓存）
   const refresh = useCallback(async (forceLoading = false) => {
     await fetchData(forceLoading, true);
   }, [fetchData]);
