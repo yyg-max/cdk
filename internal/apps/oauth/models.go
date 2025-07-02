@@ -58,11 +58,13 @@ func (u *User) Exact(tx *gorm.DB, id uint64) error {
 	return nil
 }
 
-func (u *User) SetScore(tx *gorm.DB, score int8) error {
-	if score < MinUserScore {
+func (u *User) SetScore(tx *gorm.DB, newScore int) error {
+	if newScore < MinUserScore {
 		u.Score = MinUserScore
-	} else if score > MaxUserScore {
+	} else if newScore > MaxUserScore {
 		u.Score = MaxUserScore
+	} else {
+		u.Score = int8(newScore)
 	}
 	return tx.Model(u).Update("score", u.Score).Error
 }

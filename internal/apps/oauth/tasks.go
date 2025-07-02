@@ -127,9 +127,7 @@ func updateUserScore(ctx context.Context, user *User, newScore int) error {
 	}
 
 	// 更新用户分数
-	if err := db.DB(ctx).Model(&User{}).
-		Where("id = ?", user.ID).
-		Update("score", int8(newScore)).Error; err != nil {
+	if err := user.SetScore(db.DB(ctx), newScore); err != nil {
 		return fmt.Errorf("更新用户[%s]分数失败: %w", user.Username, err)
 	}
 
