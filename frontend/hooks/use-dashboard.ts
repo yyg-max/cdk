@@ -66,13 +66,11 @@ export function useDashboard(days: number): UseDashboardReturn {
       setError(new Error(errorMessage));
 
       // 错误时使用默认数据，避免页面崩溃
-      if (!data) {
-        setData(defaultData);
-      }
+      setData((prevData) => prevData || defaultData);
     } finally {
       setIsLoading(false);
     }
-  }, [days, isInitialLoading, data, defaultData]);
+  }, [days, isInitialLoading, defaultData]);
 
   // 当天数改变时重新获取数据
   useEffect(() => {
