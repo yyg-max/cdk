@@ -1,6 +1,6 @@
 name: 新功能建议
 description: 请求新的功能或对现有功能进行改进。
-title: "Feature: "
+title: "feature: "
 labels: ["enhancement"]
 
 body:

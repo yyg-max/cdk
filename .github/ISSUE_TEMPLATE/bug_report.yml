@@ -1,6 +1,6 @@
 name: 使用时的错误报告
 description: 某些事情不按照预期工作。
-title: "Bug: "
+title: "bug: "
 labels: ["bug"]
 
 body:
