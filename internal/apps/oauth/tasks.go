@@ -84,7 +84,7 @@ func loadBadgeScores(ctx context.Context) (map[int]int, error) {
 
 // getUserBadges 获取用户的徽章
 func getUserBadges(ctx context.Context, username string) (*UserBadgeResponse, error) {
-	url := fmt.Sprintf("https://linux.do/u/%s.json", username)
+	url := fmt.Sprintf("https://linux.do/user-badges/%s.json", username)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("创建HTTP请求失败: %w", err)
@@ -122,7 +122,7 @@ func calculateUserScore(badges []Badge, badgeScores map[int]int) int {
 // updateUserScore 更新用户分数
 func updateUserScore(ctx context.Context, user *User, newScore int) error {
 	// 如果分数没变化，不更新
-	if int(user.Score) == newScore {
+	if int(user.Score) == newScore || (newScore > MaxUserScore && int(user.Score) == MaxUserScore) {
 		return nil
 	}
 
