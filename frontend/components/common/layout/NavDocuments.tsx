@@ -8,7 +8,7 @@ export interface NavDocumentItem {
   name: string;
   url: string;
   icon: LucideIcon;
-  /** 是否在新标签页打开链接，默认为 true */
+  /** 是否在新标签页打开链接，默认为 false */
   openInNewTab?: boolean;
 }
 
@@ -21,7 +21,7 @@ export function NavDocuments({items}: NavDocumentsProps) {
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
       <SidebarMenu>
         {items.map((item) => {
-          const shouldOpenInNewTab = item.openInNewTab ?? true;
+          const shouldOpenInNewTab = item.openInNewTab ?? false;
 
           return (
             <SidebarMenuItem key={item.name}>
