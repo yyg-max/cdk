@@ -85,7 +85,7 @@ export function NavDocuments({items, userScore}: NavDocumentsProps) {
                         />
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        基于社区贡献和活跃度，每日4点定时更新
+                        基于社区贡献和活跃度，每日更新
                       </div>
                     </div>
                   </div>
