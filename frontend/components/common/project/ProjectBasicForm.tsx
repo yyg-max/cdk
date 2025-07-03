@@ -116,8 +116,8 @@ export function ProjectBasicForm({
             value={formData.riskLevel}
             onChange={(e) =>
               updateField(
-                'riskLevel',
-                Math.max(0, Math.min(100, parseInt(e.target.value) || 0))
+                  'riskLevel',
+                  Math.max(0, Math.min(100, parseInt(e.target.value) || 0)),
               )
             }
             placeholder="输入0-100的风险系数"
