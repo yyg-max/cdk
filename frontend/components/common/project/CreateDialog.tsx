@@ -327,28 +327,29 @@ export function CreateDialog({
         )}
       </DialogTrigger>
       <DialogContent
-        className={`${isMobile ? 'max-w-[95vw] max-h-[90vh]' : 'max-w-3xl max-h-[90vh]'} overflow-hidden`}
+        className={`${isMobile ? 'max-w-[80vw] max-h-[90vh]' : 'max-w-3xl max-h-[90vh]'} overflow-hidden`}
       >
-        <DialogHeader>
-          <DialogTitle>
+        <DialogHeader className='text-left'>
+          <DialogTitle className='text-left'>
             {createSuccess ? '项目创建成功' : '创建新项目'}
           </DialogTitle>
-          <DialogDescription>
-            {createSuccess ?
-              '您的项目已创建成功，可以开始分发内容了' :
-              '创建一个新的项目来管理和分发您的内容'}
-          </DialogDescription>
+          {createSuccess ?
+            '' :
+            <DialogDescription>
+              创建一个新的项目来管理和分发您的内容
+            </DialogDescription>
+          }
         </DialogHeader>
 
         {createSuccess && createdProject ? (
-          <div className="space-y-6 py-6">
+          <div className="space-y-10 py-10 px-2 -mt-8">
             <div className="flex items-center justify-center">
               <div className="flex items-center gap-3 text-green-600">
-                <CheckCircle className="h-8 w-8" />
-                <div>
-                  <h3 className="text-lg font-semibold">项目创建成功</h3>
+                <CheckCircle className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'} flex-shrink-0`} />
+                <div className="flex flex-col text-left">
+                  <h3 className="text-lg font-semibold">{createdProject.name}</h3>
                   <p className="text-sm text-muted-foreground">
-                    项目名称：{createdProject.name}
+                      项目已准备就绪，可以开始分发啦
                   </p>
                 </div>
               </div>
@@ -366,25 +367,23 @@ export function CreateDialog({
                 <Input
                   value={getReceiveLink(createdProject.id)}
                   readOnly
-                  className="bg-gray-100 border-none text-sm h-8"
+                  className="bg-gray-100 border-none text-sm h-8 flex-1"
                 />
                 <Button
                   size="sm"
                   variant="secondary"
                   onClick={() => copyLink(getReceiveLink(createdProject.id))}
-                  className={isMobile ? 'w-full' : ''}
+                  className={isMobile ? 'px-2' : ''}
                 >
-                  <Copy className="h-4 w-4 mr-1" />
-                  复制
+                  <Copy className="h-4 w-4" />
                 </Button>
                 <Button
                   size="sm"
                   variant="secondary"
                   onClick={() => openLink(getReceiveLink(createdProject.id))}
-                  className={isMobile ? 'w-full' : ''}
+                  className={isMobile ? 'px-2' : ''}
                 >
-                  <ExternalLink className="h-4 w-4 mr-1" />
-                  查看
+                  <ExternalLink className="h-4 w-4" />
                 </Button>
               </div>
             </div>
