@@ -11,11 +11,9 @@ export async function generateMetadata({params}: Props): Promise<Metadata> {
   try {
     const {projectId} = await params;
     const result = await services.project.getProject(projectId);
-    if (result.success && result.data) {
-      return {
-        title: `${result.data.name} - 领取`,
-      };
-    }
+    return {
+      title: `${result.name} - 领取`,
+    };
   } catch (error) {
     console.error('Failed to fetch project for metadata:', error);
   }
