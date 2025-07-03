@@ -4,6 +4,11 @@ import {motion} from 'motion/react';
 import {Button} from '@/components/ui/button';
 import {MessageCircle, Send, Home} from 'lucide-react';
 import Link from 'next/link';
+import {Metadata} from 'next';
+
+export const metadata: Metadata = {
+  title: '页面未找到',
+};
 
 export default function NotFound() {
   return (
@@ -25,7 +30,7 @@ export default function NotFound() {
               >
                 {word}
               </motion.span>
-            ))}{' '}
+            ))}
             <span className="text-neutral-400">
               {'未找到'.split('').map((word, idx) => (
                 <motion.span
@@ -66,7 +71,7 @@ export default function NotFound() {
               className="inline-block"
             >
               <a
-                href="https://rcnocajpmmaw.feishu.cn/share/base/form/shrcnQnuZp9op9LhOAMI3kVBe2e"
+                href="https://github.com/linux-do/cdk/issues/new/choose"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-blue-500 hover:text-blue-600 underline mx-1 inline-flex items-center gap-1"

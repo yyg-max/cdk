@@ -1,5 +1,10 @@
 import {Suspense} from 'react';
 import {LoginForm} from '@/components/common/auth/LoginForm';
+import {Metadata} from 'next';
+
+export const metadata: Metadata = {
+  title: '登录',
+};
 
 export default function LoginPage() {
   return (

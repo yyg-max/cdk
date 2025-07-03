@@ -1,5 +1,10 @@
 import {Suspense} from 'react';
 import {CallbackHandler} from '@/components/common/auth/CallbackHandler';
+import {Metadata} from 'next';
+
+export const metadata: Metadata = {
+  title: '登录处理',
+};
 
 export default function AuthCallbackPage() {
   return (

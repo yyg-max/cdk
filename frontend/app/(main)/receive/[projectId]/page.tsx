@@ -1,5 +1,30 @@
 import {Suspense} from 'react';
 import {ReceiveMain} from '@/components/common/receive';
+import {Metadata} from 'next';
+import services from '@/lib/services';
+
+interface Props {
+  params: Promise<{projectId: string}>;
+}
+
+export async function generateMetadata({params}: Props): Promise<Metadata> {
+  try {
+    const {projectId} = await params;
+    const result = await services.project.getProject(projectId);
+    
+    if (result.success && result.data) {
+      return {
+        title: `${result.data.name} - 领取`,
+      };
+    }
+  } catch (error) {
+    console.error('Failed to fetch project for metadata:', error);
+  }
+  
+  return {
+    title: '项目领取',
+  };
+}
 
 export default function ProjectPage() {
   return (
