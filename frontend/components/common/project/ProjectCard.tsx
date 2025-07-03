@@ -49,7 +49,7 @@ export function ProjectCard({
       >
         <div className="space-y-3">
           <div
-            className={`${gradientTheme} p-6 rounded-2xl group hover:rounded-none transition-all duration-300 text-white relative overflow-hidden hover:shadow-lg hover:scale-[1.05] transform cursor-pointer border-0`}
+            className={`${gradientTheme} p-6 rounded-2xl group transition-all duration-300 text-white relative overflow-hidden hover:shadow-lg hover:scale-[1.05] transform cursor-pointer border-0`}
             onClick={() => onClick?.(project)}
           >
             <div className="absolute top-2 left-2 sm:top-3 sm:left-3 flex gap-1 sm:gap-2">
