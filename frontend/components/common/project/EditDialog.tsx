@@ -43,7 +43,7 @@ export function EditDialog({
   });
 
   const {tags, setTags, availableTags, fetchTags, resetTags} = useProjectTags(
-    project.tags || []
+      project.tags || [],
   );
 
   const {
@@ -84,7 +84,6 @@ export function EditDialog({
       resetForm();
     }
   }, [open, resetForm]);
-
 
 
   const handleFileUpload = (files: File[]) => {

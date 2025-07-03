@@ -82,9 +82,9 @@ export function BulkImportSection({
                     <Badge
                       variant="secondary"
                       className={`cursor-pointer ${
-                        !allowDuplicates 
-                          ? 'bg-green-100 text-green-700 border-green-200 hover:bg-green-200' 
-                          : 'bg-muted hover:bg-muted/80'
+                        !allowDuplicates ?
+                          'bg-green-100 text-green-700 border-green-200 hover:bg-green-200' :
+                          'bg-muted hover:bg-muted/80'
                       }`}
                       onClick={() => setAllowDuplicates(!allowDuplicates)}
                     >
@@ -94,9 +94,9 @@ export function BulkImportSection({
                   </TooltipTrigger>
                   <TooltipContent side="bottom">
                     <p className="text-xs">
-                      {!allowDuplicates 
-                        ? '已开启：自动过滤重复内容' 
-                        : '已关闭：允许导入重复内容'}
+                      {!allowDuplicates ?
+                        '已开启：自动过滤重复内容' :
+                        '已关闭：允许导入重复内容'}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
                       点击切换过滤模式
