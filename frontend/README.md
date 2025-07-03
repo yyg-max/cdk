@@ -111,7 +111,7 @@ frontend/
 
 | 目录 | 描述 | 规范 |
 |------|------|------|
-| `app/` | Next.js 13+ App Router 页面组件 | 使用文件系统路由 |
+| `app/` | Next.js 15 App Router 页面组件 | 使用文件系统路由 |
 | `components/common/` | 业务相关的通用组件 | 按功能模块组织 |
 | `components/ui/` | Shadcn UI 基础组件 | 不直接修改，通过覆盖样式自定义 |
 | `components/layout/` | 布局相关组件 | 页面结构和导航组件 |
@@ -307,8 +307,8 @@ pnpm start
 创建 `.env.production` 文件：
 
 ```env
-NEXT_PUBLIC_API_URL=https://api.yourdomain.com
-NEXT_PUBLIC_APP_URL=https://yourdomain.com
+FRONTEND_BASE_URL=http://localhost:3000
+BACKEND_BASE_URL=http://localhost:8000
 ```
 
 ### Docker 部署
