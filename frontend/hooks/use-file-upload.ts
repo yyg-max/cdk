@@ -67,7 +67,7 @@ export function useFileUpload() {
     };
 
     reader.readAsText(file, 'UTF-8');
-  }, []);
+  }, [toast, setFileUploadOpen, handleBulkImportContentWithFilter]);
 
   const openFileUpload = useCallback(() => {
     setFileUploadOpen(true);
