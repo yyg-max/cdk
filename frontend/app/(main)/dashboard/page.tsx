@@ -1,5 +1,3 @@
-'use client';
-
 import {Suspense} from 'react';
 import {DashboardMain} from '@/components/common/dashboard';
 import {Metadata} from 'next';
