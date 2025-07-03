@@ -92,9 +92,6 @@ export function CallbackHandler({
                 <div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin" />
                 <div className="text-center space-y-2">
                   <h2 className="text-lg font-medium">正在验证</h2>
-                  <div className="relative w-full h-1 bg-muted rounded-full overflow-hidden">
-                    <div className="absolute top-0 h-full w-1/3 bg-primary rounded-full animate-[slide_1.5s_ease-in-out_infinite]" />
-                  </div>
                 </div>
               </div>
             )}
