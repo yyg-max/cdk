@@ -2,26 +2,22 @@
 
 import {useState, useEffect} from 'react';
 import {useIsMobile} from '@/hooks/use-mobile';
+import {useProjectForm} from '@/hooks/use-project-form';
+import {useProjectTags} from '@/hooks/use-project-tags';
+import {useBulkImport} from '@/hooks/use-bulk-import';
+import {useFileUpload} from '@/hooks/use-file-upload';
 import {toast} from 'sonner';
-import {Badge} from '@/components/ui/badge';
 import {Label} from '@/components/ui/label';
 import {Input} from '@/components/ui/input';
 import {Button} from '@/components/ui/button';
-import {Textarea} from '@/components/ui/textarea';
-import {FileUpload} from '@/components/ui/file-upload';
-import {TagSelector} from '@/components/ui/tag-selector';
-import {DateTimePicker} from '@/components/ui/DateTimePicker';
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
-import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/components/ui/tooltip';
-import {Checkbox} from '@/components/animate-ui/radix/checkbox';
-import {Counter} from '@/components/animate-ui/components/counter';
 import {Tabs, TabsList, TabsTrigger, TabsContent, TabsContents} from '@/components/animate-ui/radix/tabs';
 import {Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter} from '@/components/animate-ui/radix/dialog';
-import {FORM_LIMITS, DEFAULT_FORM_VALUES, TRUST_LEVEL_OPTIONS, handleBulkImportContentWithFilter, validateProjectForm} from '@/components/common/project';
-import MarkdownEditor from '@/components/common/markdown/Editor';
-import {X, Plus, User, Lock, Copy, ExternalLink, CheckCircle} from 'lucide-react';
+import {validateProjectForm} from '@/components/common/project';
+import {ProjectBasicForm} from '@/components/common/project/ProjectBasicForm';
+import {BulkImportSection} from '@/components/common/project/BulkImportSection';
+import {DistributionModeSelect} from '@/components/common/project/DistributionModeSelect';
+import {Plus, Copy, ExternalLink, CheckCircle} from 'lucide-react';
 import services from '@/lib/services';
-import {TrustLevel} from '@/lib/services/core/types';
 import {DistributionType, ProjectListItem} from '@/lib/services/project/types';
 
 interface ProjectInfo {
@@ -43,159 +39,51 @@ export function CreateDialog({
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [createSuccess, setCreateSuccess] = useState(false);
-  const [createdProject, setCreatedProject] = useState<ProjectInfo | null>(
-      null,
-  );
-  const [fileUploadOpen, setFileUploadOpen] = useState(false);
+  const [createdProject, setCreatedProject] = useState<ProjectInfo | null>(null);
+  const [activeTab, setActiveTab] = useState('basic');
 
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    startTime: new Date(),
-    endTime: new Date(Date.now() + DEFAULT_FORM_VALUES.TIME_OFFSET_24H),
-    minimumTrustLevel: TrustLevel.BASIC_USER,
-    allowSameIP: false,
-    riskLevel: DEFAULT_FORM_VALUES.RISK_LEVEL,
-    distributionType: DistributionType.ONE_FOR_EACH,
+  const {formData, setFormData, resetForm: resetProjectForm} = useProjectForm({
+    mode: 'create',
   });
 
-  const [tags, setTags] = useState<string[]>([]);
-  const [availableTags, setAvailableTags] = useState<string[]>([]);
-  const [items, setItems] = useState<string[]>([]);
-  const [bulkContent, setBulkContent] = useState('');
-  const [activeTab, setActiveTab] = useState('basic');
-  const [allowDuplicates, setAllowDuplicates] = useState(false);
+  const {tags, setTags, availableTags, fetchTags, resetTags} = useProjectTags();
 
-  /**
-   * 获取可用标签列表
-   */
-  const fetchTags = async () => {
-    try {
-      const result = await services.project.getTagsSafe();
-      if (result.success) {
-        setAvailableTags(result.tags);
-      } else {
-        setAvailableTags([]);
-        console.warn('获取标签列表失败:', result.error);
-      }
-    } catch (error) {
-      console.error('获取标签失败:', error);
-      setAvailableTags([]);
-    }
-  };
+  const {
+    items,
+    setItems,
+    bulkContent,
+    setBulkContent,
+    allowDuplicates,
+    setAllowDuplicates,
+    handleBulkImport,
+    removeItem,
+    resetBulkImport,
+  } = useBulkImport();
+
+  const {
+    fileUploadOpen,
+    setFileUploadOpen,
+    handleFileUpload: handleFileUploadBase,
+  } = useFileUpload();
+
 
   useEffect(() => {
     if (open) {
       fetchTags();
     }
-  }, [open]);
+  }, [open, fetchTags]);
 
-  /**
-   * 重置表单状态
-   */
   const resetForm = () => {
-    setFormData({
-      name: '',
-      description: '',
-      startTime: new Date(),
-      endTime: new Date(Date.now() + DEFAULT_FORM_VALUES.TIME_OFFSET_24H),
-      minimumTrustLevel: TrustLevel.BASIC_USER,
-      allowSameIP: false,
-      riskLevel: DEFAULT_FORM_VALUES.RISK_LEVEL,
-      distributionType: DistributionType.ONE_FOR_EACH,
-    });
-    setTags([]);
-    setItems([]);
+    resetProjectForm();
+    resetTags();
+    resetBulkImport();
     setActiveTab('basic');
-    setBulkContent('');
-    setAllowDuplicates(false);
     setCreateSuccess(false);
     setCreatedProject(null);
-    setFileUploadOpen(false);
   };
 
-  const removeItem = (index: number) => {
-    setItems(items.filter((_, i) => i !== index));
-  };
-
-  /**
-   * 批量导入分发内容
-   */
-  const handleBulkImport = () => {
-    handleBulkImportContentWithFilter(
-        bulkContent,
-        items,
-        allowDuplicates,
-        (newItems: string[], importedCount: number, skippedInfo?: string) => {
-          setItems(newItems);
-          setBulkContent('');
-          const message = `成功导入 ${importedCount} 个内容${skippedInfo || ''}`;
-          toast.success(message);
-        },
-        (errorMessage: string) => {
-          toast.error(errorMessage);
-        },
-    );
-  };
-
-  /**
-   * 处理文件上传
-   */
   const handleFileUpload = (files: File[]) => {
-    if (files.length === 0) return;
-
-    const file = files[0];
-
-    // 检查文件类型
-    if (!file.name.toLowerCase().endsWith('.txt')) {
-      toast.error('仅支持上传 .txt 格式的文件');
-      return;
-    }
-
-    // 检查文件大小 (最大5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('文件大小不能超过 5MB');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const content = e.target?.result as string;
-      if (content) {
-        // 按行分割并过滤空行
-        const lines = content
-            .split(/\r?\n/)
-            .map((line) => line.trim())
-            .filter((line) => line.length > 0);
-
-        if (lines.length === 0) {
-          toast.error('文件内容为空');
-          return;
-        }
-
-        // 执行导入
-        handleBulkImportContentWithFilter(
-            lines.join('\n'),
-            items,
-            allowDuplicates,
-            (newItems: string[], importedCount: number, skippedInfo?: string) => {
-              setItems(newItems);
-              const message = `从文件成功导入 ${importedCount} 个内容${skippedInfo || ''}`;
-              toast.success(message);
-              setFileUploadOpen(false);
-            },
-            (errorMessage: string) => {
-              toast.error(errorMessage);
-            },
-        );
-      }
-    };
-
-    reader.onerror = () => {
-      toast.error('文件读取失败');
-    };
-
-    reader.readAsText(file, 'UTF-8');
+    handleFileUploadBase(files, items, allowDuplicates, setItems);
   };
 
   /**
@@ -421,8 +309,8 @@ export function CreateDialog({
                 className={`space-y-6 py-6 px-1 ${isMobile ? 'max-h-[65vh]' : 'max-h-[60vh]'} overflow-y-auto`}
               >
                 <DistributionModeSelect
-                  distributionType={formData.distributionType!}
-                  onDistributionTypeChange={(type) =>
+                  distributionType={formData.distributionType}
+                  onDistributionTypeChange={(type: DistributionType) =>
                     setFormData({...formData, distributionType: type})
                   }
                 />
@@ -436,7 +324,7 @@ export function CreateDialog({
                     setAllowDuplicates={setAllowDuplicates}
                     onBulkImport={handleBulkImport}
                     onRemoveItem={removeItem}
-                    onClearItems={clearItems}
+                    onClearItems={() => setItems([])}
                     onClearBulkContent={() => setBulkContent('')}
                     fileUploadOpen={fileUploadOpen}
                     onFileUploadOpenChange={setFileUploadOpen}

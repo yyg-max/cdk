@@ -56,7 +56,6 @@ export function EditDialog({
     handleBulkImport,
     removeItem,
     clearItems: clearNewItems,
-    clearBulkContent,
     resetBulkImport,
   } = useBulkImport();
 
@@ -64,7 +63,6 @@ export function EditDialog({
     fileUploadOpen,
     setFileUploadOpen,
     handleFileUpload: handleFileUploadBase,
-    openFileUpload,
     closeFileUpload,
   } = useFileUpload();
 
@@ -83,7 +81,7 @@ export function EditDialog({
       fetchTags();
       resetForm();
     }
-  }, [open, resetForm]);
+  }, [open, resetForm, fetchTags]);
 
 
   const handleFileUpload = (files: File[]) => {
