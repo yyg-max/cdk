@@ -1,6 +1,6 @@
 'use client';
 
-import {useState, useEffect, useCallback} from 'react';
+import {useState, useCallback} from 'react';
 import services from '@/lib/services';
 
 export function useProjectTags(initialTags: string[] = []) {

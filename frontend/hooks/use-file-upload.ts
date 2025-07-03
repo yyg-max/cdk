@@ -8,10 +8,10 @@ export function useFileUpload() {
   const [fileUploadOpen, setFileUploadOpen] = useState(false);
 
   const handleFileUpload = useCallback((
-    files: File[],
-    currentItems: string[],
-    allowDuplicates: boolean,
-    onSuccess: (newItems: string[], importedCount: number, skippedInfo?: string) => void
+      files: File[],
+      currentItems: string[],
+      allowDuplicates: boolean,
+      onSuccess: (newItems: string[], importedCount: number, skippedInfo?: string) => void,
   ) => {
     if (files.length === 0) return;
 
@@ -35,9 +35,9 @@ export function useFileUpload() {
       if (content) {
         // 按行分割并过滤空行
         const lines = content
-          .split(/\r?\n/)
-          .map((line) => line.trim())
-          .filter((line) => line.length > 0);
+            .split(/\r?\n/)
+            .map((line) => line.trim())
+            .filter((line) => line.length > 0);
 
         if (lines.length === 0) {
           toast.error('文件内容为空');
@@ -46,18 +46,18 @@ export function useFileUpload() {
 
         // 执行导入
         handleBulkImportContentWithFilter(
-          lines.join('\n'),
-          currentItems,
-          allowDuplicates,
-          (updatedItems: string[], importedCount: number, skippedInfo?: string) => {
-            onSuccess(updatedItems, importedCount, skippedInfo);
-            const message = `从文件成功导入 ${importedCount} 个内容${skippedInfo || ''}`;
-            toast.success(message);
-            setFileUploadOpen(false);
-          },
-          (errorMessage: string) => {
-            toast.error(errorMessage);
-          },
+            lines.join('\n'),
+            currentItems,
+            allowDuplicates,
+            (updatedItems: string[], importedCount: number, skippedInfo?: string) => {
+              onSuccess(updatedItems, importedCount, skippedInfo);
+              const message = `从文件成功导入 ${importedCount} 个内容${skippedInfo || ''}`;
+              toast.success(message);
+              setFileUploadOpen(false);
+            },
+            (errorMessage: string) => {
+              toast.error(errorMessage);
+            },
         );
       }
     };
