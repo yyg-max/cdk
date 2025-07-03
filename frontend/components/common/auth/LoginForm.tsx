@@ -6,7 +6,7 @@ import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
 import {LiquidButton} from '@/components/animate-ui/buttons/liquid';
 import {Accordion, AccordionItem, AccordionTrigger, AccordionContent} from '@/components/animate-ui/radix/accordion';
 import {Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription} from '@/components/animate-ui/radix/dialog';
-import {GalleryVerticalEnd, LoaderCircle} from 'lucide-react';
+import {SquareArrowUpRight, LoaderCircle} from 'lucide-react';
 import {LinuxDo} from '@/components/icons/logo';
 import {useAuth} from '@/hooks/use-auth';
 import {cn} from '@/lib/utils';
@@ -75,9 +75,9 @@ export function LoginForm({
           <div className="flex flex-col gap-6 transition-all duration-500 ease-in-out">
             <div className="flex flex-col items-center gap-2">
               <div className="flex size-8 items-center justify-center rounded-md m-4">
-                <GalleryVerticalEnd className="size-6" />
+                <SquareArrowUpRight className="size-6" />
               </div>
-              <h1 className="text-xl font-bold">欢迎使用 Linux Do CDK.</h1>
+              <h1 className="text-xl font-bold">欢迎使用 Linux Do CDK</h1>
             </div>
 
             {/* 登出成功提示 */}

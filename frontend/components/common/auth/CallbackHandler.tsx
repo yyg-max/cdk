@@ -84,7 +84,7 @@ export function CallbackHandler({
             <div className="flex size-8 items-center justify-center rounded-md">
               <GalleryVerticalEnd className="size-6" />
             </div>
-            <h1 className="text-xl font-bold">欢迎使用 Linux Do CDK.</h1>
+            <h1 className="text-xl font-bold">欢迎使用 Linux Do CDK</h1>
           </div>
           <div className="flex flex-col items-center gap-4">
             {status === 'loading' && (

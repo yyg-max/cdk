@@ -1,5 +1,10 @@
 import {Suspense} from 'react';
 import {ExploreMain} from '@/components/common/explore';
+import {Metadata} from 'next';
+
+export const metadata: Metadata = {
+  title: '项目探索',
+};
 
 export default function ExplorePage() {
   return (

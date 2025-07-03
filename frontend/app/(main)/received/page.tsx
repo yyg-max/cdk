@@ -1,5 +1,10 @@
 import {Suspense} from 'react';
 import {ReceivedMain} from '@/components/common/received';
+import {Metadata} from 'next';
+
+export const metadata: Metadata = {
+  title: '领取记录',
+};
 
 export default function ReceivedPage() {
   return (
