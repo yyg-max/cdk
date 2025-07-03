@@ -11,23 +11,23 @@ export function useBulkImport(initialItems: string[] = []) {
 
   const handleBulkImport = useCallback(() => {
     handleBulkImportContentWithFilter(
-      bulkContent,
-      items,
-      allowDuplicates,
-      (newItems: string[], importedCount: number, skippedInfo?: string) => {
-        setItems(newItems);
-        setBulkContent('');
-        const message = `成功导入 ${importedCount} 个内容${skippedInfo || ''}`;
-        toast.success(message);
-      },
-      (errorMessage: string) => {
-        toast.error(errorMessage);
-      },
+        bulkContent,
+        items,
+        allowDuplicates,
+        (newItems: string[], importedCount: number, skippedInfo?: string) => {
+          setItems(newItems);
+          setBulkContent('');
+          const message = `成功导入 ${importedCount} 个内容${skippedInfo || ''}`;
+          toast.success(message);
+        },
+        (errorMessage: string) => {
+          toast.error(errorMessage);
+        },
     );
   }, [bulkContent, items, allowDuplicates]);
 
   const removeItem = useCallback((index: number) => {
-    setItems(prev => prev.filter((_, i) => i !== index));
+    setItems((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
   const clearItems = useCallback(() => {

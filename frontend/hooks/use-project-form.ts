@@ -35,7 +35,7 @@ export function useProjectForm(options: UseProjectFormOptions) {
         minimumTrustLevel: project.minimum_trust_level,
         allowSameIP: project.allow_same_ip,
         riskLevel: project.risk_level,
-        distributionType: project.distribution_type,
+        distributionType: project.distribution_type,,
       };
     }
 
@@ -57,7 +57,7 @@ export function useProjectForm(options: UseProjectFormOptions) {
     field: K,
     value: ProjectFormData[K]
   ) => {
-    setFormData(prev => ({...prev, [field]: value}));
+    setFormData((prev) => ({...prev, [field]: value}));
   }, []);
 
   const resetForm = useCallback(() => {
