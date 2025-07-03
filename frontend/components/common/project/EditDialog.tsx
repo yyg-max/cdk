@@ -413,27 +413,20 @@ export function EditDialog({
 
                   <div className="space-y-2">
                     <Label htmlFor="riskLevel">最低风险系数</Label>
-                    <div className="flex items-center w-full">
-                      <Counter
-                        number={formData.riskLevel}
-                        setNumber={(value) =>
-                          setFormData({
-                            ...formData,
-                            riskLevel: value,
-                          })
-                        }
-                        min={0}
-                        max={100}
-                        step={1}
-                        longPressDelay={300}
-                        longPressSpeed={80}
-                        className="flex w-full justify-between items-center"
-                        buttonProps={{
-                          variant: 'outline',
-                          size: 'sm',
-                        }}
-                      />
-                    </div>
+                    <Input
+                      id="riskLevel"
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={formData.riskLevel}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          riskLevel: Math.max(0, Math.min(100, parseInt(e.target.value) || 0)),
+                        })
+                      }
+                      placeholder="输入0-100的风险系数"
+                    />
                   </div>
                 </div>
 
