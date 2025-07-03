@@ -407,6 +407,9 @@ const docTemplate = `{
                 "nickname": {
                     "type": "string"
                 },
+                "score": {
+                    "type": "integer"
+                },
                 "trust_level": {
                     "$ref": "#/definitions/oauth.TrustLevel"
                 },
