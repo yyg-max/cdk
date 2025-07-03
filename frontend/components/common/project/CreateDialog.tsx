@@ -502,7 +502,7 @@ export function CreateDialog({
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="riskLevel">最低风险系数</Label>
+                    <Label htmlFor="riskLevel">最高风险系数</Label>
                     <Input
                       id="riskLevel"
                       type="number"
