@@ -80,7 +80,10 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
         <NavMain items={navMain} />
       </SidebarContent>
       <SidebarFooter>
-        <NavDocuments items={navDocuments} />
+        <NavDocuments
+          items={navDocuments}
+          userScore={!isLoading && user ? user.score : undefined}
+        />
         {isLoading && (
           <NavUser
             user={{

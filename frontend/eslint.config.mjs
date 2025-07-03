@@ -20,7 +20,7 @@ const eslintConfig = [
       'valid-jsdoc': 'off',
       'require-jsdoc': 'off',
       'max-len': 'off',
-      // 'linebreak-style': 'off',
+      // 'linebreak-style': 'off', // 如果您是windows系统，可在开发时禁用行尾换行符检查
     },
   },
 ];
