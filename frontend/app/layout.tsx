@@ -21,7 +21,10 @@ const notoSansSC = Noto_Sans_SC({
 });
 
 export const metadata: Metadata = {
-  title: 'Linux Do CDK',
+  title: {
+    template: '%s - Linux Do CDK',
+    default: 'Linux Do CDK',
+  },
   description: 'Linux Do 社区 CDK 快速分享平台 - 让分享变得更简单',
 };
 

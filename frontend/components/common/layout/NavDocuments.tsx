@@ -88,7 +88,7 @@ export function NavDocuments({items, userScore}: NavDocumentsProps) {
                       number={userScore}
                       fromNumber={0}
                       inView={true}
-                      transition={{stiffness: 100, damping: 30}}
+                      transition={{stiffness: 200, damping: 25}}
                     />
                   </div>
                   <div className="text-xs text-muted-foreground">
