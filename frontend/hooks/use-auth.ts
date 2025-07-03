@@ -71,7 +71,6 @@ export function useAuth(): UseAuthReturn {
       }
 
 
-
       // 使用缓存数据（如果缓存有效）
       const now = Date.now();
       if (userInfoCache.data && now - userInfoCache.timestamp < CACHE_EXPIRY) {
@@ -110,7 +109,6 @@ export function useAuth(): UseAuthReturn {
         }
         return;
       }
-
 
 
       // 创建新请求并缓存Promise
