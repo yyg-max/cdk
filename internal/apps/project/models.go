@@ -45,11 +45,13 @@ type Project struct {
 	TotalItems        int64            `json:"total_items"`
 	StartTime         time.Time        `json:"start_time"`
 	EndTime           time.Time        `json:"end_time" gorm:"index:idx_projects_end_completed_trust_risk,priority:1"`
-	MinimumTrustLevel oauth.TrustLevel `json:"minimum_trust_level" gorm:"index:idx_projects_end_completed_trust_risk,priority:3"`
+	MinimumTrustLevel oauth.TrustLevel `json:"minimum_trust_level" gorm:"index:idx_projects_end_completed_trust_risk,priority:4"`
 	AllowSameIP       bool             `json:"allow_same_ip"`
-	RiskLevel         int8             `json:"risk_level" gorm:"index:idx_projects_end_completed_trust_risk,priority:4"`
+	RiskLevel         int8             `json:"risk_level" gorm:"index:idx_projects_end_completed_trust_risk,priority:5"`
 	CreatorID         uint64           `json:"creator_id" gorm:"index"`
 	IsCompleted       bool             `json:"is_completed" gorm:"index:idx_projects_end_completed_trust_risk,priority:2"`
+	Status            bool             `json:"status" gorm:"default:0;index;index:idx_projects_end_completed_trust_risk,priority:3"`
+	ReportCount       uint8            `json:"report_count" gorm:"default:0"`
 	Creator           oauth.User       `json:"-" gorm:"foreignKey:CreatorID"`
 	CreatedAt         time.Time        `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt         time.Time        `json:"updated_at" gorm:"autoUpdateTime"`
@@ -226,4 +228,13 @@ func (p *Project) GetReceivedItem(ctx context.Context, userID uint64) (*ProjectI
 		return nil, err
 	}
 	return item, nil
+}
+
+type ProjectReport struct {
+	ID         uint64    `json:"id" gorm:"primaryKey,autoIncrement"`
+	ProjectID  string    `json:"project_id" gorm:"size:64;index;uniqueIndex:idx_project_reporter"`
+	ReporterID uint64    `json:"reporter_id" gorm:"index;uniqueIndex:idx_project_reporter"`
+	Reason     string    `json:"reason" gorm:"size:255"`
+	CreatedAt  time.Time `json:"created_at" gorm:"autoCreateTime"`
+	UpdatedAt  time.Time `json:"updated_at" gorm:"autoUpdateTime"`
 }

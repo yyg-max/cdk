@@ -41,6 +41,7 @@ func Migrate() {
 		&project.Project{},
 		&project.ProjectItem{},
 		&project.ProjectTag{},
+		&project.ProjectReport{},
 	); err != nil {
 		log.Fatalf("[MySQL] auto migrate failed: %v\n", err)
 	}

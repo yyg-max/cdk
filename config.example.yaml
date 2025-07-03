@@ -14,6 +14,11 @@ app:
   session_http_only: false
   api_prefix: "/api"
 
+# project
+project:
+  update_delete_threshold: 1 # project update and delete threshold
+  hidden_threshold: 5 # project hidden threshold
+
 # OAuth2
 oauth2:
   client_id: "<OAUTH2_CLIENT_ID>"
