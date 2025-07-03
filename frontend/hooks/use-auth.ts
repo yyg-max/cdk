@@ -31,7 +31,7 @@ interface UseAuthReturn extends AuthState {
 }
 
 /** 缓存过期时间（毫秒） */
-const CACHE_EXPIRY = 10000; // 10秒
+const CACHE_EXPIRY = 30000;
 
 /** 用户信息缓存 */
 const userInfoCache: {
@@ -47,7 +47,6 @@ const userInfoCache: {
 /**
  * 用户认证状态管理Hook
  *
- * 使用请求缓存、防抖和请求合并优化性能
  */
 export function useAuth(): UseAuthReturn {
   const [state, setState] = useState<AuthState>({
@@ -57,8 +56,8 @@ export function useAuth(): UseAuthReturn {
     error: null,
   });
 
-  // 防止重复请求标记
   const requestInProgress = useRef(false);
+  const isMounted = useRef(true);
 
   /**
    * 检查用户认证状态
@@ -66,9 +65,12 @@ export function useAuth(): UseAuthReturn {
    */
   const checkAuthStatus = useCallback(async () => {
     try {
-      setState((prev) => ({...prev, isLoading: true, error: null}));
+      if (!isMounted.current) return;
+      
+      if (!state.isLoading) {
+        setState((prev) => ({...prev, isLoading: true, error: null}));
+      }
 
-      // 防止重复请求
       if (requestInProgress.current) {
         return;
       }
@@ -76,12 +78,14 @@ export function useAuth(): UseAuthReturn {
       // 使用缓存数据（如果缓存有效）
       const now = Date.now();
       if (userInfoCache.data && now - userInfoCache.timestamp < CACHE_EXPIRY) {
-        setState({
-          isAuthenticated: true,
-          user: userInfoCache.data,
-          isLoading: false,
-          error: null,
-        });
+        if (isMounted.current) {
+          setState({
+            isAuthenticated: true,
+            user: userInfoCache.data,
+            isLoading: false,
+            error: null,
+          });
+        }
         return;
       }
 
@@ -89,19 +93,23 @@ export function useAuth(): UseAuthReturn {
       if (userInfoCache.promise) {
         try {
           const userInfo = await userInfoCache.promise;
-          setState({
-            isAuthenticated: true,
-            user: userInfo,
-            isLoading: false,
-            error: null,
-          });
+          if (isMounted.current) {
+            setState({
+              isAuthenticated: true,
+              user: userInfo,
+              isLoading: false,
+              error: null,
+            });
+          }
         } catch (error) {
-          setState({
-            isAuthenticated: false,
-            user: null,
-            isLoading: false,
-            error: error instanceof Error ? error.message : '获取用户信息失败',
-          });
+          if (isMounted.current) {
+            setState({
+              isAuthenticated: false,
+              user: null,
+              isLoading: false,
+              error: error instanceof Error ? error.message : '获取用户信息失败',
+            });
+          }
         }
         return;
       }
@@ -119,23 +127,27 @@ export function useAuth(): UseAuthReturn {
         userInfoCache.data = userInfo;
         userInfoCache.timestamp = Date.now();
 
-        setState({
-          isAuthenticated: true,
-          user: userInfo,
-          isLoading: false,
-          error: null,
-        });
+        if (isMounted.current) {
+          setState({
+            isAuthenticated: true,
+            user: userInfo,
+            isLoading: false,
+            error: null,
+          });
+        }
       } catch (error) {
         // 清除缓存
         userInfoCache.data = null;
         userInfoCache.timestamp = 0;
 
-        setState({
-          isAuthenticated: false,
-          user: null,
-          isLoading: false,
-          error: error instanceof Error ? error.message : '获取用户信息失败',
-        });
+        if (isMounted.current) {
+          setState({
+            isAuthenticated: false,
+            user: null,
+            isLoading: false,
+            error: error instanceof Error ? error.message : '获取用户信息失败',
+          });
+        }
       } finally {
         // 重置请求状态
         requestInProgress.current = false;
@@ -145,14 +157,16 @@ export function useAuth(): UseAuthReturn {
       requestInProgress.current = false;
       userInfoCache.promise = null;
 
-      setState({
-        isAuthenticated: false,
-        user: null,
-        isLoading: false,
-        error: error instanceof Error ? error.message : '认证状态检查失败',
-      });
+      if (isMounted.current) {
+        setState({
+          isAuthenticated: false,
+          user: null,
+          isLoading: false,
+          error: error instanceof Error ? error.message : '认证状态检查失败',
+        });
+      }
     }
-  }, []);
+  }, [state.isLoading]); // 添加state.isLoading作为依赖项，减少不必要的函数重建
 
   /**
    * 执行登录操作
@@ -160,14 +174,18 @@ export function useAuth(): UseAuthReturn {
    */
   const login = useCallback(async (redirectTo?: string) => {
     try {
-      setState((prev) => ({...prev, isLoading: true, error: null}));
+      if (isMounted.current) {
+        setState((prev) => ({...prev, isLoading: true, error: null}));
+      }
       await services.auth.login(redirectTo);
     } catch (error) {
-      setState((prev) => ({
-        ...prev,
-        isLoading: false,
-        error: error instanceof Error ? error.message : '登录失败',
-      }));
+      if (isMounted.current) {
+        setState((prev) => ({
+          ...prev,
+          isLoading: false,
+          error: error instanceof Error ? error.message : '登录失败',
+        }));
+      }
     }
   }, []);
 
@@ -177,7 +195,9 @@ export function useAuth(): UseAuthReturn {
    */
   const logout = useCallback(async (redirectTo = '/login') => {
     try {
-      setState((prev) => ({...prev, isLoading: true}));
+      if (isMounted.current) {
+        setState((prev) => ({...prev, isLoading: true}));
+      }
 
       // 清除缓存
       userInfoCache.data = null;
@@ -187,20 +207,23 @@ export function useAuth(): UseAuthReturn {
       // 调用登出方法（会处理API调用和重定向）
       await services.auth.logout(redirectTo);
 
-      // 更新状态（页面可能已重定向）
-      setState({
-        isAuthenticated: false,
-        user: null,
-        isLoading: false,
-        error: null,
-      });
+      if (isMounted.current) {
+        setState({
+          isAuthenticated: false,
+          user: null,
+          isLoading: false,
+          error: null,
+        });
+      }
     } catch (error) {
       // 这段代码通常不会执行，因为logout会在出错时也执行重定向
-      setState((prev) => ({
-        ...prev,
-        isLoading: false,
-        error: error instanceof Error ? error.message : '登出失败',
-      }));
+      if (isMounted.current) {
+        setState((prev) => ({
+          ...prev,
+          isLoading: false,
+          error: error instanceof Error ? error.message : '登出失败',
+        }));
+      }
     }
   }, []);
 
@@ -208,14 +231,24 @@ export function useAuth(): UseAuthReturn {
    * 清除错误信息
    */
   const clearError = useCallback(() => {
-    setState((prev) => ({...prev, error: null}));
+    if (isMounted.current) {
+      setState((prev) => ({...prev, error: null}));
+    }
   }, []);
 
   // 初始化时检查认证状态
   useEffect(() => {
-    checkAuthStatus();
+    isMounted.current = true;
+    
+    // 使用requestAnimationFrame延迟执行认证检查，避免与布局渲染冲突
+    const timer = requestAnimationFrame(() => {
+      checkAuthStatus();
+    });
+    
     return () => {
+      isMounted.current = false;
       requestInProgress.current = false;
+      cancelAnimationFrame(timer);
     };
   }, [checkAuthStatus]);
 
