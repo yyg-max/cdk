@@ -58,7 +58,7 @@ export function useProjectForm(options: UseProjectFormOptions) {
     value: ProjectFormData[K],
   ) => {
     setFormData((prev) => ({...prev, [field]: value}));
-  }, []);
+  }, [setFormData]);
 
   const resetForm = useCallback(() => {
     setFormData(getInitialFormData());
