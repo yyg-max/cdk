@@ -7,6 +7,19 @@
 [![Next.js](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19-blue.svg)](https://reactjs.org/)
 
+[![GitHub release](https://img.shields.io/github/v/release/linux-do/cdk?include_prereleases)](https://github.com/linux-do/cdk/releases)
+[![GitHub stars](https://img.shields.io/github/stars/linux-do/cdk)](https://github.com/linux-do/cdk/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/linux-do/cdk)](https://github.com/linux-do/cdk/network)
+[![GitHub issues](https://img.shields.io/github/issues/linux-do/cdk)](https://github.com/linux-do/cdk/issues)
+[![GitHub pull requests](https://img.shields.io/github/issues-pr/linux-do/cdk)](https://github.com/linux-do/cdk/pulls)
+[![GitHub contributors](https://img.shields.io/github/contributors/linux-do/cdk)](https://github.com/linux-do/cdk/graphs/contributors)
+
+[![Backend Build](https://github.com/linux-do/cdk/actions/workflows/build_backend.yml/badge.svg)](https://github.com/linux-do/cdk/actions/workflows/build_backend.yml)
+[![Frontend Build](https://github.com/linux-do/cdk/actions/workflows/build_frontend.yml/badge.svg)](https://github.com/linux-do/cdk/actions/workflows/build_frontend.yml)
+[![Docker Build](https://github.com/linux-do/cdk/actions/workflows/build_image.yml/badge.svg)](https://github.com/linux-do/cdk/actions/workflows/build_image.yml)
+[![CodeQL](https://github.com/linux-do/cdk/actions/workflows/codeql.yml/badge.svg)](https://github.com/linux-do/cdk/actions/workflows/codeql.yml)
+[![ESLint](https://github.com/linux-do/cdk/actions/workflows/eslint.yml/badge.svg)](https://github.com/linux-do/cdk/actions/workflows/eslint.yml)
+
 ## 📖 项目简介
 
 Linux Do CDK 是一个为 Linux Do 社区打造的内容分发工具包，旨在提供快速、安全、便捷的 CDK 分享服务。平台支持多种分发方式，具备完善的用户权限管理和风险控制机制。
