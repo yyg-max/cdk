@@ -61,6 +61,11 @@ function TagSelector({
     const trimmedTag = tag.trim();
     if (!trimmedTag) return;
 
+    if (trimmedTag === '无标签') {
+      toast.error('不允许创建名为"无标签"的标签');
+      return;
+    }
+
     if (selectedTags.includes(trimmedTag)) {
       toast.error('该标签已添加');
       return;

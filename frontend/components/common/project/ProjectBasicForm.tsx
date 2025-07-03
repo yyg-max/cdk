@@ -58,17 +58,6 @@ export function ProjectBasicForm({
         />
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="description">项目描述</Label>
-        <MarkdownEditor
-          value={formData.description}
-          onChange={(value) => updateField('description', value)}
-          placeholder={`请输入项目描述，支持Markdown格式（${FORM_LIMITS.DESCRIPTION_MAX_LENGTH}字符以内）`}
-          maxLength={FORM_LIMITS.DESCRIPTION_MAX_LENGTH}
-          className="w-full"
-        />
-      </div>
-
       <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2'} gap-4`}>
         <DateTimePicker
           label="开始时间"
@@ -125,20 +114,31 @@ export function ProjectBasicForm({
         </div>
       </div>
 
-      <Label className="hover:bg-accent/50 flex items-start gap-3 rounded-lg border p-3 has-[[aria-checked=true]]:border-blue-600 has-[[aria-checked=true]]:bg-blue-50 dark:has-[[aria-checked=true]]:border-blue-900 dark:has-[[aria-checked=true]]:bg-blue-950">
-        <Checkbox
-          id="allowSameIP"
-          checked={formData.allowSameIP}
-          onCheckedChange={(checked) => updateField('allowSameIP', checked === true)}
-          className="data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-600 data-[state=checked]:text-white dark:data-[state=checked]:border-blue-700 dark:data-[state=checked]:bg-blue-700"
-        />
-        <div className="grid gap-1.5 font-normal">
-          <p className="text-sm leading-none font-medium">IP 管控</p>
+      <div className="space-y-2">
+        <Label>IP 管控</Label>
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="allowSameIP"
+            checked={formData.allowSameIP}
+            onCheckedChange={(checked) => updateField('allowSameIP', checked === true)}
+            className="data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-600 data-[state=checked]:text-white dark:data-[state=checked]:border-blue-700 dark:data-[state=checked]:bg-blue-700"
+          />
           <p className="text-muted-foreground text-sm">
-            如果开启，则同一个 IP 可以多次领取内容。
+            如果开启，则同一个 IP 可以多次领取内容
           </p>
         </div>
-      </Label>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="description">项目描述</Label>
+        <MarkdownEditor
+          value={formData.description}
+          onChange={(value) => updateField('description', value)}
+          placeholder={`请输入项目描述，支持Markdown格式（${FORM_LIMITS.DESCRIPTION_MAX_LENGTH}字符以内）`}
+          maxLength={FORM_LIMITS.DESCRIPTION_MAX_LENGTH}
+          className="w-full"
+        />
+      </div>
     </>
   );
 }
