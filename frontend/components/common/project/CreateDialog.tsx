@@ -406,347 +406,44 @@ export function CreateDialog({
                 value="basic"
                 className={`space-y-6 py-6 px-1 ${isMobile ? 'max-h-[65vh]' : 'max-h-[60vh]'} overflow-y-auto`}
               >
-                <div className="space-y-2">
-                  <Label htmlFor="name">项目名称 *</Label>
-                  <Input
-                    id="name"
-                    placeholder={`请填写此项目的名称（${FORM_LIMITS.PROJECT_NAME_MAX_LENGTH}字符以内）`}
-                    value={formData.name}
-                    onChange={(e) =>
-                      setFormData({...formData, name: e.target.value})
-                    }
-                    maxLength={FORM_LIMITS.PROJECT_NAME_MAX_LENGTH}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>项目标签</Label>
-                  <TagSelector
-                    selectedTags={tags}
-                    availableTags={availableTags}
-                    maxTagLength={FORM_LIMITS.TAG_MAX_LENGTH}
-                    maxTags={FORM_LIMITS.MAX_TAGS}
-                    onTagsChange={setTags}
-                    placeholder="请选择或添加关联标签"
-                    isMobile={isMobile}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="description">项目描述</Label>
-                  <MarkdownEditor
-                    value={formData.description}
-                    onChange={(value) =>
-                      setFormData({...formData, description: value})
-                    }
-                    placeholder={`请输入项目描述，支持Markdown格式（${FORM_LIMITS.DESCRIPTION_MAX_LENGTH}字符以内）`}
-                    maxLength={FORM_LIMITS.DESCRIPTION_MAX_LENGTH}
-                    className="w-full"
-                  />
-                </div>
-
-                <div
-                  className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2'} gap-4`}
-                >
-                  <DateTimePicker
-                    label="开始时间"
-                    value={formData.startTime}
-                    onChange={(date) =>
-                      setFormData({
-                        ...formData,
-                        startTime: date || new Date(),
-                      })
-                    }
-                    placeholder="选择开始时间"
-                    required
-                  />
-                  <DateTimePicker
-                    label="结束时间"
-                    value={formData.endTime}
-                    onChange={(date) =>
-                      setFormData({...formData, endTime: date || new Date()})
-                    }
-                    placeholder="选择结束时间"
-                    required
-                  />
-                </div>
-
-                <div
-                  className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2'} gap-4`}
-                >
-                  <div className="space-y-2">
-                    <Label>最低信任等级</Label>
-                    <Select
-                      value={formData.minimumTrustLevel.toString()}
-                      onValueChange={(value) =>
-                        setFormData({
-                          ...formData,
-                          minimumTrustLevel: parseInt(value) as TrustLevel,
-                        })
-                      }
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {TRUST_LEVEL_OPTIONS.map((option) => (
-                          <SelectItem
-                            key={option.value}
-                            value={option.value.toString()}
-                          >
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="riskLevel">最高风险系数</Label>
-                    <Input
-                      id="riskLevel"
-                      type="number"
-                      min={0}
-                      max={100}
-                      value={formData.riskLevel}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          riskLevel: Math.max(0, Math.min(100, parseInt(e.target.value) || 0)),
-                        })
-                      }
-                      placeholder="输入0-100的风险系数"
-                    />
-                  </div>
-                </div>
-
-                <Label className="hover:bg-accent/50 flex items-start gap-3 rounded-lg border p-3 has-[[aria-checked=true]]:border-blue-600 has-[[aria-checked=true]]:bg-blue-50 dark:has-[[aria-checked=true]]:border-blue-900 dark:has-[[aria-checked=true]]:bg-blue-950">
-                  <Checkbox
-                    id="allowSameIP"
-                    checked={formData.allowSameIP}
-                    onCheckedChange={(checked) =>
-                      setFormData({
-                        ...formData,
-                        allowSameIP: checked === true,
-                      })
-                    }
-                    className="data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-600 data-[state=checked]:text-white dark:data-[state=checked]:border-blue-700 dark:data-[state=checked]:bg-blue-700"
-                  />
-                  <div className="grid gap-1.5 font-normal">
-                    <p className="text-sm leading-none font-medium">IP 管控</p>
-                    <p className="text-muted-foreground text-sm">
-                      如果开启，则同一个 IP 可以多次领取内容。
-                    </p>
-                  </div>
-                </Label>
+                <ProjectBasicForm
+                  formData={formData}
+                  onFormDataChange={setFormData}
+                  tags={tags}
+                  onTagsChange={setTags}
+                  availableTags={availableTags}
+                  isMobile={isMobile}
+                />
               </TabsContent>
 
               <TabsContent
                 value="distribution"
                 className={`space-y-6 py-6 px-1 ${isMobile ? 'max-h-[65vh]' : 'max-h-[60vh]'} overflow-y-auto`}
               >
-                <div className="space-y-3">
-                  <Label>分发模式</Label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div
-                      className={`relative cursor-pointer rounded-lg border-2 p-4 transition-all ${
-                        formData.distributionType ===
-                        DistributionType.ONE_FOR_EACH ?
-                          'border-primary bg-primary/5' :
-                          'border-border hover:border-primary/50'
-                      }`}
-                      onClick={() =>
-                        setFormData({
-                          ...formData,
-                          distributionType: DistributionType.ONE_FOR_EACH,
-                        })
-                      }
-                    >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`rounded-full p-2 ${
-                            formData.distributionType ===
-                            DistributionType.ONE_FOR_EACH ?
-                              'bg-primary text-primary-foreground' :
-                              'bg-muted text-muted-foreground'
-                          }`}
-                        >
-                          <User className="h-4 w-4" />
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-medium text-sm">一码一用</h3>
-                          <p className="text-muted-foreground text-xs mt-0.5">
-                            邀请码仅供一人使用
-                          </p>
-                        </div>
-                        {formData.distributionType ===
-                          DistributionType.ONE_FOR_EACH && (
-                          <div className="h-2 w-2 rounded-full bg-primary"></div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div
-                      className={`relative cursor-pointer rounded-lg border-2 p-4 transition-all ${
-                        formData.distributionType === DistributionType.INVITE ?
-                          'border-primary bg-primary/5' :
-                          'border-border hover:border-primary/50'
-                      }`}
-                      onClick={() =>
-                        setFormData({
-                          ...formData,
-                          distributionType: DistributionType.INVITE,
-                        })
-                      }
-                    >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`rounded-full p-2 ${
-                            formData.distributionType ===
-                            DistributionType.INVITE ?
-                              'bg-primary text-primary-foreground' :
-                              'bg-muted text-muted-foreground'
-                          }`}
-                        >
-                          <Lock className="h-4 w-4" />
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-medium text-sm">手动邀请</h3>
-                          <p className="text-muted-foreground text-xs mt-0.5">
-                            用户填写内容后发放
-                          </p>
-                        </div>
-                        {formData.distributionType ===
-                          DistributionType.INVITE && (
-                          <div className="h-2 w-2 rounded-full bg-primary"></div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <DistributionModeSelect
+                  distributionType={formData.distributionType!}
+                  onDistributionTypeChange={(type) =>
+                    setFormData({...formData, distributionType: type})
+                  }
+                />
 
                 {formData.distributionType === DistributionType.ONE_FOR_EACH ? (
-                  <div className="space-y-4">
-                    <div className="flex items-center">
-                      <div className="flex items-center justify-between w-full gap-2">
-                        <div className="text-sm font-medium">导入分发内容</div>
-                        <div className="flex items-center gap-2">
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Badge
-                                  variant="secondary"
-                                  className={`cursor-pointer ${
-                                    !allowDuplicates ? 'bg-green-100 text-green-700 border-green-200 hover:bg-green-200' : 'bg-muted hover:bg-muted/80'
-                                  }`}
-                                  onClick={() => setAllowDuplicates(!allowDuplicates)}
-                                >
-                                  {!allowDuplicates ? '已开启过滤' : '辅助过滤'}
-                                </Badge>
-                              </TooltipTrigger>
-                              <TooltipContent side="bottom">
-                                <p className="text-xs">
-                                  {!allowDuplicates ?
-                                    '已开启：自动过滤重复内容' :
-                                    '已关闭：允许导入重复内容'
-                                  }
-                                </p>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  点击切换过滤模式
-                                </p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                          <Badge
-                            variant="secondary"
-                            className="text-xs cursor-pointer hover:bg-gray-300"
-                            onClick={() => setFileUploadOpen(true)}
-                          >
-                            TXT导入
-                          </Badge>
-                          <Badge variant="secondary" className="bg-muted">
-                            已添加: {items.length}个
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Textarea
-                        placeholder="请输入分发内容，支持以 逗号分隔（中英文逗号均可）或 每行一个内容 的格式批量导入"
-                        value={bulkContent}
-                        onChange={(e) => setBulkContent(e.target.value)}
-                        className="h-[100px] break-all overflow-x-auto whitespace-pre-wrap"
-                      />
-                      <div className="flex items-center gap-2">
-                        <Button
-                          type="button"
-                          onClick={handleBulkImport}
-                          size="sm"
-                          className="mt-1 text-sm"
-                        >
-                          导入
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="mt-1 text-xs text-muted-foreground hover:text-destructive"
-                          onClick={() => setBulkContent('')}
-                        >
-                          清空
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-sm font-medium">
-                          已添加内容
-                        </Label>
-                        {items.length > 0 && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="text-xs text-muted-foreground hover:text-destructive"
-                            onClick={() => setItems([])}
-                          >
-                            清空全部
-                          </Button>
-                        )}
-                      </div>
-
-                      {items.length > 0 ? (
-                        <div className="space-y-2 h-[150px] overflow-y-auto overflow-x-auto border rounded-md p-2">
-                          {items.map((item, index) => (
-                            <div
-                              key={index}
-                              className="flex items-center gap-2 p-2 bg-muted/30 rounded-md"
-                            >
-                              <div className="w-6 h-6 flex items-center justify-center rounded-full bg-muted text-muted-foreground text-xs">
-                                {index + 1}
-                              </div>
-                              <div className="flex-1 min-w-0 break-all overflow-x-auto text-sm">{item}</div>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
-                                onClick={() => removeItem(index)}
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="w-full h-[150px] flex items-center justify-center py-8 text-sm text-center border rounded-md text-muted-foreground">
-                          暂无分发内容，请在上方导入
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <BulkImportSection
+                    items={items}
+                    bulkContent={bulkContent}
+                    setBulkContent={setBulkContent}
+                    allowDuplicates={allowDuplicates}
+                    setAllowDuplicates={setAllowDuplicates}
+                    onBulkImport={handleBulkImport}
+                    onRemoveItem={removeItem}
+                    onClearItems={clearItems}
+                    onClearBulkContent={() => setBulkContent('')}
+                    fileUploadOpen={fileUploadOpen}
+                    onFileUploadOpenChange={setFileUploadOpen}
+                    onFileUpload={handleFileUpload}
+                    isMobile={isMobile}
+                    mode="create"
+                  />
                 ) : (
                   <div className="flex items-center justify-center py-12">
                     <div className="text-center">
@@ -788,29 +485,6 @@ export function CreateDialog({
           )}
         </DialogFooter>
 
-        {/* 文件上传对话框 */}
-        <Dialog open={fileUploadOpen} onOpenChange={setFileUploadOpen}>
-          <DialogContent className={`${isMobile ? 'max-w-[90vw] max-h-[80vh]' : 'max-w-lg'}`}>
-            <DialogHeader>
-              <DialogTitle>文件导入分发内容</DialogTitle>
-              <DialogDescription className="text-xs">
-                支持 .txt 格式• 每行一个邀请码 • 空行自动忽略 • 大小限制：5MB
-              </DialogDescription>
-            </DialogHeader>
-
-            <FileUpload onChange={handleFileUpload} />
-
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setFileUploadOpen(false)}
-                className="w-full"
-              >
-                取消
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </DialogContent>
     </Dialog>
   );
