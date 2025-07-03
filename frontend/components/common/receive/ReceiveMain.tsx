@@ -124,6 +124,12 @@ export function ReceiveMain() {
     }
   }, [projectId, fetchProject]);
 
+  useEffect(() => {
+    if (project?.name) {
+      document.title = `${project.name} - 项目信息 - Linux Do CDK`;
+    }
+  }, [project?.name]);
+
   const containerVariants = {
     hidden: {opacity: 0},
     visible: {
