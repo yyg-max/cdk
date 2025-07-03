@@ -4,11 +4,6 @@ import {motion} from 'motion/react';
 import {Button} from '@/components/ui/button';
 import {MessageCircle, Send, Home} from 'lucide-react';
 import Link from 'next/link';
-import {Metadata} from 'next';
-
-export const metadata: Metadata = {
-  title: '页面未找到',
-};
 
 export default function NotFound() {
   return (
