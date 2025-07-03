@@ -1,7 +1,9 @@
+'use client';
+
 import {useMemo} from 'react';
 import {DISTRIBUTION_MODE_NAMES} from '../project/constants';
 import {ChartContainerProps, UserGrowthChartProps, ActivityChartProps, CategoryChartProps, DistributeModeChartProps, TooltipProps} from '@/lib/services/dashboard/types';
-import {AreaChart, Area, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, Legend} from 'recharts';
+import {AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, Legend} from 'recharts';
 
 /**
  * 生成时间范围图表数据
@@ -58,7 +60,6 @@ const generateTimeRangeChartData = (data: { date: string; value: number }[] | un
     }
   });
 
-  // 用实际数据替换默认值
   return fullDateRange.map(({date, value}) => ({
     date,
     value: dataMap.has(date) ? dataMap.get(date) : value,
@@ -301,7 +302,13 @@ export function ActivityChart({data, isLoading, icon, range = 7}: ActivityChartP
     <ChartContainer title="领取活动趋势" icon={icon} isLoading={isLoading}>
       <div className="h-[300px] transition-all duration-300 ease-in-out" key={`activity-${range}-${data?.length || 0}`}>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData} margin={{top: 10, right: 10, left: -32, bottom: 10}}>
+          <AreaChart data={chartData} margin={{top: 10, right: 10, left: -32, bottom: 10}}>
+            <defs>
+              <linearGradient id="activityGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#10b981" stopOpacity={0.4}/>
+                <stop offset="95%" stopColor="#10b981" stopOpacity={0.05}/>
+              </linearGradient>
+            </defs>
             <XAxis
               dataKey="date"
               axisLine={false}
@@ -320,12 +327,13 @@ export function ActivityChart({data, isLoading, icon, range = 7}: ActivityChartP
               content={<EnhancedTooltip labelFormatter={(label) => `日期: ${label}`} />}
               cursor={{stroke: '#10b981', strokeWidth: 1, strokeDasharray: '3 3', strokeOpacity: 0.6}}
             />
-            <Line
+            <Area
               type="monotone"
               dataKey="value"
               stroke="#10b981"
               strokeWidth={3}
-              dot={false}
+              fillOpacity={1}
+              fill="url(#activityGradient)"
               activeDot={{
                 r: 6,
                 stroke: '#047857',
@@ -334,9 +342,9 @@ export function ActivityChart({data, isLoading, icon, range = 7}: ActivityChartP
                 filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))',
               }}
               {...ANIMATION_CONFIG.base}
-              {...ANIMATION_CONFIG.line}
+              {...ANIMATION_CONFIG.area}
             />
-          </LineChart>
+          </AreaChart>
         </ResponsiveContainer>
       </div>
     </ChartContainer>
