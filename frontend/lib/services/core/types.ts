@@ -59,4 +59,6 @@ export interface BasicUserInfo {
   trust_level: TrustLevel;
   /** 头像URL */
   avatar_url: string;
+  /** 用户分数 */
+  score: number;
 }
