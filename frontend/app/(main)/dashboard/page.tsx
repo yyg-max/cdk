@@ -1,7 +1,10 @@
-'use client';
-
 import {Suspense} from 'react';
 import {DashboardMain} from '@/components/common/dashboard';
+import {Metadata} from 'next';
+
+export const metadata: Metadata = {
+  title: '项目管理',
+};
 
 export default function DashboardPage() {
   return (
