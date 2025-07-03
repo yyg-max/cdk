@@ -26,30 +26,29 @@ package logger
 
 import (
 	"context"
+	"fmt"
+	"log"
+	"os"
+	"path/filepath"
+
 	"github.com/linux-do/cdk/internal/config"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
-	"log"
-	"os"
 )
 
 // GetLogWriter 获取日志输出写入器
-func GetLogWriter() zapcore.WriteSyncer {
+// 注意：此函数应该只在包初始化时调用一次
+func GetLogWriter() (zapcore.WriteSyncer, error) {
 	logConfig := config.Config.Log
 
 	if logConfig.Output == "file" {
-
 		// 初始化日志目录
 		logPath := logConfig.FilePath
-		if _, err := os.Stat(logPath); os.IsNotExist(err) {
-			// 创建日志目录
-			if err := os.MkdirAll(logPath, 0755); err != nil {
-				log.Fatalf("[Logger] create log file dir err: %v\n", err)
-			}
-		} else if err != nil {
-			log.Fatalf("[Logger] check log file dir err: %v\n", err)
+		logDir := filepath.Dir(logPath)
+		if err := os.MkdirAll(logDir, 0o750); err != nil {
+			return nil, fmt.Errorf("[Logger] create log file dir err: %w", err)
 		}
 
 		// 配置日志轮转
@@ -61,10 +60,10 @@ func GetLogWriter() zapcore.WriteSyncer {
 			Compress:   logConfig.Compress,
 		}
 
-		return zapcore.AddSync(logOutput)
+		return zapcore.AddSync(logOutput), nil
 	}
 
-	return zapcore.AddSync(os.Stdout)
+	return zapcore.AddSync(os.Stdout), nil
 }
 
 // getEncoder 获取日志编码器
