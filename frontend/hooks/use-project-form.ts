@@ -13,7 +13,7 @@ export interface ProjectFormData {
   minimumTrustLevel: TrustLevel;
   allowSameIP: boolean;
   riskLevel: number;
-  distributionType?: DistributionType;
+  distributionType: DistributionType;
 }
 
 export interface UseProjectFormOptions {
@@ -35,6 +35,7 @@ export function useProjectForm(options: UseProjectFormOptions) {
         minimumTrustLevel: project.minimum_trust_level,
         allowSameIP: project.allow_same_ip,
         riskLevel: project.risk_level,
+        distributionType: project.distribution_type,
       };
     }
 
