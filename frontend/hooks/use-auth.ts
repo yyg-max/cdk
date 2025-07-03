@@ -66,7 +66,7 @@ export function useAuth(): UseAuthReturn {
   const checkAuthStatus = useCallback(async () => {
     try {
       if (!isMounted.current) return;
-      
+
       if (!state.isLoading) {
         setState((prev) => ({...prev, isLoading: true, error: null}));
       }
@@ -239,12 +239,12 @@ export function useAuth(): UseAuthReturn {
   // 初始化时检查认证状态
   useEffect(() => {
     isMounted.current = true;
-    
+
     // 使用requestAnimationFrame延迟执行认证检查，避免与布局渲染冲突
     const timer = requestAnimationFrame(() => {
       checkAuthStatus();
     });
-    
+
     return () => {
       isMounted.current = false;
       requestInProgress.current = false;
