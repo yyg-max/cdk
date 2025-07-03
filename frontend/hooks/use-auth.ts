@@ -56,7 +56,6 @@ export function useAuth(): UseAuthReturn {
     error: null,
   });
 
-  const requestInProgress = useRef(false);
   const isMounted = useRef(true);
 
   /**
@@ -71,9 +70,7 @@ export function useAuth(): UseAuthReturn {
         setState((prev) => ({...prev, isLoading: true, error: null}));
       }
 
-      if (requestInProgress.current) {
-        return;
-      }
+
 
       // 使用缓存数据（如果缓存有效）
       const now = Date.now();
@@ -114,8 +111,7 @@ export function useAuth(): UseAuthReturn {
         return;
       }
 
-      // 标记请求开始
-      requestInProgress.current = true;
+
 
       // 创建新请求并缓存Promise
       userInfoCache.promise = services.auth.getUserInfo();
@@ -150,11 +146,9 @@ export function useAuth(): UseAuthReturn {
         }
       } finally {
         // 重置请求状态
-        requestInProgress.current = false;
         userInfoCache.promise = null;
       }
     } catch (error) {
-      requestInProgress.current = false;
       userInfoCache.promise = null;
 
       if (isMounted.current) {
@@ -247,7 +241,6 @@ export function useAuth(): UseAuthReturn {
 
     return () => {
       isMounted.current = false;
-      requestInProgress.current = false;
       cancelAnimationFrame(timer);
     };
   }, [checkAuthStatus]);
