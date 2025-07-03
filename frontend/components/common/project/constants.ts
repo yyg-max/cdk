@@ -44,7 +44,7 @@ export const TRUST_LEVEL_OPTIONS = [
 export const TRUST_LEVEL_CONFIG: Record<number, {name: string; gradient: string}> = {
   0: {name: '新用户', gradient: 'bg-gradient-to-br from-gray-600 to-gray-700'},
   1: {name: '基本用户', gradient: 'bg-gradient-to-br from-emerald-500 to-cyan-500'},
-  2: {name: '用户', gradient: 'bg-gradient-to-br from-blue-600 to-purple-700'},
+  2: {name: '成员', gradient: 'bg-gradient-to-br from-blue-600 to-purple-700'},
   3: {name: '活跃用户', gradient: 'bg-gradient-to-br from-purple-600 to-pink-600'},
   4: {name: '领导者', gradient: 'bg-gradient-to-br from-orange-500 to-pink-500'},
 };
