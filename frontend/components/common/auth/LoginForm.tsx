@@ -33,10 +33,20 @@ export function LoginForm({
     const isLoggedOut = searchParams.get('logout') === 'true';
     if (isLoggedOut) {
       setLogoutMessage('您已成功登出平台');
+      // 使用 pushState 去除 logout 参数
+      const url = new URL(window.location.href);
+      url.searchParams.delete('logout');
+      window.history.pushState({}, '', url.toString());
     } else {
       setLogoutMessage('');
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    if (isAuthenticated && user && !searchParams.get('logout')) {
+      router.push('/explore');
+    }
+  }, [isAuthenticated, user, router, searchParams]);
 
   /**
    * 处理登录按钮点击
