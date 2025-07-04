@@ -33,4 +33,5 @@ const (
 	UnknownError       = "未知异常"
 	SameIPReceived     = "已有相同IP领取"
 	NoStock            = "无库存"
+	NotFound           = "项目不存在"
 )

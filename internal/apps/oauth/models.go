@@ -39,16 +39,18 @@ type OAuthUserInfo struct {
 }
 
 type User struct {
-	ID          uint64     `json:"id" gorm:"primaryKey"`
-	Username    string     `json:"username" gorm:"size:255;unique"`
-	Nickname    string     `json:"nickname" gorm:"size:255"`
-	AvatarUrl   string     `json:"avatar_url" gorm:"size:255"`
-	IsActive    bool       `json:"is_active" gorm:"default:true"`
-	TrustLevel  TrustLevel `json:"trust_level"`
-	Score       int8       `json:"score"`
-	LastLoginAt time.Time  `json:"last_login_at;index"`
-	CreatedAt   time.Time  `json:"created_at" gorm:"autoCreateTime;index"`
-	UpdatedAt   time.Time  `json:"updated_at" gorm:"autoUpdateTime;index"`
+	ID             uint64     `json:"id" gorm:"primaryKey"`
+	Username       string     `json:"username" gorm:"size:255;unique"`
+	Nickname       string     `json:"nickname" gorm:"size:255"`
+	AvatarUrl      string     `json:"avatar_url" gorm:"size:255"`
+	IsActive       bool       `json:"is_active" gorm:"default:true"`
+	TrustLevel     TrustLevel `json:"trust_level"`
+	Score          int8       `json:"score"`
+	ViolationCount uint8      `json:"violation_count" gorm:"default:0"`
+	IsAdmin        bool       `json:"is_admin" gorm:"default:false"`
+	LastLoginAt    time.Time  `json:"last_login_at;index"`
+	CreatedAt      time.Time  `json:"created_at" gorm:"autoCreateTime;index"`
+	UpdatedAt      time.Time  `json:"updated_at" gorm:"autoUpdateTime;index"`
 }
 
 func (u *User) Exact(tx *gorm.DB, id uint64) error {

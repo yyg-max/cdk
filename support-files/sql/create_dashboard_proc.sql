@@ -39,9 +39,11 @@ BEGIN
                            JSON_OBJECT('name', tag, 'value', tag_count)
                    )
             FROM (
-                     SELECT tag, COUNT(*) AS tag_count
-                     FROM project_tags
-                     GROUP BY tag
+                     SELECT pt.tag, COUNT(*) AS tag_count
+                     FROM project_tags pt
+                     INNER JOIN projects p ON pt.project_id = p.id
+                     WHERE p.status = 0
+                     GROUP BY pt.tag
                  ) AS tag_stats
         ) AS projectTags,
         (
@@ -51,6 +53,7 @@ BEGIN
             FROM (
                      SELECT distribution_type, COUNT(*) AS dist_count
                      FROM projects
+                     WHERE status = 0
                      GROUP BY distribution_type
                  ) AS dist_stats
         ) AS distributeModes,
@@ -71,33 +74,34 @@ BEGIN
                         FROM project_tags
                         GROUP BY project_id
                     ) pt ON pt.project_id = p.id
+                    WHERE p.status = 0
                     ORDER BY pi.receive_count DESC
                     LIMIT p_limit_count
                 ) AS hot_stats
         ) AS hotProjects,
         (
             SELECT JSON_ARRAYAGG(
-                           JSON_OBJECT('avatar', avatar_url, 'name', nickname, 'projectCount', project_count)
+                           JSON_OBJECT('avatar', avatar_url, 'nickname', nickname, 'username', username, 'projectCount', project_count)
                    )
             FROM (
-                     SELECT u.avatar_url, u.nickname, COUNT(p.id) AS project_count
+                     SELECT u.avatar_url, u.nickname, u.username, COUNT(p.id) AS project_count
                      FROM projects p
-                              JOIN users u ON u.id = p.creator_id
-                     GROUP BY u.id, u.avatar_url, u.nickname
+                              JOIN users u ON u.id = p.creator_id and p.status = 0
+                     GROUP BY u.id, u.avatar_url, u.username
                      ORDER BY project_count DESC
                      LIMIT p_limit_count
                  ) AS creator_stats
         ) AS activeCreators,
         (
             SELECT JSON_ARRAYAGG(
-                           JSON_OBJECT('avatar', avatar_url, 'name', nickname, 'receiveCount', receive_count)
+                           JSON_OBJECT('avatar', avatar_url, 'nickname', nickname, 'username', username, 'receiveCount', receive_count)
                    )
             FROM (
-                     SELECT u.avatar_url, u.nickname, COUNT(pi.id) AS receive_count
+                     SELECT u.avatar_url, u.nickname, u.username, COUNT(pi.id) AS receive_count
                      FROM project_items pi
                               JOIN users u ON u.id = pi.receiver_id
                      WHERE pi.receiver_id IS NOT NULL
-                     GROUP BY u.id, u.avatar_url, u.nickname
+                     GROUP BY u.id, u.avatar_url, u.username
                      ORDER BY receive_count DESC
                      LIMIT p_limit_count
                  ) AS receiver_stats
@@ -106,7 +110,7 @@ BEGIN
             SELECT JSON_OBJECT(
                            'totalUsers', (SELECT COUNT(*) FROM users),
                            'newUsers', (SELECT COUNT(*) FROM users WHERE created_at >= CURDATE() - INTERVAL days DAY),
-                           'totalProjects', (SELECT COUNT(*) FROM projects),
+                           'totalProjects', (SELECT COUNT(*) FROM projects WHERE status = 0),
                            'totalReceived', (SELECT COUNT(*) FROM project_items WHERE received_at IS NOT NULL),
                            'recentReceived', (SELECT COUNT(*) FROM project_items WHERE received_at >= CURDATE() - INTERVAL days DAY)
                    )

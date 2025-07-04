@@ -14,6 +14,11 @@ app:
   session_http_only: false
   api_prefix: "/api"
 
+# projectApp
+projectApp:
+  hidden_threshold: 5 # project hidden threshold
+  deduction_per_offense: 5 # deduction per offense
+
 # OAuth2
 oauth2:
   client_id: "<OAUTH2_CLIENT_ID>"
