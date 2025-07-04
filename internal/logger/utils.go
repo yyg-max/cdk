@@ -30,6 +30,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/linux-do/cdk/internal/config"
 	"go.opentelemetry.io/otel/trace"
@@ -38,9 +39,22 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
+var (
+	writer  zapcore.WriteSyncer
+	once    sync.Once
+	errOnce error
+)
+
 // GetLogWriter 获取日志输出写入器
-// 注意：此函数应该只在包初始化时调用一次
-func GetLogWriter() (zapcore.WriteSyncer, error) {
+func GetWriter() (zapcore.WriteSyncer, error) {
+	once.Do(func() {
+		writer, errOnce = initWriter()
+	})
+
+	return writer, errOnce
+}
+
+func initWriter() (zapcore.WriteSyncer, error) {
 	logConfig := config.Config.Log
 
 	if logConfig.Output == "file" {
