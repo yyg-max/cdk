@@ -139,3 +139,54 @@ button {
   50% { left: 100%; }
   100% { left: -33%; }
 }
+
+/* Toast 图标着色样式 */
+[data-sonner-toast] [data-icon] {
+  margin-inline-end: 8px;
+}
+
+/* 成功类型 - 绿色图标 */
+[data-sonner-toast][data-type="success"] [data-icon] {
+  color: #10b981;
+}
+
+/* 错误类型 - 红色图标 */
+[data-sonner-toast][data-type="error"] [data-icon] {
+  color: #ef4444;
+}
+
+/* 警告类型 - 黄色图标 */
+[data-sonner-toast][data-type="warning"] [data-icon] {
+  color: #f59e0b;
+}
+
+/* 信息类型 - 蓝色图标 */
+[data-sonner-toast][data-type="info"] [data-icon] {
+  color: #3b82f6;
+}
+
+/* 加载类型 - 灰色图标 */
+[data-sonner-toast][data-type="loading"] [data-icon] {
+  color: #6b7280;
+}
+
+/* 深色模式下的图标颜色调整 */
+.dark [data-sonner-toast][data-type="success"] [data-icon] {
+  color: #34d399;
+}
+
+.dark [data-sonner-toast][data-type="error"] [data-icon] {
+  color: #f87171;
+}
+
+.dark [data-sonner-toast][data-type="warning"] [data-icon] {
+  color: #fbbf24;
+}
+
+.dark [data-sonner-toast][data-type="info"] [data-icon] {
+  color: #60a5fa;
+}
+
+.dark [data-sonner-toast][data-type="loading"] [data-icon] {
+  color: #9ca3af;
+}
