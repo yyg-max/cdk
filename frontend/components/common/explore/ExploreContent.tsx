@@ -358,7 +358,7 @@ export function ExploreContent({data, LoadingSkeleton}: ExploreContentProps) {
         <EmptyState
           icon={Compass}
           title="暂无分发项目"
-          description={(selectedTags || []).length > 0 || searchKeyword ? '未找到符合条件的分发项目' : '请前往 我的项目创建 或 尝试刷新页面'}
+          description={(selectedTags || []).length > 0 || searchKeyword ? '未找到符合条件的分发项目' : '请前往 我的项目 创建或尝试刷新页面'}
           className="p-12 text-center"
         >
           {((selectedTags || []).length > 0 || searchKeyword) && (
