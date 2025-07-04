@@ -46,7 +46,7 @@ var (
 )
 
 // GetLogWriter 获取日志输出写入器
-func GetWriter() (zapcore.WriteSyncer, error) {
+func GetLogWriter() (zapcore.WriteSyncer, error) {
 	once.Do(func() {
 		writer, errOnce = initWriter()
 	})
