@@ -22,4 +22,3 @@ jobs:
           days-before-pr-close: 14
           stale-pr-message: "此 PR 长期无活动，将在 14 天后自动关闭。如需继续讨论请回复"
           close-pr-message: "此 PR 因长期无活动已自动关闭，如有需要请重新开启"
-          if-no-issue-labels: ''
