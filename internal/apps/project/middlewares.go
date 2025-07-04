@@ -35,7 +35,7 @@ func ProjectCreatorPermMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// load project
 		project := &Project{}
-		if err := project.Exact(db.DB(c.Request.Context()), c.Param("id"), ProjectStatusNormal); err != nil {
+		if err := project.Exact(db.DB(c.Request.Context()), c.Param("id"), true); err != nil {
 			c.AbortWithStatusJSON(http.StatusNotFound, ProjectResponse{ErrorMsg: err.Error()})
 			return
 		}
@@ -62,7 +62,7 @@ func ReceiveProjectMiddleware() gin.HandlerFunc {
 		// load project
 		projectID := c.Param("id")
 		project := &Project{}
-		if err := project.Exact(db.DB(ctx), projectID, ProjectStatusNormal); err != nil {
+		if err := project.Exact(db.DB(ctx), projectID, true); err != nil {
 			c.AbortWithStatusJSON(http.StatusNotFound, ProjectResponse{ErrorMsg: err.Error()})
 			return
 		}

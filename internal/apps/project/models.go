@@ -57,11 +57,15 @@ type Project struct {
 	UpdatedAt         time.Time        `json:"updated_at" gorm:"autoUpdateTime"`
 }
 
-func (p *Project) Exact(tx *gorm.DB, id string, status ProjectStatus) error {
-	if err := tx.Preload("Creator").Where("id = ? AND status = ?", id, status).First(p).Error; err != nil {
-		return err
+func (p *Project) Exact(tx *gorm.DB, id string, isNormal bool) error {
+	query := tx.Preload("Creator").
+		Where("id = ?", id)
+	if isNormal {
+		query = query.Where("status = ?", ProjectStatusNormal)
+	} else {
+		query = query.Where("status != ?", ProjectStatusNormal)
 	}
-	return nil
+	return query.First(p).Error
 }
 
 func (p *Project) ItemsKey() string {

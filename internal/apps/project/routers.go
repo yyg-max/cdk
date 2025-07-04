@@ -72,7 +72,7 @@ func GetProject(c *gin.Context) {
 	projectID := c.Param("id")
 
 	var project Project // Project struct is in the same package
-	if err := project.Exact(db.DB(c.Request.Context()), projectID, ProjectStatusNormal); err != nil {
+	if err := project.Exact(db.DB(c.Request.Context()), projectID, true); err != nil {
 		c.JSON(http.StatusNotFound, ProjectResponse{ErrorMsg: err.Error()})
 		return
 	}
@@ -207,7 +207,7 @@ func UpdateProject(c *gin.Context) {
 
 	// load project
 	project := &Project{}
-	if err := project.Exact(db.DB(c.Request.Context()), c.Param("id"), ProjectStatusNormal); err != nil {
+	if err := project.Exact(db.DB(c.Request.Context()), c.Param("id"), true); err != nil {
 		c.JSON(http.StatusNotFound, ProjectResponse{ErrorMsg: err.Error()})
 		return
 	}
@@ -258,7 +258,7 @@ func UpdateProject(c *gin.Context) {
 func DeleteProject(c *gin.Context) {
 	// load project
 	project := &Project{}
-	if err := project.Exact(db.DB(c.Request.Context()), c.Param("id"), ProjectStatusNormal); err != nil {
+	if err := project.Exact(db.DB(c.Request.Context()), c.Param("id"), true); err != nil {
 		c.JSON(http.StatusNotFound, ProjectResponse{ErrorMsg: err.Error()})
 		return
 	}
@@ -319,7 +319,7 @@ func ReceiveProject(c *gin.Context) {
 
 	// load project
 	project := &Project{}
-	if err := project.Exact(db.DB(c.Request.Context()), c.Param("id"), ProjectStatusNormal); err != nil {
+	if err := project.Exact(db.DB(c.Request.Context()), c.Param("id"), true); err != nil {
 		c.JSON(http.StatusNotFound, ProjectResponse{ErrorMsg: err.Error()})
 		return
 	}
