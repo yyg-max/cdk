@@ -7,6 +7,17 @@ import {FlipButton} from '@/components/animate-ui/buttons/flip';
 import {LogOutIcon} from 'lucide-react';
 import {useAuth} from '@/hooks/use-auth';
 import {TrustLevel} from '@/lib/services/core';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 /**
  * 获取信任等级对应的文本描述
@@ -88,15 +99,30 @@ export function NavUser({
   return (
     <SidebarMenu>
       <SidebarMenuItem>
-        <FlipButton
-          frontContent={frontContent}
-          backContent={backContent}
-          from="left"
-          onClick={handleLogout}
-          className="w-full h-[42px]"
-          frontClassName="text-foreground"
-          backClassName="bg-destructive"
-        />
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <FlipButton
+              frontContent={frontContent}
+              backContent={backContent}
+              from="left"
+              className="w-full h-[42px]"
+              frontClassName="text-foreground"
+              backClassName="bg-destructive"
+            />
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>确认登出</AlertDialogTitle>
+              <AlertDialogDescription>
+                您确定要退出登录吗？退出后需要重新登录才能使用。
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>取消</AlertDialogCancel>
+              <AlertDialogAction onClick={handleLogout}>确认退出</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </SidebarMenuItem>
     </SidebarMenu>
   );

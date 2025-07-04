@@ -122,7 +122,7 @@ const ReceiveButton = ({
     <Button
       onClick={onReceive}
       disabled={isReceiving}
-      className="w-full bg-gray-900 hover:bg-gray-800 text-white disabled:bg-gray-100 disabled:text-gray-400 dark:bg-gray-800 dark:text-white dark:disabled:bg-gray-800 dark:disabled:text-gray-400 dark:hover:bg-gray-700"
+      className="w-full"
     >
       <Gift className="w-4 h-4 mr-2" />
       {isReceiving ? '领取中...' : '立即领取'}
