@@ -40,7 +40,7 @@ func ProjectCreatorPermMiddleware() gin.HandlerFunc {
 			return
 		}
 		// check if project is public
-		if project.Status != Normal {
+		if project.Status != ProjectStatusNormal {
 			c.AbortWithStatusJSON(http.StatusNotFound, ProjectResponse{ErrorMsg: NotFound})
 			return
 
@@ -73,7 +73,7 @@ func ReceiveProjectMiddleware() gin.HandlerFunc {
 			return
 		}
 		// check if project is normal
-		if project.Status != Normal {
+		if project.Status != ProjectStatusNormal {
 			c.AbortWithStatusJSON(http.StatusNotFound, ProjectResponse{ErrorMsg: NotFound})
 			return
 

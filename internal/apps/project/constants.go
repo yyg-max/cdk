@@ -31,10 +31,10 @@ const (
 	DistributionTypeInvite
 )
 
-type Status uint8
+type ProjectStatus uint8
 
 const (
-	Normal Status = iota
-	Hidden
-	Violation
+	ProjectStatusNormal ProjectStatus = iota
+	ProjectStatusHidden
+	ProjectStatusViolation
 )

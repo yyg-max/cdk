@@ -60,7 +60,7 @@ func ListProjectsWithTags(ctx context.Context, offset, limit int, tags []string,
 			LEFT JOIN project_tags pt ON p.id = pt.project_id
 			WHERE p.end_time > ? AND p.is_completed = false AND p.status = ? AND p.minimum_trust_level <= ? AND p.risk_level >= ? AND NOT EXISTS ( SELECT 1 FROM project_items pi WHERE pi.project_id = p.id AND pi.receiver_id = ?)`
 
-	var parameters = []interface{}{now, Normal, currentUser.TrustLevel, currentUser.RiskLevel(), currentUser.ID}
+	var parameters = []interface{}{now, ProjectStatusNormal, currentUser.TrustLevel, currentUser.RiskLevel(), currentUser.ID}
 	if len(tags) > 0 {
 		getTotalCountSql += ` AND pt.tag IN (?)`
 		getProjectWithTagsSql += ` AND pt.tag IN (?)`
@@ -111,7 +111,7 @@ func ListMyProjectsWithTags(ctx context.Context, creatorID uint64, offset, limit
 			LEFT JOIN project_tags pt ON p.id = pt.project_id
 			WHERE p.creator_id = ? AND p.status = ?`
 
-	var parameters = []interface{}{creatorID, Normal}
+	var parameters = []interface{}{creatorID, ProjectStatusNormal}
 
 	if len(tags) > 0 {
 		getTotalCountSql += ` AND pt.tag IN (?)`

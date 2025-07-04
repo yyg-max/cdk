@@ -78,7 +78,7 @@ func GetProject(c *gin.Context) {
 	}
 
 	// check if project is normal
-	if project.Status != Normal {
+	if project.Status != ProjectStatusNormal {
 		c.AbortWithStatusJSON(http.StatusNotFound, ProjectResponse{ErrorMsg: NotFound})
 		return
 	}
@@ -489,7 +489,7 @@ func ListTags(c *gin.Context) {
 	err := db.DB(c.Request.Context()).
 		Model(&ProjectTag{}).
 		Joins("INNER JOIN projects ON projects.id = project_tags.project_id").
-		Where("projects.status = ?", Normal).
+		Where("projects.status = ?", ProjectStatusNormal).
 		Distinct("project_tags.tag").
 		Pluck("tag", &tags).Error
 

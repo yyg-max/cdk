@@ -25,28 +25,33 @@
 package config
 
 type configModel struct {
-	App      appConfig      `mapstructure:"app"`
-	OAuth2   OAuth2Config   `mapstructure:"oauth2"`
-	Database databaseConfig `mapstructure:"database"`
-	Redis    redisConfig    `mapstructure:"redis"`
-	Log      logConfig      `mapstructure:"log"`
-	Worker   workerConfig   `mapstructure:"worker"`
+	App        appConfig        `mapstructure:"app"`
+	ProjectApp projectAppConfig `mapstructure:"projectApp"`
+	OAuth2     OAuth2Config     `mapstructure:"oauth2"`
+	Database   databaseConfig   `mapstructure:"database"`
+	Redis      redisConfig      `mapstructure:"redis"`
+	Log        logConfig        `mapstructure:"log"`
+	Worker     workerConfig     `mapstructure:"worker"`
 }
 
 // appConfig 应用基本配置
 type appConfig struct {
-	AppName                    string `mapstructure:"app_name"`
-	Env                        string `mapstructure:"env"`
-	Addr                       string `mapstructure:"addr"`
-	APIPrefix                  string `mapstructure:"api_prefix"`
-	SessionCookieName          string `mapstructure:"session_cookie_name"`
-	SessionSecret              string `mapstructure:"session_secret"`
-	SessionDomain              string `mapstructure:"session_domain"`
-	SessionAge                 int    `mapstructure:"session_age"`
-	SessionHttpOnly            bool   `mapstructure:"session_http_only"`
-	SessionSecure              bool   `mapstructure:"session_secure"`
-	ProjectHiddenThreshold     uint8  `mapstructure:"project_hidden_threshold"`
-	ProjectDeductionPerOffense uint8  `mapstructure:"project_deduction_per_offense"`
+	AppName           string `mapstructure:"app_name"`
+	Env               string `mapstructure:"env"`
+	Addr              string `mapstructure:"addr"`
+	APIPrefix         string `mapstructure:"api_prefix"`
+	SessionCookieName string `mapstructure:"session_cookie_name"`
+	SessionSecret     string `mapstructure:"session_secret"`
+	SessionDomain     string `mapstructure:"session_domain"`
+	SessionAge        int    `mapstructure:"session_age"`
+	SessionHttpOnly   bool   `mapstructure:"session_http_only"`
+	SessionSecure     bool   `mapstructure:"session_secure"`
+}
+
+// projectAppConfig 项目相关配置
+type projectAppConfig struct {
+	HiddenThreshold     uint8 `mapstructure:"hidden_threshold"`
+	DeductionPerOffense uint8 `mapstructure:"deduction_per_offense"`
 }
 
 // OAuth2Config OAuth2认证配置

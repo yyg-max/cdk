@@ -109,7 +109,7 @@ func getUserBadges(ctx context.Context, username string) (*UserBadgeResponse, er
 }
 
 // calculateUserScore 计算用户分数
-func calculateUserScore(badges []Badge, badgeScores map[int]int) int {
+func calculateUserScore(user *User, badges []Badge, badgeScores map[int]int) int {
 	var totalScore int
 	for _, badge := range badges {
 		// 从缓存中查找徽章分数
@@ -117,7 +117,7 @@ func calculateUserScore(badges []Badge, badgeScores map[int]int) int {
 			totalScore += score
 		}
 	}
-	return totalScore
+	return totalScore - int(config.Config.ProjectApp.DeductionPerOffense)*int(user.ViolationCount)
 }
 
 // updateUserScore 更新用户分数
@@ -208,7 +208,7 @@ func HandleUpdateSingleUserBadgeScore(ctx context.Context, t *asynq.Task) error 
 	}
 
 	// 计算用户分数
-	totalScore := calculateUserScore(response.Badges, badgeScores) - int(config.Config.App.ProjectDeductionPerOffense)*int(user.ViolationCount)
+	totalScore := calculateUserScore(&user, response.Badges, badgeScores)
 
 	// 更新用户分数
 	return updateUserScore(ctx, &user, totalScore)

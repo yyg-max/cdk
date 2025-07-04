@@ -53,7 +53,7 @@ BEGIN
             FROM (
                      SELECT distribution_type, COUNT(*) AS dist_count
                      FROM projects
-                     where status = 0
+                     WHERE status = 0
                      GROUP BY distribution_type
                  ) AS dist_stats
         ) AS distributeModes,
@@ -74,7 +74,7 @@ BEGIN
                         FROM project_tags
                         GROUP BY project_id
                     ) pt ON pt.project_id = p.id
-                    where p.status = 0
+                    WHERE p.status = 0
                     ORDER BY pi.receive_count DESC
                     LIMIT p_limit_count
                 ) AS hot_stats
@@ -110,7 +110,7 @@ BEGIN
             SELECT JSON_OBJECT(
                            'totalUsers', (SELECT COUNT(*) FROM users),
                            'newUsers', (SELECT COUNT(*) FROM users WHERE created_at >= CURDATE() - INTERVAL days DAY),
-                           'totalProjects', (SELECT COUNT(*) FROM projects where status = 0),
+                           'totalProjects', (SELECT COUNT(*) FROM projects WHERE status = 0),
                            'totalReceived', (SELECT COUNT(*) FROM project_items WHERE received_at IS NOT NULL),
                            'recentReceived', (SELECT COUNT(*) FROM project_items WHERE received_at >= CURDATE() - INTERVAL days DAY)
                    )
