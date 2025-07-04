@@ -627,7 +627,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "status": {
-                    "$ref": "#/definitions/project.Status"
+                    "$ref": "#/definitions/project.ProjectStatus"
                 },
                 "tags": {
                     "type": "array",
@@ -783,7 +783,7 @@ const docTemplate = `{
                 }
             }
         },
-        "project.Status": {
+        "project.ProjectStatus": {
             "type": "integer",
             "enum": [
                 0,
@@ -791,9 +791,9 @@ const docTemplate = `{
                 2
             ],
             "x-enum-varnames": [
-                "Normal",
-                "Hidden",
-                "Violation"
+                "ProjectStatusNormal",
+                "ProjectStatusHidden",
+                "ProjectStatusViolation"
             ]
         },
         "project.UpdateProjectRequestBody": {

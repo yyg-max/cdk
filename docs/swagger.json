@@ -618,7 +618,7 @@
                     "type": "string"
                 },
                 "status": {
-                    "$ref": "#/definitions/project.Status"
+                    "$ref": "#/definitions/project.ProjectStatus"
                 },
                 "tags": {
                     "type": "array",
@@ -774,7 +774,7 @@
                 }
             }
         },
-        "project.Status": {
+        "project.ProjectStatus": {
             "type": "integer",
             "enum": [
                 0,
@@ -782,9 +782,9 @@
                 2
             ],
             "x-enum-varnames": [
-                "Normal",
-                "Hidden",
-                "Violation"
+                "ProjectStatusNormal",
+                "ProjectStatusHidden",
+                "ProjectStatusViolation"
             ]
         },
         "project.UpdateProjectRequestBody": {
