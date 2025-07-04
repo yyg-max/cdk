@@ -13,11 +13,8 @@ app:
   session_secure: false
   session_http_only: false
   api_prefix: "/api"
-
-# project
-project:
-  update_delete_threshold: 1 # project update and delete threshold
-  hidden_threshold: 5 # project hidden threshold
+  project_hidden_threshold: 5 # project hidden threshold
+  project_deduction_per_offense: 5 # deduction per offense
 
 # OAuth2
 oauth2:

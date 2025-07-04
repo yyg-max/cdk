@@ -30,3 +30,11 @@ const (
 	DistributionTypeOneForEach DistributionType = iota
 	DistributionTypeInvite
 )
+
+type Status uint8
+
+const (
+	Normal Status = iota
+	Hidden
+	Violation
+)

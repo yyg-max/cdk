@@ -77,6 +77,12 @@ func GetProject(c *gin.Context) {
 		return
 	}
 
+	// check if project is normal
+	if project.Status != Normal {
+		c.AbortWithStatusJSON(http.StatusNotFound, ProjectResponse{ErrorMsg: NotFound})
+		return
+	}
+
 	tags, err := project.GetTags(db.DB(c.Request.Context()))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ProjectResponse{ErrorMsg: err.Error()})
@@ -479,7 +485,15 @@ type ListTagsResponse struct {
 // @Router /api/v1/tags [get]
 func ListTags(c *gin.Context) {
 	var tags []string
-	if err := db.DB(c.Request.Context()).Model(&ProjectTag{}).Distinct("tag").Pluck("tag", &tags).Error; err != nil {
+
+	err := db.DB(c.Request.Context()).
+		Model(&ProjectTag{}).
+		Joins("INNER JOIN projects ON projects.id = project_tags.project_id").
+		Where("projects.status = ?", Normal).
+		Distinct("project_tags.tag").
+		Pluck("tag", &tags).Error
+
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, ListTagsResponse{ErrorMsg: err.Error()})
 		return
 	}

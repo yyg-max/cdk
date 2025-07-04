@@ -28,6 +28,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/linux-do/cdk/internal/config"
 	"github.com/linux-do/cdk/internal/task"
 	"github.com/linux-do/cdk/internal/task/schedule"
 	"net/http"
@@ -207,7 +208,7 @@ func HandleUpdateSingleUserBadgeScore(ctx context.Context, t *asynq.Task) error 
 	}
 
 	// 计算用户分数
-	totalScore := calculateUserScore(response.Badges, badgeScores)
+	totalScore := calculateUserScore(response.Badges, badgeScores) - int(config.Config.App.ProjectDeductionPerOffense)*int(user.ViolationCount)
 
 	// 更新用户分数
 	return updateUserScore(ctx, &user, totalScore)

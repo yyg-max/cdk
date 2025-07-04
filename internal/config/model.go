@@ -35,16 +35,18 @@ type configModel struct {
 
 // appConfig 应用基本配置
 type appConfig struct {
-	AppName           string `mapstructure:"app_name"`
-	Env               string `mapstructure:"env"`
-	Addr              string `mapstructure:"addr"`
-	APIPrefix         string `mapstructure:"api_prefix"`
-	SessionCookieName string `mapstructure:"session_cookie_name"`
-	SessionSecret     string `mapstructure:"session_secret"`
-	SessionDomain     string `mapstructure:"session_domain"`
-	SessionAge        int    `mapstructure:"session_age"`
-	SessionHttpOnly   bool   `mapstructure:"session_http_only"`
-	SessionSecure     bool   `mapstructure:"session_secure"`
+	AppName                    string `mapstructure:"app_name"`
+	Env                        string `mapstructure:"env"`
+	Addr                       string `mapstructure:"addr"`
+	APIPrefix                  string `mapstructure:"api_prefix"`
+	SessionCookieName          string `mapstructure:"session_cookie_name"`
+	SessionSecret              string `mapstructure:"session_secret"`
+	SessionDomain              string `mapstructure:"session_domain"`
+	SessionAge                 int    `mapstructure:"session_age"`
+	SessionHttpOnly            bool   `mapstructure:"session_http_only"`
+	SessionSecure              bool   `mapstructure:"session_secure"`
+	ProjectHiddenThreshold     uint8  `mapstructure:"project_hidden_threshold"`
+	ProjectDeductionPerOffense uint8  `mapstructure:"project_deduction_per_offense"`
 }
 
 // OAuth2Config OAuth2认证配置

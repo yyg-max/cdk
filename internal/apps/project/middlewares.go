@@ -39,6 +39,12 @@ func ProjectCreatorPermMiddleware() gin.HandlerFunc {
 			c.AbortWithStatusJSON(http.StatusNotFound, ProjectResponse{ErrorMsg: err.Error()})
 			return
 		}
+		// check if project is public
+		if project.Status != Normal {
+			c.AbortWithStatusJSON(http.StatusNotFound, ProjectResponse{ErrorMsg: NotFound})
+			return
+
+		}
 		// check creator
 		if project.CreatorID != oauth.GetUserIDFromContext(c) {
 			c.AbortWithStatusJSON(http.StatusForbidden, ProjectResponse{ErrorMsg: NoPermission})
@@ -65,6 +71,12 @@ func ReceiveProjectMiddleware() gin.HandlerFunc {
 		if err := project.Exact(db.DB(ctx), projectID); err != nil {
 			c.AbortWithStatusJSON(http.StatusNotFound, ProjectResponse{ErrorMsg: err.Error()})
 			return
+		}
+		// check if project is normal
+		if project.Status != Normal {
+			c.AbortWithStatusJSON(http.StatusNotFound, ProjectResponse{ErrorMsg: NotFound})
+			return
+
 		}
 		// check receivable
 		if err := project.IsReceivable(ctx, user, c.ClientIP()); err != nil {
