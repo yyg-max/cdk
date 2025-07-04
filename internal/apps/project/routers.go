@@ -25,13 +25,16 @@
 package project
 
 import (
+	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/linux-do/cdk/internal/apps/oauth"
+	"github.com/linux-do/cdk/internal/config"
 	"github.com/linux-do/cdk/internal/db"
 	"github.com/linux-do/cdk/internal/utils"
 	"gorm.io/gorm"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -384,6 +387,72 @@ func ReceiveProject(c *gin.Context) {
 	c.JSON(http.StatusOK, ProjectResponse{
 		Data: map[string]interface{}{"itemContent": item.Content},
 	})
+}
+
+type ReportProjectRequestBody struct {
+	Reason string `json:"reason" binding:"required,min=1,max=255"`
+}
+
+// ReportProject
+// @Tags project
+// @Accept json
+// @Produce json
+// @Param id path string true "项目ID"
+// @Param project body ReportProjectRequestBody true "举报信息"
+// @Success 200 {object} ProjectResponse
+// @Router /api/v1/projects/{id}/report [post]
+func ReportProject(c *gin.Context) {
+	// init req
+	var req ReportProjectRequestBody
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, ProjectResponse{ErrorMsg: err.Error()})
+		return
+	}
+
+	// load project
+	project := &Project{}
+	if err := project.Exact(db.DB(c.Request.Context()), c.Param("id"), true); err != nil {
+		c.JSON(http.StatusNotFound, ProjectResponse{ErrorMsg: err.Error()})
+		return
+	}
+
+	// init session
+	userID := oauth.GetUserIDFromContext(c)
+
+	if err := db.DB(c.Request.Context()).Transaction(
+		func(tx *gorm.DB) error {
+			// if report count reaches threshold, mark project as hidden
+			if err := tx.Model(&Project{}).
+				Where("id = ?", project.ID).
+				Updates(map[string]interface{}{
+					"report_count": gorm.Expr("report_count + 1"),
+					"status": gorm.Expr("CASE WHEN report_count + 1 >= ? THEN ? ELSE status END",
+						config.Config.ProjectApp.HiddenThreshold,
+						ProjectStatusHidden,
+					),
+				}).Error; err != nil {
+				return err
+			}
+			// create report record
+			report := &ProjectReport{
+				ProjectID:  project.ID,
+				ReporterID: userID,
+				Reason:     req.Reason,
+			}
+			if err := tx.Create(report).Error; err != nil {
+				if strings.Contains(err.Error(), "Duplicate") {
+					return errors.New(AlreadyReported)
+				}
+				return err
+			}
+			return nil
+		},
+	); err != nil {
+		c.JSON(http.StatusInternalServerError, ProjectResponse{ErrorMsg: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, ProjectResponse{})
 }
 
 type ListReceiveHistoryRequest struct {

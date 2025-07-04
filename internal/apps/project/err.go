@@ -34,4 +34,5 @@ const (
 	SameIPReceived     = "已有相同IP领取"
 	NoStock            = "无库存"
 	NotFound           = "项目不存在"
+	AlreadyReported    = "已举报过当前项目"
 )
