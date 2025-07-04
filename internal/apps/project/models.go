@@ -57,8 +57,8 @@ type Project struct {
 	UpdatedAt         time.Time        `json:"updated_at" gorm:"autoUpdateTime"`
 }
 
-func (p *Project) Exact(tx *gorm.DB, id string) error {
-	if err := tx.Preload("Creator").Where("id = ?", id).First(p).Error; err != nil {
+func (p *Project) Exact(tx *gorm.DB, id string, status ProjectStatus) error {
+	if err := tx.Preload("Creator").Where("id = ? AND status = ?", id, status).First(p).Error; err != nil {
 		return err
 	}
 	return nil
