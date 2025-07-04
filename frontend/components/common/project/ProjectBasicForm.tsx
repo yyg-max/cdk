@@ -115,7 +115,7 @@ export function ProjectBasicForm({
       </div>
 
       <div className="space-y-2">
-        <Label>IP 管控</Label>
+        <Label htmlFor="allowSameIP">IP 管控</Label>
         <div className="flex items-center gap-2">
           <Checkbox
             id="allowSameIP"

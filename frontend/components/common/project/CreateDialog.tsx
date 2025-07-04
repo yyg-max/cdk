@@ -18,6 +18,7 @@ import {BulkImportSection} from '@/components/common/project/BulkImportSection';
 import {DistributionModeSelect} from '@/components/common/project/DistributionModeSelect';
 import {Plus, Copy, ExternalLink, CheckCircle} from 'lucide-react';
 import services from '@/lib/services';
+import {copyToClipboard} from '@/lib/utils';
 import {DistributionType, ProjectListItem} from '@/lib/services/project/types';
 
 interface ProjectInfo {
@@ -191,16 +192,6 @@ export function CreateDialog({
     return `${baseUrl}/receive/${projectId}`;
   };
 
-  const copyLink = async (link: string) => {
-    try {
-      await navigator.clipboard.writeText(link);
-      toast.success('链接已复制到剪贴板');
-    } catch (err) {
-      toast.error('复制失败，请手动复制');
-      console.warn('Clipboard API failed:', err);
-    }
-  };
-
   const openLink = (link: string) => {
     window.open(link, '_blank', 'noopener,noreferrer');
   };
@@ -257,7 +248,14 @@ export function CreateDialog({
                 <Button
                   size="sm"
                   variant="secondary"
-                  onClick={() => copyLink(getReceiveLink(createdProject.id))}
+                  onClick={async () => {
+                    try {
+                      await copyToClipboard(getReceiveLink(createdProject.id));
+                      toast.success('链接已复制到剪贴板');
+                    } catch {
+                      toast.error('复制失败，请手动复制');
+                    }
+                  }}
                 >
                   <Copy className="h-4 w-4" />
                 </Button>

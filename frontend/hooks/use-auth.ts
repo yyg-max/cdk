@@ -106,6 +106,8 @@ export function useAuth(): UseAuthReturn {
               error: error instanceof Error ? error.message : '获取用户信息失败',
             });
           }
+        } finally {
+          userInfoCache.promise = null;
         }
         return;
       }
