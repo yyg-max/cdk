@@ -108,7 +108,7 @@ function TagSelector({
       });
     }
 
-    // 添加创建选项（如果有搜索内容且不在可用标签中）
+    // 添加创建选项
     if (shouldShowCreate && filteredTags.length > 0) {
       items.push({
         type: 'header',
@@ -125,12 +125,12 @@ function TagSelector({
     return items;
   }, [availableTags, selectedTags, searchValue, emptyMessage]);
 
-  // 使用 @tanstack/react-virtual
+  // 虚拟列表 @tanstack/react-virtual
   const virtualizer = useVirtualizer({
     count: listItems.length,
     getScrollElement: () => scrollElementRef.current,
-    estimateSize: () => 32, // 每项高度
-    overscan: 5, // 额外渲染的项目数
+    estimateSize: () => 32,
+    overscan: 5,
   });
 
   // 当 Popover 打开时，重新计算虚拟列表
@@ -162,7 +162,6 @@ function TagSelector({
       return;
     }
 
-    /* 标签长度已在输入时控制（额外检查） */
     if (trimmedTag.length > maxTagLength) {
       const truncatedTag = trimmedTag.slice(0, maxTagLength);
       onTagsChange([...selectedTags, truncatedTag]);
@@ -235,15 +234,12 @@ function TagSelector({
                   WebkitOverflowScrolling: 'touch',
                 }}
                 onWheel={(e) => {
-                  // 阻止事件冒泡到 Popover，允许滚动
                   e.stopPropagation();
                 }}
                 onTouchMove={(e) => {
-                  // 支持触摸滚动
                   e.stopPropagation();
                 }}
                 onScroll={(e) => {
-                  // 阻止滚动事件冒泡
                   e.stopPropagation();
                 }}
               >
@@ -270,10 +266,10 @@ function TagSelector({
                         }}
                       >
                         {item.type === 'empty' && (
-                          <div className="flex flex-col items-center justify-center text-center text-sm px-2 h-full">
+                          <div className="flex flex-col items-center justify-center text-center text-sm px-2 h-full py-8">
                             <p>{item.content}</p>
                             {item.id === 'empty' && (
-                              <p className="text-muted-foreground">输入内容创建新标签</p>
+                              <p className="text-muted-foreground mt-1">输入内容创建新标签</p>
                             )}
                           </div>
                         )}
@@ -286,7 +282,7 @@ function TagSelector({
 
                         {item.type === 'create' && (
                           <div
-                            className="flex items-center gap-2 rounded-sm px-3 text-sm cursor-pointer hover:bg-accent mx-1 h-full"
+                            className="flex items-center gap-2 rounded-sm px-3 text-sm cursor-pointer hover:bg-accent mx-1 h-full mt-2"
                             onClick={() => addTag(item.content)}
                           >
                             <PlusCircle className="h-4 w-4" />
