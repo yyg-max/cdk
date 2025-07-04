@@ -61,7 +61,7 @@ func initWriter() (zapcore.WriteSyncer, error) {
 		// 初始化日志目录
 		logPath := logConfig.FilePath
 		logDir := filepath.Dir(logPath)
-		if err := os.MkdirAll(logDir, 0o750); err != nil {
+		if err := os.MkdirAll(logDir, 0750); err != nil {
 			return nil, fmt.Errorf("[Logger] create log file dir err: %w", err)
 		}
 
