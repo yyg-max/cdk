@@ -162,10 +162,14 @@ definitions:
         type: string
       received_content:
         type: string
+      report_count:
+        type: integer
       risk_level:
         type: integer
       start_time:
         type: string
+      status:
+        $ref: '#/definitions/project.Status'
       tags:
         items:
           type: string
@@ -266,6 +270,16 @@ definitions:
       error_msg:
         type: string
     type: object
+  project.Status:
+    enum:
+    - 0
+    - 1
+    - 2
+    type: integer
+    x-enum-varnames:
+    - Normal
+    - Hidden
+    - Violation
   project.UpdateProjectRequestBody:
     properties:
       allow_same_ip:

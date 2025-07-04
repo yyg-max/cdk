@@ -617,11 +617,17 @@ const docTemplate = `{
                 "received_content": {
                     "type": "string"
                 },
+                "report_count": {
+                    "type": "integer"
+                },
                 "risk_level": {
                     "type": "integer"
                 },
                 "start_time": {
                     "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/project.Status"
                 },
                 "tags": {
                     "type": "array",
@@ -776,6 +782,19 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
+        },
+        "project.Status": {
+            "type": "integer",
+            "enum": [
+                0,
+                1,
+                2
+            ],
+            "x-enum-varnames": [
+                "Normal",
+                "Hidden",
+                "Violation"
+            ]
         },
         "project.UpdateProjectRequestBody": {
             "type": "object",
