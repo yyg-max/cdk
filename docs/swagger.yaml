@@ -280,6 +280,15 @@ definitions:
     - ProjectStatusNormal
     - ProjectStatusHidden
     - ProjectStatusViolation
+  project.ReportProjectRequestBody:
+    properties:
+      reason:
+        maxLength: 255
+        minLength: 1
+        type: string
+    required:
+    - reason
+    type: object
   project.UpdateProjectRequestBody:
     properties:
       allow_same_ip:
@@ -506,6 +515,31 @@ paths:
         name: id
         required: true
         type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/project.ProjectResponse'
+      tags:
+      - project
+  /api/v1/projects/{id}/report:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 项目ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 举报信息
+        in: body
+        name: project
+        required: true
+        schema:
+          $ref: '#/definitions/project.ReportProjectRequestBody'
       produces:
       - application/json
       responses:
