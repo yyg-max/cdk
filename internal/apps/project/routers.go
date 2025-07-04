@@ -34,6 +34,7 @@ import (
 	"github.com/linux-do/cdk/internal/utils"
 	"gorm.io/gorm"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -418,21 +419,6 @@ func ReportProject(c *gin.Context) {
 	// init session
 	userID := oauth.GetUserIDFromContext(c)
 
-	// check if user has already reported this project
-	var existingReport ProjectReport
-	if err := db.DB(c.Request.Context()).
-		Model(&ProjectReport{}).
-		Where("project_id = ? AND reporter_id = ?", project.ID, userID).
-		First(&existingReport).Error; err != nil {
-		if !errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusInternalServerError, ProjectResponse{ErrorMsg: err.Error()})
-			return
-		}
-	} else {
-		c.JSON(http.StatusBadRequest, ProjectResponse{ErrorMsg: AlreadyReported})
-		return
-	}
-
 	if err := db.DB(c.Request.Context()).Transaction(
 		func(tx *gorm.DB) error {
 			// if report count reaches threshold, mark project as hidden
@@ -454,6 +440,9 @@ func ReportProject(c *gin.Context) {
 				Reason:     req.Reason,
 			}
 			if err := tx.Create(report).Error; err != nil {
+				if strings.Contains(err.Error(), "Duplicate") {
+					return errors.New(AlreadyReported)
+				}
 				return err
 			}
 			return nil
