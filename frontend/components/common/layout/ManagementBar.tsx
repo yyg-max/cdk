@@ -34,7 +34,7 @@ export function ManagementBar() {
     {
       title: '需求反馈',
       icon: <MessageCircleIcon className="h-3 w-3" />,
-      href: 'https://rcnocajpmmaw.feishu.cn/share/base/form/shrcnQnuZp9op9LhOAMI3kVBe2e',
+      href: 'https://github.com/linux-do/cdk/issues/new/choose',
     },
     {
       title: '群组交流',

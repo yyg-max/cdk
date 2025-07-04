@@ -35,13 +35,22 @@ function TagSelector({
   const [isOpen, setIsOpen] = React.useState(false);
   const [searchValue, setSearchValue] = React.useState('');
 
-  // 判断是否显示创建选项
+  const handleInputChange = React.useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value.length > maxTagLength) {
+      setSearchValue(value.slice(0, maxTagLength));
+    } else {
+      setSearchValue(value);
+    }
+  }, [maxTagLength]);
+
+  /* 判断是否显示创建选项 */
   const shouldShowCreate = React.useMemo(() => {
     return searchValue && searchValue.trim() &&
       !availableTags.some((tag) => tag.toLowerCase() === searchValue.toLowerCase());
   }, [searchValue, availableTags]);
 
-  // 获取过滤后的可用标签
+  /* 获取过滤后的可用标签 */
   const filteredTags = React.useMemo(() => {
     return availableTags
         .filter((tag) => !selectedTags.includes(tag))
@@ -51,6 +60,11 @@ function TagSelector({
   const addTag = React.useCallback((tag: string) => {
     const trimmedTag = tag.trim();
     if (!trimmedTag) return;
+
+    if (trimmedTag === '无标签') {
+      toast.error('不允许创建名为"无标签"的标签');
+      return;
+    }
 
     if (selectedTags.includes(trimmedTag)) {
       toast.error('该标签已添加');
@@ -62,12 +76,14 @@ function TagSelector({
       return;
     }
 
+    /* 标签长度已在输入时控制（额外检查） */
     if (trimmedTag.length > maxTagLength) {
-      toast.error(`标签长度不能超过${maxTagLength}个字符`);
-      return;
+      const truncatedTag = trimmedTag.slice(0, maxTagLength);
+      onTagsChange([...selectedTags, truncatedTag]);
+    } else {
+      onTagsChange([...selectedTags, trimmedTag]);
     }
 
-    onTagsChange([...selectedTags, trimmedTag]);
     setSearchValue('');
     setIsOpen(false);
   }, [selectedTags, maxTags, maxTagLength, onTagsChange]);
@@ -115,9 +131,10 @@ function TagSelector({
                 <SearchIcon className="h-4 w-4 shrink-0 opacity-50" />
                 <input
                   className="flex-1 bg-transparent border-none outline-none text-sm placeholder:text-muted-foreground"
-                  placeholder="搜索或创建标签..."
+                  placeholder={`搜索或创建标签(16字符以内)`}
                   value={searchValue}
-                  onChange={(e) => setSearchValue(e.target.value)}
+                  onChange={handleInputChange}
+                  maxLength={maxTagLength}
                 />
               </div>
 
