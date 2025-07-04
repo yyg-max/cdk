@@ -25,12 +25,13 @@
 package config
 
 type configModel struct {
-	App      appConfig      `mapstructure:"app"`
-	OAuth2   OAuth2Config   `mapstructure:"oauth2"`
-	Database databaseConfig `mapstructure:"database"`
-	Redis    redisConfig    `mapstructure:"redis"`
-	Log      logConfig      `mapstructure:"log"`
-	Worker   workerConfig   `mapstructure:"worker"`
+	App        appConfig        `mapstructure:"app"`
+	ProjectApp projectAppConfig `mapstructure:"projectApp"`
+	OAuth2     OAuth2Config     `mapstructure:"oauth2"`
+	Database   databaseConfig   `mapstructure:"database"`
+	Redis      redisConfig      `mapstructure:"redis"`
+	Log        logConfig        `mapstructure:"log"`
+	Worker     workerConfig     `mapstructure:"worker"`
 }
 
 // appConfig 应用基本配置
@@ -45,6 +46,12 @@ type appConfig struct {
 	SessionAge        int    `mapstructure:"session_age"`
 	SessionHttpOnly   bool   `mapstructure:"session_http_only"`
 	SessionSecure     bool   `mapstructure:"session_secure"`
+}
+
+// projectAppConfig 项目相关配置
+type projectAppConfig struct {
+	HiddenThreshold     uint8 `mapstructure:"hidden_threshold"`
+	DeductionPerOffense uint8 `mapstructure:"deduction_per_offense"`
 }
 
 // OAuth2Config OAuth2认证配置

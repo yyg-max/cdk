@@ -30,3 +30,11 @@ const (
 	DistributionTypeOneForEach DistributionType = iota
 	DistributionTypeInvite
 )
+
+type ProjectStatus uint8
+
+const (
+	ProjectStatusNormal ProjectStatus = iota
+	ProjectStatusHidden
+	ProjectStatusViolation
+)
