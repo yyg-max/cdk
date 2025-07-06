@@ -132,11 +132,13 @@ func Serve() {
 
 			// Admin
 			adminRouter := apiV1Router.Group("/admin")
-			adminRouter.Use(admin.LoginAdminRequired())
+			adminRouter.Use(oauth.LoginRequired(), admin.LoginAdminRequired())
 			{
 				// Project
 				projectAdminRouter := adminRouter.Group("/projects")
-				projectAdminRouter.GET("/report", admin.ListReportProjects)
+				{
+					projectAdminRouter.GET("/report", admin.GetProjectsList)
+				}
 			}
 		}
 	}

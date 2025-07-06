@@ -25,41 +25,43 @@
 package admin
 
 import (
+	"github.com/linux-do/cdk/internal/apps/project"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-type ListReportProjectsRequest struct {
-	Current int `json:"current" form:"current" binding:"min=1"`
-	Size    int `json:"size" form:"size" binding:"min=1,max=100"`
+type ListProjectsRequest struct {
+	Current int                    `json:"current" form:"current" binding:"min=1"`
+	Size    int                    `json:"size" form:"size" binding:"min=1,max=100"`
+	Status  *project.ProjectStatus `json:"status" form:"status" binding:"omitempty,oneof=0 1 2"`
 }
 
-type ListReportProjectsResponse struct {
-	ErrorMsg string                          `json:"error_msg"`
-	Data     *ListReportProjectsResponseData `json:"data"`
+type ListProjectsResponse struct {
+	ErrorMsg string                    `json:"error_msg"`
+	Data     *ListProjectsResponseData `json:"data"`
 }
 
-// ListReportProjects 获取被举报的项目列表
+// GetProjectsList 获取项目列表
 // @Tags admin
-// @Params request query ListReportProjectsRequest true "request query"
+// @Param request query ListProjectsRequest true "request query"
 // @Produce json
-// @Success 200 {object} ListReportProjectsResponse
+// @Success 200 {object} ListProjectsResponse
 // @Router /api/v1/admin/projects/report [get]
-func ListReportProjects(c *gin.Context) {
-	req := &ListReportProjectsRequest{}
+func GetProjectsList(c *gin.Context) {
+	req := &ListProjectsRequest{}
 	if err := c.ShouldBindQuery(req); err != nil {
-		c.JSON(http.StatusBadRequest, ListReportProjectsResponse{ErrorMsg: err.Error()})
+		c.JSON(http.StatusBadRequest, ListProjectsResponse{ErrorMsg: err.Error()})
 		return
 	}
 	offset := (req.Current - 1) * req.Size
-	pagedData, err := ListReportProjectsWith(c.Request.Context(), offset, req.Size)
+	pagedData, err := QueryProjectsList(c.Request.Context(), offset, req.Size, req.Status)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, ListReportProjectsResponse{ErrorMsg: err.Error()})
+		c.JSON(http.StatusInternalServerError, ListProjectsResponse{ErrorMsg: err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, ListReportProjectsResponse{
+	c.JSON(http.StatusOK, ListProjectsResponse{
 		Data: pagedData,
 	})
 }

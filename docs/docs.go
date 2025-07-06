@@ -23,11 +23,41 @@ const docTemplate = `{
                 "tags": [
                     "admin"
                 ],
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "name": "current",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "name": "size",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            0,
+                            1,
+                            2
+                        ],
+                        "type": "integer",
+                        "x-enum-varnames": [
+                            "ProjectStatusNormal",
+                            "ProjectStatusHidden",
+                            "ProjectStatusViolation"
+                        ],
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/admin.ListReportProjectsResponse"
+                            "$ref": "#/definitions/admin.ListProjectsResponse"
                         }
                     }
                 }
@@ -40,6 +70,14 @@ const docTemplate = `{
                 ],
                 "tags": [
                     "Dashboard"
+                ],
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "request query",
+                        "name": "days",
+                        "in": "query"
+                    }
                 ],
                 "responses": {
                     "200": {
@@ -160,6 +198,30 @@ const docTemplate = `{
                 "tags": [
                     "project"
                 ],
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "name": "current",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "name": "size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "name": "tags",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -208,6 +270,30 @@ const docTemplate = `{
                 "tags": [
                     "project"
                 ],
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "name": "current",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "name": "size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "name": "tags",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -225,6 +311,21 @@ const docTemplate = `{
                 ],
                 "tags": [
                     "project"
+                ],
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "name": "current",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "name": "size",
+                        "in": "query"
+                    }
                 ],
                 "responses": {
                     "200": {
@@ -434,24 +535,24 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "admin.ListReportProjectsResponse": {
+        "admin.ListProjectsResponse": {
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/admin.ListReportProjectsResponseData"
+                    "$ref": "#/definitions/admin.ListProjectsResponseData"
                 },
                 "error_msg": {
                     "type": "string"
                 }
             }
         },
-        "admin.ListReportProjectsResponseData": {
+        "admin.ListProjectsResponseData": {
             "type": "object",
             "properties": {
                 "results": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/admin.ListReportProjectsResponseDataResult"
+                        "$ref": "#/definitions/admin.ListProjectsResponseDataResult"
                     }
                 },
                 "total": {
@@ -459,7 +560,7 @@ const docTemplate = `{
                 }
             }
         },
-        "admin.ListReportProjectsResponseDataResult": {
+        "admin.ListProjectsResponseDataResult": {
             "type": "object",
             "properties": {
                 "description": {

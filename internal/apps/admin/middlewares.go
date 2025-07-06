@@ -27,7 +27,6 @@ package admin
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/linux-do/cdk/internal/apps/oauth"
-	"github.com/linux-do/cdk/internal/db"
 	"github.com/linux-do/cdk/internal/logger"
 	"github.com/linux-do/cdk/internal/otel_trace"
 	"net/http"
@@ -39,26 +38,15 @@ func LoginAdminRequired() gin.HandlerFunc {
 		ctx, span := otel_trace.Start(c.Request.Context(), "LoginAdminRequired")
 		defer span.End()
 
-		// load user
-		userId := oauth.GetUserIDFromContext(c)
-		if userId <= 0 {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error_msg": oauth.UnAuthorized, "data": nil})
-			return
-		}
+		user, _ := oauth.GetUserFromContext(c)
 
-		// load user from db to make sure is active and admin
-		var user oauth.User
-		tx := db.DB(ctx).Where("id = ? AND is_admin = ? AND is_active = ?", userId, true, true).First(&user)
-		if tx.Error != nil {
-			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error_msg": tx.Error.Error(), "data": nil})
+		if !user.IsAdmin {
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error_msg": UserNotFound, "data": nil})
 			return
 		}
 
 		// log
 		logger.InfoF(ctx, "[LoginAdminRequired] %d %s", user.ID, user.Username)
-
-		// set user info
-		oauth.SetUserToContext(c, &user)
 
 		// next
 		c.Next()

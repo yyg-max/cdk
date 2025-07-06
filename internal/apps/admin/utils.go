@@ -31,7 +31,7 @@ import (
 	"github.com/linux-do/cdk/internal/utils"
 )
 
-type ListReportProjectsResponseDataResult struct {
+type ListProjectsResponseDataResult struct {
 	ID          string            `json:"id"`
 	Username    string            `json:"username"`
 	Nickname    string            `json:"nickname"`
@@ -39,24 +39,27 @@ type ListReportProjectsResponseDataResult struct {
 	Tags        utils.StringArray `json:"tags"`
 }
 
-type ListReportProjectsResponseData struct {
-	Total   int64                                   `json:"total"`
-	Results *[]ListReportProjectsResponseDataResult `json:"results"`
+type ListProjectsResponseData struct {
+	Total   int64                             `json:"total"`
+	Results *[]ListProjectsResponseDataResult `json:"results"`
 }
 
-// ListReportProjectsWith 查询举报的项目
-func ListReportProjectsWith(ctx context.Context, offset, limit int) (*ListReportProjectsResponseData, error) {
-	var results []ListReportProjectsResponseDataResult
+// QueryProjectsList 获取项目列表
+func QueryProjectsList(ctx context.Context, offset, limit int, status *project.ProjectStatus) (*ListProjectsResponseData, error) {
+	var results []ListProjectsResponseDataResult
 	query := `
 		SELECT u.username, u.nickname, p.id, p.description, IF(COUNT(pt.tag) = 0, NULL, JSON_ARRAYAGG(pt.tag)) AS tags
 		FROM users u
-		INNER JOIN projects p ON u.id = p.creator_id AND p.status = ?
+		INNER JOIN projects p ON u.id = p.creator_id AND 
+			CASE 
+				WHEN ? THEN p.status != ?
+				ELSE p.status = ?
+			END
 		LEFT JOIN project_tags pt ON p.id = pt.project_id
 		GROUP BY p.id
-		ORDER BY p.report_count DESC
 		LIMIT ? OFFSET ?
 	`
-	if err := db.DB(ctx).Raw(query, project.ProjectStatusHidden, limit, offset).Scan(&results).Error; err != nil {
+	if err := db.DB(ctx).Raw(query, status == nil, project.ProjectStatusNormal, status, limit, offset).Scan(&results).Error; err != nil {
 		return nil, err
 	}
 
@@ -64,13 +67,17 @@ func ListReportProjectsWith(ctx context.Context, offset, limit int) (*ListReport
 	countQuery := `
 		SELECT COUNT(p.id)
 		FROM users u
-		INNER JOIN projects p ON u.id = p.creator_id AND p.status = ?
+		INNER JOIN projects p ON u.id = p.creator_id AND 
+			CASE 
+				WHEN ? THEN p.status != ?
+				ELSE p.status = ?
+			END
 	`
-	if err := db.DB(ctx).Raw(countQuery, project.ProjectStatusHidden).Count(&total).Error; err != nil {
+	if err := db.DB(ctx).Raw(countQuery, status == nil, project.ProjectStatusNormal, status).Count(&total).Error; err != nil {
 		return nil, err
 	}
 
-	return &ListReportProjectsResponseData{
+	return &ListProjectsResponseData{
 		Total:   total,
 		Results: &results,
 	}, nil
