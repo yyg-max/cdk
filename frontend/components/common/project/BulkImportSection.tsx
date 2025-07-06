@@ -109,7 +109,7 @@ export function BulkImportSection({
                 className="text-xs cursor-pointer hover:bg-gray-300"
                 onClick={() => onFileUploadOpenChange(true)}
               >
-                TXT导入
+                文件导入
               </Badge>
               <Badge variant="secondary" className="bg-muted">
                 {isEditMode ? '待添加' : '已添加'}: {items.length}个
@@ -120,7 +120,7 @@ export function BulkImportSection({
 
         <div className="space-y-2">
           <Textarea
-            placeholder={`请输入${placeholderPrefix}分发内容，支持以 逗号分隔（中英文逗号均可）或 每行一个内容 的格式批量导入`}
+            placeholder={`请输入${placeholderPrefix}分发内容，支持以下格式批量导入：\n• JSON 数组格式：[{}, {}, {}]\n• 每行一个内容\n• 逗号分隔（中英文逗号均可）`}
             value={bulkContent}
             onChange={(e) => setBulkContent(e.target.value)}
             className="h-[100px] break-all overflow-x-auto whitespace-pre-wrap"
@@ -199,9 +199,9 @@ export function BulkImportSection({
       <Dialog open={fileUploadOpen} onOpenChange={onFileUploadOpenChange}>
         <DialogContent className={`${isMobile ? 'max-w-[90vw] max-h-[80vh]' : 'max-w-lg'}`}>
           <DialogHeader>
-            <DialogTitle>文件导入分发内容</DialogTitle>
+            <DialogTitle>文件导入</DialogTitle>
             <DialogDescription className="text-xs">
-              支持 .txt 格式• 每行一个邀请码 • 空行自动忽略 • 大小限制：5MB
+              支持 .txt 和 .jsonl 格式 • 每行一个内容 • 空行自动忽略 • 大小限制：5MB
             </DialogDescription>
           </DialogHeader>
 

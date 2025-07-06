@@ -60,11 +60,38 @@ export const getTrustLevelGradient = (trustLevel: number): string => {
 
 /**
  * 解析导入的内容文本 - 通用工具函数
+ * 支持多种格式：
+ * 1. JSON 数组格式：[{}, {}, {}]
+ * 2. 每行一个内容
+ * 3. 逗号分隔格式（向后兼容）
  */
 export const parseImportContent = (content: string): string[] => {
-  let parsed = content.split('\n').filter((item) => item.trim());
+  const trimmedContent = content.trim();
+
+  // 尝试解析为 JSON 数组
+  if (trimmedContent.startsWith('[') && trimmedContent.endsWith(']')) {
+    try {
+      const jsonArray = JSON.parse(trimmedContent);
+      if (Array.isArray(jsonArray)) {
+        return jsonArray
+            .map((item) => {
+              if (typeof item === 'object' && item !== null) {
+                return JSON.stringify(item);
+              }
+              return String(item);
+            })
+            .filter((item) => item.trim())
+            .map((item) => item.substring(0, FORM_LIMITS.CONTENT_ITEM_MAX_LENGTH));
+      }
+    } catch {
+      // JSON 解析失败，继续使用原有逻辑
+    }
+  }
+
+  // 原有逻辑：按行分割，如果只有一行则按逗号分割
+  let parsed = trimmedContent.split('\n').filter((item) => item.trim());
   if (parsed.length === 1) {
-    parsed = content
+    parsed = trimmedContent
         .replace(/，/g, ',')
         .split(',')
         .filter((item) => item.trim());
