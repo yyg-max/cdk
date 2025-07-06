@@ -13,13 +13,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Node.js
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.10.0
+
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20.18.1'
+          node-version: "20"
+          cache: 'pnpm'
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
       - name: Install dependencies
         working-directory: frontend
-        run: npm install
+        run: pnpm install
+
       - name: Run ESLint
         working-directory: frontend
         run: npx eslint . --max-warnings 0
