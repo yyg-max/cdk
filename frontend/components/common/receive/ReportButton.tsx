@@ -42,16 +42,19 @@ export function ReportButton({projectId, user, hasReported = false, variant = 'd
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasReportedLocal, setHasReportedLocal] = useState(hasReported);
 
+  // 计算 trimmed reason，用于多个地方的验证
+  const trimmedReason = reason.trim();
+
   /**
    * 处理举报提交
    */
   const handleSubmit = async () => {
-    if (!reason.trim()) {
+    if (!trimmedReason) {
       toast.error('请填写举报理由');
       return;
     }
 
-    if (reason.trim().length > 255) {
+    if (trimmedReason.length > 255) {
       toast.error('举报理由不能超过255个字符');
       return;
     }
@@ -59,7 +62,7 @@ export function ReportButton({projectId, user, hasReported = false, variant = 'd
     try {
       setIsSubmitting(true);
 
-      const result = await services.project.reportProjectSafe(projectId, reason.trim());
+      const result = await services.project.reportProjectSafe(projectId, trimmedReason);
 
       if (result.success) {
         toast.success('举报提交成功，感谢您的反馈');
@@ -146,7 +149,7 @@ export function ReportButton({projectId, user, hasReported = false, variant = 'd
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={isSubmitting || !reason.trim()}
+            disabled={isSubmitting || !trimmedReason}
           >
             {isSubmitting ? '提交中...' : '提交举报'}
           </Button>
