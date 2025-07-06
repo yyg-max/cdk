@@ -17,6 +17,8 @@ frontend/.next/*
 frontend/next-env.d.ts
 frontend/package-lock.json
 frontend/.env
+frontend/.env.local
+frontend/tsconfig.tsbuildinfo
 
 # os
 .DS_Store
