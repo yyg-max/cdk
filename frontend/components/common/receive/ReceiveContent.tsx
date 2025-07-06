@@ -13,6 +13,7 @@ import {BasicUserInfo} from '@/lib/services/core';
 import {GetProjectResponseData} from '@/lib/services/project';
 import {formatDateTimeWithSeconds, copyToClipboard} from '@/lib/utils';
 import {motion} from 'motion/react';
+import {ReportButton} from './ReportButton';
 
 
 /**
@@ -320,6 +321,7 @@ export function ReceiveContent({data}: ReceiveContentProps) {
           receivedContent={receivedContent}
           onReceive={handleReceive}
         />
+        <ReportButton projectId={projectId} />
       </motion.div>
 
       <motion.div className="pt-6 border-t border-gray-200" variants={itemVariants}>
