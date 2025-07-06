@@ -42,10 +42,10 @@ export function LoginForm({
   }, [searchParams]);
 
   useEffect(() => {
-    if (isAuthenticated && user && !searchParams.get('logout')) {
+    if (isAuthenticated && user && !searchParams.get('logout') && !error) {
       router.push('/explore');
     }
-  }, [isAuthenticated, user, router, searchParams]);
+  }, [isAuthenticated, user, router, searchParams, error]);
 
   /**
    * 处理登录按钮点击
