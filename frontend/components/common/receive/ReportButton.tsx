@@ -28,13 +28,15 @@ interface ReportButtonProps {
   user: BasicUserInfo | null;
   /** 是否已经举报过 */
   hasReported?: boolean;
+  /** 按钮样式变体 */
+  variant?: 'default' | 'text';
 }
 
 /**
  * 举报按钮组件
  * 提供项目举报功能，通过弹窗让用户填写举报理由
  */
-export function ReportButton({projectId, user, hasReported = false}: ReportButtonProps) {
+export function ReportButton({projectId, user, hasReported = false, variant = 'default'}: ReportButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [reason, setReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -97,12 +99,16 @@ export function ReportButton({projectId, user, hasReported = false}: ReportButto
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button
-          variant="outline"
-          size="sm"
+          variant={variant === 'text' ? 'ghost' : 'outline'}
+          size={variant === 'text' ? 'sm' : 'sm'}
           disabled={!user || hasReportedLocal}
-          className="h-8 px-3 text-xs border-muted-foreground/30 text-muted-foreground hover:text-foreground hover:border-muted-foreground"
+          className={
+            variant === 'text' ?
+              'h-auto p-0 text-sm text-muted-foreground hover:text-foreground font-normal justify-start' :
+              'h-8 px-3 text-xs border-muted-foreground/30 text-muted-foreground hover:text-foreground hover:border-muted-foreground'
+          }
         >
-          <Flag className="w-3 h-3 mr-1" />
+          <Flag className={variant === 'text' ? 'w-4 h-4 mr-2' : 'w-3 h-3 mr-1'} />
           {!user ? '请先登录' : hasReportedLocal ? '已举报' : '举报项目'}
         </Button>
       </DialogTrigger>

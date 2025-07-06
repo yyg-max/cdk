@@ -7,7 +7,6 @@ import {Button} from '@/components/ui/button';
 import {Skeleton} from '@/components/ui/skeleton';
 import {ArrowLeftIcon, AlertCircle, RefreshCw} from 'lucide-react';
 import {ReceiveContent} from '@/components/common/receive';
-import {ReportButton} from '@/components/common/receive/ReportButton';
 import {EmptyState} from '@/components/common/layout/EmptyState';
 import services from '@/lib/services';
 import {GetProjectResponseData} from '@/lib/services/project';
@@ -205,19 +204,6 @@ export function ReceiveMain() {
             }}
           />
         </motion.div>
-      )}
-
-      {/* 页面底部举报按钮 */}
-      {!Loading && !error && project && (
-        <div className="fixed bottom-4 left-4 z-50">
-          <div className="bg-background/80 backdrop-blur-sm border border-border rounded-lg p-2 shadow-lg">
-            <ReportButton
-              projectId={projectId || ''}
-              user={user}
-              hasReported={false}
-            />
-          </div>
-        </div>
       )}
     </motion.div>
   );
