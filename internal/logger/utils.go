@@ -40,18 +40,18 @@ import (
 )
 
 var (
-	writer  zapcore.WriteSyncer
-	once    sync.Once
-	errOnce error
+	logWriter         zapcore.WriteSyncer
+	initLogWriterOnce sync.Once
+	initLogWriterErr  error
 )
 
 // GetLogWriter 获取日志输出写入器
 func GetLogWriter() (zapcore.WriteSyncer, error) {
-	once.Do(func() {
-		writer, errOnce = initWriter()
+	initLogWriterOnce.Do(func() {
+		logWriter, initLogWriterErr = initWriter()
 	})
 
-	return writer, errOnce
+	return logWriter, initLogWriterErr
 }
 
 func initWriter() (zapcore.WriteSyncer, error) {
