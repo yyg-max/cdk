@@ -38,6 +38,7 @@ export function ReportButton({projectId, user, hasReported = false}: ReportButto
   const [isOpen, setIsOpen] = useState(false);
   const [reason, setReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasReportedLocal, setHasReportedLocal] = useState(hasReported);
 
   /**
    * 处理举报提交
@@ -60,13 +61,23 @@ export function ReportButton({projectId, user, hasReported = false}: ReportButto
 
       if (result.success) {
         toast.success('举报提交成功，感谢您的反馈');
+        setHasReportedLocal(true);
         setIsOpen(false);
         setReason('');
       } else {
+        // 检查是否是重复举报的错误
+        if (result.error && result.error.includes('已举报过当前项目')) {
+          setHasReportedLocal(true);
+        }
         toast.error(result.error || '举报失败，请稍后重试');
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : '举报失败，请稍后重试');
+      const errorMessage = error instanceof Error ? error.message : '举报失败，请稍后重试';
+      // 检查是否是重复举报的错误
+      if (errorMessage.includes('已举报过当前项目')) {
+        setHasReportedLocal(true);
+      }
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -88,11 +99,11 @@ export function ReportButton({projectId, user, hasReported = false}: ReportButto
         <Button
           variant="outline"
           size="sm"
-          disabled={!user || hasReported}
-          className="w-full mt-2"
+          disabled={!user || hasReportedLocal}
+          className="h-8 px-3 text-xs border-muted-foreground/30 text-muted-foreground hover:text-foreground hover:border-muted-foreground"
         >
-          <Flag className="w-4 h-4 mr-2" />
-          {!user ? '请先登录' : hasReported ? '已举报' : '举报项目'}
+          <Flag className="w-3 h-3 mr-1" />
+          {!user ? '请先登录' : hasReportedLocal ? '已举报' : '举报项目'}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
