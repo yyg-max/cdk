@@ -6,7 +6,7 @@
         "version": "0.1.0"
     },
     "paths": {
-        "/api/v1/admin/projects/report": {
+        "/api/v1/admin/projects": {
             "get": {
                 "produces": [
                     "application/json"

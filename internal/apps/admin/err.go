@@ -25,5 +25,5 @@
 package admin
 
 const (
-	UserNotFound = "未找到用户"
+	AdminRequired = "未经授权访问"
 )

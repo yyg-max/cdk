@@ -41,7 +41,7 @@ func LoginAdminRequired() gin.HandlerFunc {
 		user, _ := oauth.GetUserFromContext(c)
 
 		if !user.IsAdmin {
-			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error_msg": UserNotFound, "data": nil})
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error_msg": AdminRequired, "data": nil})
 			return
 		}
 

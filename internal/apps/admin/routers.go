@@ -47,7 +47,7 @@ type ListProjectsResponse struct {
 // @Param request query ListProjectsRequest true "request query"
 // @Produce json
 // @Success 200 {object} ListProjectsResponse
-// @Router /api/v1/admin/projects/report [get]
+// @Router /api/v1/admin/projects [get]
 func GetProjectsList(c *gin.Context) {
 	req := &ListProjectsRequest{}
 	if err := c.ShouldBindQuery(req); err != nil {
