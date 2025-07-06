@@ -16,6 +16,7 @@ import {Textarea} from '@/components/ui/textarea';
 import {Label} from '@/components/ui/label';
 import {Flag} from 'lucide-react';
 import services from '@/lib/services';
+import {BasicUserInfo} from '@/lib/services/core';
 
 /**
  * 举报按钮组件 Props
@@ -23,6 +24,8 @@ import services from '@/lib/services';
 interface ReportButtonProps {
   /** 项目ID */
   projectId: string;
+  /** 当前用户信息 */
+  user: BasicUserInfo | null;
   /** 是否已经举报过 */
   hasReported?: boolean;
 }
@@ -31,7 +34,7 @@ interface ReportButtonProps {
  * 举报按钮组件
  * 提供项目举报功能，通过弹窗让用户填写举报理由
  */
-export function ReportButton({projectId, hasReported = false}: ReportButtonProps) {
+export function ReportButton({projectId, user, hasReported = false}: ReportButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [reason, setReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -85,11 +88,11 @@ export function ReportButton({projectId, hasReported = false}: ReportButtonProps
         <Button
           variant="outline"
           size="sm"
-          disabled={hasReported}
+          disabled={!user || hasReported}
           className="w-full mt-2"
         >
           <Flag className="w-4 h-4 mr-2" />
-          {hasReported ? '已举报' : '举报项目'}
+          {!user ? '请先登录' : hasReported ? '已举报' : '举报项目'}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">

@@ -321,7 +321,7 @@ export function ReceiveContent({data}: ReceiveContentProps) {
           receivedContent={receivedContent}
           onReceive={handleReceive}
         />
-        <ReportButton projectId={projectId} />
+        <ReportButton projectId={projectId} user={user} />
       </motion.div>
 
       <motion.div className="pt-6 border-t border-gray-200" variants={itemVariants}>
