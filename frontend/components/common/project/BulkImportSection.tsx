@@ -120,7 +120,7 @@ export function BulkImportSection({
 
         <div className="space-y-2">
           <Textarea
-            placeholder={`请输入${placeholderPrefix}分发内容，支持以 逗号分隔（中英文逗号均可）或 每行一个内容 的格式批量导入`}
+            placeholder={`请输入${placeholderPrefix}分发内容，支持以下格式批量导入：\n• JSON 数组格式：[{}, {}, {}]\n• 每行一个内容\n• 逗号分隔（中英文逗号均可）`}
             value={bulkContent}
             onChange={(e) => setBulkContent(e.target.value)}
             className="h-[100px] break-all overflow-x-auto whitespace-pre-wrap"
