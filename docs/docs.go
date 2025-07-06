@@ -63,6 +63,45 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/admin/projects/{id}/review": {
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "项目ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "项目信息",
+                        "name": "project",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/admin.ReviewProjectRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/admin.ReviewProjectResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/dashboard/stats/all": {
             "get": {
                 "produces": [
@@ -579,6 +618,31 @@ const docTemplate = `{
                     }
                 },
                 "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "admin.ReviewProjectRequest": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "enum": [
+                        0,
+                        2
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/project.ProjectStatus"
+                        }
+                    ]
+                }
+            }
+        },
+        "admin.ReviewProjectResponse": {
+            "type": "object",
+            "properties": {
+                "data": {},
+                "error_msg": {
                     "type": "string"
                 }
             }

@@ -30,6 +30,21 @@ definitions:
       username:
         type: string
     type: object
+  admin.ReviewProjectRequest:
+    properties:
+      status:
+        allOf:
+        - $ref: '#/definitions/project.ProjectStatus'
+        enum:
+        - 0
+        - 2
+    type: object
+  admin.ReviewProjectResponse:
+    properties:
+      data: {}
+      error_msg:
+        type: string
+    type: object
   dashboard.DashboardDataResponse:
     properties:
       data: {}
@@ -396,6 +411,31 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/admin.ListProjectsResponse'
+      tags:
+      - admin
+  /api/v1/admin/projects/{id}/review:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: 项目ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 项目信息
+        in: body
+        name: project
+        required: true
+        schema:
+          $ref: '#/definitions/admin.ReviewProjectRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/admin.ReviewProjectResponse'
       tags:
       - admin
   /api/v1/dashboard/stats/all:

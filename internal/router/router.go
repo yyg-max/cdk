@@ -138,6 +138,7 @@ func Serve() {
 				projectAdminRouter := adminRouter.Group("/projects")
 				{
 					projectAdminRouter.GET("", admin.GetProjectsList)
+					projectAdminRouter.PUT("/:id/review", admin.ReviewProject)
 				}
 			}
 		}

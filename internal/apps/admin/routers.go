@@ -26,6 +26,7 @@ package admin
 
 import (
 	"github.com/linux-do/cdk/internal/apps/project"
+	"github.com/linux-do/cdk/internal/db"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -64,4 +65,55 @@ func GetProjectsList(c *gin.Context) {
 	c.JSON(http.StatusOK, ListProjectsResponse{
 		Data: pagedData,
 	})
+}
+
+type ReviewProjectRequest struct {
+	Status project.ProjectStatus `json:"status" binding:"oneof=0 2"`
+}
+
+type ReviewProjectResponse struct {
+	ErrorMsg string      `json:"error_msg"`
+	Data     interface{} `json:"data"`
+}
+
+// ReviewProject 审核项目
+// @Tags admin
+// @Accept json
+// @Produce json
+// @Param id path string true "项目ID"
+// @Param project body ReviewProjectRequest true "项目信息"
+// @Success 200 {object} ReviewProjectResponse
+// @Router /api/v1/admin/projects/{id}/review [put]
+func ReviewProject(c *gin.Context) {
+	var req ReviewProjectRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, ReviewProjectResponse{ErrorMsg: err.Error()})
+		return
+	}
+
+	p := &project.Project{}
+	if err := p.Exact(db.DB(c.Request.Context()), c.Param("id"), false); err != nil {
+		c.JSON(http.StatusNotFound, ReviewProjectResponse{ErrorMsg: err.Error()})
+		return
+	}
+
+	// 根据项目的状态更新项目
+	if req.Status == project.ProjectStatusNormal {
+		if err := db.DB(c.Request.Context()).Model(&project.Project{}).Where("id = ?", p.ID).
+			Updates(map[string]interface{}{
+				"status":       project.ProjectStatusNormal,
+				"report_count": 0,
+			}).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, ReviewProjectResponse{ErrorMsg: err.Error()})
+			return
+		}
+	} else if req.Status == project.ProjectStatusViolation {
+		if err := db.DB(c.Request.Context()).Model(&project.Project{}).Where("id = ?", p.ID).
+			Update("status", project.ProjectStatusViolation).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, ReviewProjectResponse{ErrorMsg: err.Error()})
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, ReviewProjectResponse{})
 }
