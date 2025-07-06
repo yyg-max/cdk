@@ -31,6 +31,7 @@ import (
 	"github.com/gin-contrib/sessions/redis"
 	"github.com/gin-gonic/gin"
 	_ "github.com/linux-do/cdk/docs"
+	"github.com/linux-do/cdk/internal/apps/admin"
 	"github.com/linux-do/cdk/internal/apps/dashboard"
 	"github.com/linux-do/cdk/internal/apps/health"
 	"github.com/linux-do/cdk/internal/apps/oauth"
@@ -127,6 +128,15 @@ func Serve() {
 			dashboardRouter.Use(oauth.LoginRequired())
 			{
 				dashboardRouter.GET("/stats/all", dashboard.GetAllStats)
+			}
+
+			// Admin
+			adminRouter := apiV1Router.Group("/admin")
+			adminRouter.Use(admin.LoginAdminRequired())
+			{
+				// Project
+				projectAdminRouter := adminRouter.Group("/projects")
+				projectAdminRouter.GET("/report", admin.ListReportProjects)
 			}
 		}
 	}

@@ -1,4 +1,35 @@
 definitions:
+  admin.ListReportProjectsResponse:
+    properties:
+      data:
+        $ref: '#/definitions/admin.ListReportProjectsResponseData'
+      error_msg:
+        type: string
+    type: object
+  admin.ListReportProjectsResponseData:
+    properties:
+      results:
+        items:
+          $ref: '#/definitions/admin.ListReportProjectsResponseDataResult'
+        type: array
+      total:
+        type: integer
+    type: object
+  admin.ListReportProjectsResponseDataResult:
+    properties:
+      description:
+        type: string
+      id:
+        type: string
+      nickname:
+        type: string
+      tags:
+        items:
+          type: string
+        type: array
+      username:
+        type: string
+    type: object
   dashboard.DashboardDataResponse:
     properties:
       data: {}
@@ -335,6 +366,17 @@ info:
   title: Linux Do CDK
   version: 0.1.0
 paths:
+  /api/v1/admin/projects/report:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/admin.ListReportProjectsResponse'
+      tags:
+      - admin
   /api/v1/dashboard/stats/all:
     get:
       produces:

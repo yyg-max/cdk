@@ -15,6 +15,24 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/v1/admin/projects/report": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/admin.ListReportProjectsResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/dashboard/stats/all": {
             "get": {
                 "produces": [
@@ -416,6 +434,54 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "admin.ListReportProjectsResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/admin.ListReportProjectsResponseData"
+                },
+                "error_msg": {
+                    "type": "string"
+                }
+            }
+        },
+        "admin.ListReportProjectsResponseData": {
+            "type": "object",
+            "properties": {
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/admin.ListReportProjectsResponseDataResult"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "admin.ListReportProjectsResponseDataResult": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "nickname": {
+                    "type": "string"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
         "dashboard.DashboardDataResponse": {
             "type": "object",
             "properties": {
