@@ -8,6 +8,7 @@ import {Badge} from '@/components/ui/badge';
 import {TRUST_LEVEL_OPTIONS} from '@/components/common/project';
 import {ArrowLeftIcon, Copy, Tag, Gift, Clock, AlertCircle, Package} from 'lucide-react';
 import ContentRender from '@/components/common/markdown/ContentRender';
+import {ReportButton} from '@/components/common/receive/ReportButton';
 import services from '@/lib/services';
 import {BasicUserInfo} from '@/lib/services/core';
 import {GetProjectResponseData} from '@/lib/services/project';
@@ -328,6 +329,18 @@ export function ReceiveContent({data}: ReceiveContentProps) {
           <ContentRender
             content={currentProject.description}
             className="text-gray-700 dark:text-gray-200 leading-relaxed markdown-content"
+          />
+        </div>
+      </motion.div>
+
+      <motion.div variants={itemVariants}>
+        <hr className="border-t border-gray-200 dark:border-gray-700" />
+        <div className="pt-4">
+          <ReportButton
+            projectId={projectId}
+            user={user}
+            hasReported={false}
+            variant="text"
           />
         </div>
       </motion.div>

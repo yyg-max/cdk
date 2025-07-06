@@ -278,3 +278,16 @@ export interface ProjectListData {
  * 项目列表响应类型
  */
 export type ProjectListResponse = BackendResponse<ProjectListData>;
+
+/**
+ * 举报项目请求参数
+ */
+export interface ReportProjectRequest {
+  /** 举报理由 */
+  reason: string;
+}
+
+/**
+ * 举报项目响应类型
+ */
+export type ReportProjectResponse = BackendResponse<null>;
