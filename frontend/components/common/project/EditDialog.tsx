@@ -64,6 +64,11 @@ export function EditDialog({
     setFileUploadOpen,
     handleFileUpload: handleFileUploadBase,
     closeFileUpload,
+    confirmationOpen,
+    setConfirmationOpen,
+    pendingFile,
+    handleConfirmUpload,
+    handleCancelUpload,
   } = useFileUpload();
 
 
@@ -244,6 +249,11 @@ export function EditDialog({
                   isMobile={isMobile}
                   mode="edit"
                   totalExistingItems={project.total_items}
+                  confirmationOpen={confirmationOpen}
+                  onConfirmationOpenChange={setConfirmationOpen}
+                  pendingFile={pendingFile}
+                  onConfirmUpload={handleConfirmUpload}
+                  onCancelUpload={handleCancelUpload}
                 />
               </TabsContent>
             </TabsContents>
