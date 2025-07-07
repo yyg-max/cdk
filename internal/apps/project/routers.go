@@ -72,10 +72,12 @@ type GetProjectResponseData struct {
 // @Success 200 {object} ProjectResponse{data=GetProjectResponseData}
 // @Router /api/v1/projects/{id} [get]
 func GetProject(c *gin.Context) {
-	projectID := c.Param("id")
+	currentUser, _ := oauth.GetUserFromContext(c)
 
 	var project Project // Project struct is in the same package
-	if err := project.Exact(db.DB(c.Request.Context()), projectID, true); err != nil {
+	if err := db.DB(c.Request.Context()).Model(&Project{}).
+		Where("id = ? AND status = ? AND minimum_trust_level <= ? AND risk_level >= ?", c.Param("id"),
+			ProjectStatusNormal, currentUser.TrustLevel, currentUser.RiskLevel()).First(&project).Error; err != nil {
 		c.JSON(http.StatusNotFound, ProjectResponse{ErrorMsg: err.Error()})
 		return
 	}
@@ -218,12 +220,17 @@ func UpdateProject(c *gin.Context) {
 	// init project
 	project.Name = req.Name
 	project.Description = req.Description
-	project.TotalItems += int64(len(req.ProjectItems))
 	project.StartTime = req.StartTime
 	project.EndTime = req.EndTime
 	project.MinimumTrustLevel = req.MinimumTrustLevel
 	project.AllowSameIP = req.AllowSameIP
 	project.RiskLevel = req.RiskLevel
+
+	projectItemsCount := int64(len(req.ProjectItems))
+	if projectItemsCount > 0 {
+		project.TotalItems += projectItemsCount
+		project.IsCompleted = false
+	}
 
 	// save to db
 	if err := db.DB(c.Request.Context()).Transaction(
