@@ -585,7 +585,6 @@ type ListProjectsResponseDataResult struct {
 	RiskLevel         int8              `json:"risk_level"`
 	Tags              utils.StringArray `json:"tags"`
 	CreatedAt         time.Time         `json:"created_at"`
-	HideFromExplore   bool              `json:"hide_from_explore"`
 }
 
 type ListProjectsResponseData struct {
