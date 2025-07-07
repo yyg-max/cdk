@@ -79,7 +79,11 @@ func GetProject(c *gin.Context) {
 	if err := db.DB(c.Request.Context()).Model(&Project{}).
 		Where("id = ? AND status = ? AND minimum_trust_level <= ? AND risk_level >= ?", c.Param("id"),
 			ProjectStatusNormal, currentUser.TrustLevel, currentUser.RiskLevel()).First(&project).Error; err != nil {
-		c.JSON(http.StatusNotFound, ProjectResponse{ErrorMsg: err.Error()})
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, ProjectResponse{ErrorMsg: RequirementsFailed})
+		} else {
+			c.JSON(http.StatusNotFound, ProjectResponse{ErrorMsg: err.Error()})
+		}
 		return
 	}
 
