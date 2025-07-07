@@ -777,6 +777,9 @@
                 "end_time": {
                     "type": "string"
                 },
+                "hide_from_explore": {
+                    "type": "boolean"
+                },
                 "minimum_trust_level": {
                     "enum": [
                         0,
@@ -859,6 +862,9 @@
                 },
                 "end_time": {
                     "type": "string"
+                },
+                "hide_from_explore": {
+                    "type": "boolean"
                 },
                 "id": {
                     "type": "string"
@@ -1087,6 +1093,9 @@
                 },
                 "end_time": {
                     "type": "string"
+                },
+                "hide_from_explore": {
+                    "type": "boolean"
                 },
                 "minimum_trust_level": {
                     "enum": [

@@ -14,6 +14,7 @@ export interface ProjectFormData {
   allowSameIP: boolean;
   riskLevel: number;
   distributionType: DistributionType;
+  hideFromExplore: boolean;
 }
 
 export interface UseProjectFormOptions {
@@ -36,6 +37,7 @@ export function useProjectForm(options: UseProjectFormOptions) {
         allowSameIP: project.allow_same_ip,
         riskLevel: project.risk_level,
         distributionType: project.distribution_type,
+        hideFromExplore: project.hide_from_explore || false,
       };
     }
 
@@ -48,6 +50,7 @@ export function useProjectForm(options: UseProjectFormOptions) {
       allowSameIP: false,
       riskLevel: DEFAULT_FORM_VALUES.RISK_LEVEL,
       distributionType: DistributionType.ONE_FOR_EACH,
+      hideFromExplore: false,
     };
   }, [initialData, mode, project]);
 

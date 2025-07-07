@@ -786,6 +786,9 @@ const docTemplate = `{
                 "end_time": {
                     "type": "string"
                 },
+                "hide_from_explore": {
+                    "type": "boolean"
+                },
                 "minimum_trust_level": {
                     "enum": [
                         0,
@@ -868,6 +871,9 @@ const docTemplate = `{
                 },
                 "end_time": {
                     "type": "string"
+                },
+                "hide_from_explore": {
+                    "type": "boolean"
                 },
                 "id": {
                     "type": "string"
@@ -1096,6 +1102,9 @@ const docTemplate = `{
                 },
                 "end_time": {
                     "type": "string"
+                },
+                "hide_from_explore": {
+                    "type": "boolean"
                 },
                 "minimum_trust_level": {
                     "enum": [

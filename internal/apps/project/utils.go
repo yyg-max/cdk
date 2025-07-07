@@ -50,7 +50,7 @@ func ListProjectsWithTags(ctx context.Context, offset, limit int, tags []string,
 	getTotalCountSql := `SELECT COUNT(DISTINCT p.id) as total
 			FROM projects p
 			LEFT JOIN project_tags pt ON p.id = pt.project_id
-			WHERE p.end_time > ? AND p.is_completed = false AND p.status = ? AND p.minimum_trust_level <= ? AND p.risk_level >= ? AND NOT EXISTS ( SELECT 1 FROM project_items pi WHERE pi.project_id = p.id AND pi.receiver_id = ?)`
+			WHERE p.end_time > ? AND p.is_completed = false AND p.status = ? AND p.minimum_trust_level <= ? AND p.risk_level >= ? AND p.hide_from_explore = false AND NOT EXISTS ( SELECT 1 FROM project_items pi WHERE pi.project_id = p.id AND pi.receiver_id = ?)`
 
 	getProjectWithTagsSql := `SELECT 
     			p.id,p.name,p.description,p.distribution_type,p.total_items,
@@ -58,7 +58,7 @@ func ListProjectsWithTags(ctx context.Context, offset, limit int, tags []string,
 				IF(COUNT(pt.tag) = 0, NULL, JSON_ARRAYAGG(pt.tag)) AS tags
 			FROM projects p
 			LEFT JOIN project_tags pt ON p.id = pt.project_id
-			WHERE p.end_time > ? AND p.is_completed = false AND p.status = ? AND p.minimum_trust_level <= ? AND p.risk_level >= ? AND NOT EXISTS ( SELECT 1 FROM project_items pi WHERE pi.project_id = p.id AND pi.receiver_id = ?)`
+			WHERE p.end_time > ? AND p.is_completed = false AND p.status = ? AND p.minimum_trust_level <= ? AND p.risk_level >= ? AND p.hide_from_explore = false AND NOT EXISTS ( SELECT 1 FROM project_items pi WHERE pi.project_id = p.id AND pi.receiver_id = ?)`
 
 	var parameters = []interface{}{now, ProjectStatusNormal, currentUser.TrustLevel, currentUser.RiskLevel(), currentUser.ID}
 	if len(tags) > 0 {

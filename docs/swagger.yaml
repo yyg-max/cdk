@@ -134,6 +134,8 @@ definitions:
         - 1
       end_time:
         type: string
+      hide_from_explore:
+        type: boolean
       minimum_trust_level:
         allOf:
         - $ref: '#/definitions/oauth.TrustLevel'
@@ -196,6 +198,8 @@ definitions:
         $ref: '#/definitions/project.DistributionType'
       end_time:
         type: string
+      hide_from_explore:
+        type: boolean
       id:
         type: string
       is_completed:
@@ -344,6 +348,8 @@ definitions:
         type: string
       end_time:
         type: string
+      hide_from_explore:
+        type: boolean
       minimum_trust_level:
         allOf:
         - $ref: '#/definitions/oauth.TrustLevel'

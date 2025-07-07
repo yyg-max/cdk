@@ -115,6 +115,21 @@ export function ProjectBasicForm({
       </div>
 
       <div className="space-y-2">
+        <Label htmlFor="hideFromExplore">显示在探索广场</Label>
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="hideFromExplore"
+            checked={!formData.hideFromExplore}
+            onCheckedChange={(checked) => updateField('hideFromExplore', !checked)}
+            className="data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-600 data-[state=checked]:text-white dark:data-[state=checked]:border-blue-700 dark:data-[state=checked]:bg-blue-700"
+          />
+          <p className="text-muted-foreground text-sm">
+            如果开启，项目将显示在探索广场中供其他用户浏览
+          </p>
+        </div>
+      </div>
+
+      <div className="space-y-2">
         <Label htmlFor="allowSameIP">IP 管控</Label>
         <div className="flex items-center gap-2">
           <Checkbox

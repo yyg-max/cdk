@@ -139,6 +139,7 @@ export function CreateDialog({
         allow_same_ip: formData.allowSameIP,
         risk_level: formData.riskLevel,
         distribution_type: formData.distributionType,
+        hide_from_explore: formData.hideFromExplore,
         project_items:
           formData.distributionType === DistributionType.ONE_FOR_EACH ?
             items :
@@ -171,6 +172,7 @@ export function CreateDialog({
         distribution_type: formData.distributionType,
         total_items: items.length,
         created_at: new Date().toISOString(),
+        hide_from_explore: formData.hideFromExplore,
       };
 
       setCreateSuccess(true);
