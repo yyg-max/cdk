@@ -160,6 +160,7 @@ export function useAuth(): UseAuthReturn {
         });
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // 避免循环依赖导致的重复请求
 
   /**
