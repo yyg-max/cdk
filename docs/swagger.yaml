@@ -211,8 +211,6 @@ definitions:
         $ref: '#/definitions/project.DistributionType'
       end_time:
         type: string
-      hide_from_explore:
-        type: boolean
       id:
         type: string
       minimum_trust_level:
