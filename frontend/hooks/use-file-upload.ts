@@ -12,11 +12,11 @@ const isBinaryFile = (content: string): boolean => {
   if (content.includes('\0')) {
     return true;
   }
-  
+
   // 检查非打印字符的比例
   const totalLength = content.length;
   if (totalLength === 0) return false;
-  
+
   let nonPrintableCount = 0;
   for (let i = 0; i < Math.min(totalLength, 1000); i++) {
     const charCode = content.charCodeAt(i);
@@ -25,7 +25,7 @@ const isBinaryFile = (content: string): boolean => {
       nonPrintableCount++;
     }
   }
-  
+
   // 如果非打印字符超过 5%，认为是二进制文件
   return (nonPrintableCount / Math.min(totalLength, 1000)) > 0.05;
 };
@@ -50,7 +50,7 @@ const hasNonUnicodeCharacters = (content: string): boolean => {
   try {
     // 尝试将字符串转换为 UTF-8 并检查是否有替换字符
     const encoded = new TextEncoder().encode(content);
-    const decoded = new TextDecoder('utf-8', { fatal: true }).decode(encoded);
+    const decoded = new TextDecoder('utf-8', {fatal: true}).decode(encoded);
     return decoded !== content;
   } catch {
     // 如果解码失败，说明包含非 Unicode 字符
@@ -69,7 +69,7 @@ const analyzeFileContent = (content: string): {
   const isBinary = isBinaryFile(content);
   const hasNonAscii = hasNonAsciiCharacters(content);
   const hasNonUnicode = hasNonUnicodeCharacters(content);
-  
+
   return {
     isBinary,
     hasNonAscii,
@@ -154,7 +154,7 @@ export function useFileUpload() {
     file: File,
     currentItems: string[],
     allowDuplicates: boolean,
-    onSuccess: (newItems: string[], importedCount: number, skippedInfo?: string) => void
+    onSuccess: (newItems: string[], importedCount: number, skippedInfo?: string) => void,
   ) => {
     const fileName = file.name.toLowerCase();
     let processedContent = content;
@@ -207,7 +207,7 @@ export function useFileUpload() {
         pendingFile.file,
         pendingFile.currentItems,
         pendingFile.allowDuplicates,
-        pendingFile.onSuccess
+        pendingFile.onSuccess,
       );
       setPendingFile(null);
       setConfirmationOpen(false);
@@ -248,7 +248,7 @@ export function useFileUpload() {
       if (content) {
         // 分析文件内容
         const analysis = analyzeFileContent(content);
-        
+
         // 如果是二进制文件或包含非 ASCII/Unicode 字符，显示确认对话框
         if (analysis.isBinary || analysis.hasNonAscii || analysis.hasNonUnicode) {
           setPendingFile({
@@ -273,7 +273,7 @@ export function useFileUpload() {
     };
 
     reader.readAsText(file, 'UTF-8');
-  }, [setFileUploadOpen]);
+  }, [processFileContent]);
 
   const openFileUpload = useCallback(() => {
     setFileUploadOpen(true);
