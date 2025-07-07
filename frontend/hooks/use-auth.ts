@@ -160,7 +160,8 @@ export function useAuth(): UseAuthReturn {
         });
       }
     }
-  }, [state.isLoading]); // 添加state.isLoading作为依赖项，减少不必要的函数重建
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // 避免循环依赖导致的重复请求
 
   /**
    * 执行登录操作

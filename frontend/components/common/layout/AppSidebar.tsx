@@ -70,7 +70,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
                   inViewOnce={false}
                   transition={{duration: 0.5, delay: 0.1, ease: 'easeOut'}}
                 />
-                <span className="text-xs text-muted-foreground">v 0.0.2 - Beta</span>
+                <span className="text-xs text-muted-foreground">v 1.0.0</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
