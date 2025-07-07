@@ -123,6 +123,7 @@ export function EditDialog({
         minimum_trust_level: formData.minimumTrustLevel,
         allow_same_ip: formData.allowSameIP,
         risk_level: formData.riskLevel,
+        hide_from_explore: formData.hideFromExplore,
         project_items: newItems.length > 0 ? newItems : undefined,
       };
 
@@ -146,6 +147,7 @@ export function EditDialog({
         minimum_trust_level: formData.minimumTrustLevel,
         allow_same_ip: formData.allowSameIP,
         risk_level: formData.riskLevel,
+        hide_from_explore: formData.hideFromExplore,
         total_items: project.total_items + newItems.length,
       };
 
