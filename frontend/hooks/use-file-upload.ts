@@ -146,15 +146,15 @@ export function useFileUpload() {
     };
     currentItems: string[];
     allowDuplicates: boolean;
-    onSuccess: (newItems: string[], importedCount: number, skippedInfo?: string) => void;
-  } | null>(null);
+    onSuccess:(newItems: string[], importedCount: number, skippedInfo?: string) => void;
+        } | null>(null);
 
   const processFileContent = useCallback((
-    content: string,
-    file: File,
-    currentItems: string[],
-    allowDuplicates: boolean,
-    onSuccess: (newItems: string[], importedCount: number, skippedInfo?: string) => void,
+      content: string,
+      file: File,
+      currentItems: string[],
+      allowDuplicates: boolean,
+      onSuccess: (newItems: string[], importedCount: number, skippedInfo?: string) => void,
   ) => {
     const fileName = file.name.toLowerCase();
     let processedContent = content;
@@ -203,11 +203,11 @@ export function useFileUpload() {
   const handleConfirmUpload = useCallback(() => {
     if (pendingFile) {
       processFileContent(
-        pendingFile.content,
-        pendingFile.file,
-        pendingFile.currentItems,
-        pendingFile.allowDuplicates,
-        pendingFile.onSuccess,
+          pendingFile.content,
+          pendingFile.file,
+          pendingFile.currentItems,
+          pendingFile.allowDuplicates,
+          pendingFile.onSuccess,
       );
       setPendingFile(null);
       setConfirmationOpen(false);
