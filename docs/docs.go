@@ -611,6 +611,9 @@ const docTemplate = `{
                 "nickname": {
                     "type": "string"
                 },
+                "status": {
+                    "$ref": "#/definitions/project.ProjectStatus"
+                },
                 "tags": {
                     "type": "array",
                     "items": {
@@ -628,6 +631,7 @@ const docTemplate = `{
                 "status": {
                     "enum": [
                         0,
+                        1,
                         2
                     ],
                     "allOf": [

@@ -23,6 +23,8 @@ definitions:
         type: string
       nickname:
         type: string
+      status:
+        $ref: '#/definitions/project.ProjectStatus'
       tags:
         items:
           type: string
@@ -37,6 +39,7 @@ definitions:
         - $ref: '#/definitions/project.ProjectStatus'
         enum:
         - 0
+        - 1
         - 2
     type: object
   admin.ReviewProjectResponse:

@@ -25,8 +25,10 @@
 package admin
 
 import (
+	"github.com/linux-do/cdk/internal/apps/oauth"
 	"github.com/linux-do/cdk/internal/apps/project"
 	"github.com/linux-do/cdk/internal/db"
+	"gorm.io/gorm"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -68,7 +70,7 @@ func GetProjectsList(c *gin.Context) {
 }
 
 type ReviewProjectRequest struct {
-	Status project.ProjectStatus `json:"status" binding:"oneof=0 2"`
+	Status project.ProjectStatus `json:"status" binding:"oneof=0 1 2"`
 }
 
 type ReviewProjectResponse struct {
@@ -107,9 +109,26 @@ func ReviewProject(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, ReviewProjectResponse{ErrorMsg: err.Error()})
 			return
 		}
-	} else if req.Status == project.ProjectStatusViolation {
+	} else if req.Status == project.ProjectStatusHidden {
 		if err := db.DB(c.Request.Context()).Model(&project.Project{}).Where("id = ?", p.ID).
-			Update("status", project.ProjectStatusViolation).Error; err != nil {
+			Update("status", project.ProjectStatusHidden).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, ReviewProjectResponse{ErrorMsg: err.Error()})
+			return
+		}
+	} else if req.Status == project.ProjectStatusViolation {
+		if err := db.DB(c.Request.Context()).Transaction(
+			func(tx *gorm.DB) error {
+				if err := tx.Model(&project.Project{}).Where("id = ?", p.ID).
+					Update("status", project.ProjectStatusViolation).Error; err != nil {
+					return err
+				}
+				if err := tx.Model(&oauth.User{}).Where("id = ?", p.CreatorID).
+					UpdateColumn("violation_count", gorm.Expr("violation_count + 1")).Error; err != nil {
+					return err
+				}
+				return nil
+			},
+		); err != nil {
 			c.JSON(http.StatusInternalServerError, ReviewProjectResponse{ErrorMsg: err.Error()})
 			return
 		}

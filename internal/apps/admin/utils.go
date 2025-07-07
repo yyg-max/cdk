@@ -32,11 +32,12 @@ import (
 )
 
 type ListProjectsResponseDataResult struct {
-	ID          string            `json:"id"`
-	Username    string            `json:"username"`
-	Nickname    string            `json:"nickname"`
-	Description string            `json:"description"`
-	Tags        utils.StringArray `json:"tags"`
+	ID          string                `json:"id"`
+	Username    string                `json:"username"`
+	Nickname    string                `json:"nickname"`
+	Description string                `json:"description"`
+	Status      project.ProjectStatus `json:"status"`
+	Tags        utils.StringArray     `json:"tags"`
 }
 
 type ListProjectsResponseData struct {
@@ -48,7 +49,7 @@ type ListProjectsResponseData struct {
 func QueryProjectsList(ctx context.Context, offset, limit int, status *project.ProjectStatus) (*ListProjectsResponseData, error) {
 	var results []ListProjectsResponseDataResult
 	query := `
-		SELECT u.username, u.nickname, p.id, p.description, IF(COUNT(pt.tag) = 0, NULL, JSON_ARRAYAGG(pt.tag)) AS tags
+		SELECT u.username, u.nickname, p.id, p.description, p.status, IF(COUNT(pt.tag) = 0, NULL, JSON_ARRAYAGG(pt.tag)) AS tags
 		FROM users u
 		INNER JOIN projects p ON u.id = p.creator_id AND 
 			CASE 
