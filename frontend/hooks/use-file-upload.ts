@@ -5,6 +5,79 @@ import {toast} from 'sonner';
 import {handleBulkImportContentWithFilter} from '@/components/common/project';
 
 /**
+ * 检测文件内容是否为二进制文件
+ */
+const isBinaryFile = (content: string): boolean => {
+  // 检查是否包含 null 字符（二进制文件常见特征）
+  if (content.includes('\0')) {
+    return true;
+  }
+  
+  // 检查非打印字符的比例
+  const totalLength = content.length;
+  if (totalLength === 0) return false;
+  
+  let nonPrintableCount = 0;
+  for (let i = 0; i < Math.min(totalLength, 1000); i++) {
+    const charCode = content.charCodeAt(i);
+    // 检查是否为非打印字符（除了换行符、回车符、制表符）
+    if (charCode < 32 && charCode !== 9 && charCode !== 10 && charCode !== 13) {
+      nonPrintableCount++;
+    }
+  }
+  
+  // 如果非打印字符超过 5%，认为是二进制文件
+  return (nonPrintableCount / Math.min(totalLength, 1000)) > 0.05;
+};
+
+/**
+ * 检测文件内容是否包含非 ASCII 字符
+ */
+const hasNonAsciiCharacters = (content: string): boolean => {
+  for (let i = 0; i < content.length; i++) {
+    const charCode = content.charCodeAt(i);
+    if (charCode > 127) {
+      return true;
+    }
+  }
+  return false;
+};
+
+/**
+ * 检测文件内容是否包含非 Unicode 字符
+ */
+const hasNonUnicodeCharacters = (content: string): boolean => {
+  try {
+    // 尝试将字符串转换为 UTF-8 并检查是否有替换字符
+    const encoded = new TextEncoder().encode(content);
+    const decoded = new TextDecoder('utf-8', { fatal: true }).decode(encoded);
+    return decoded !== content;
+  } catch {
+    // 如果解码失败，说明包含非 Unicode 字符
+    return true;
+  }
+};
+
+/**
+ * 检测文件内容特征
+ */
+const analyzeFileContent = (content: string): {
+  isBinary: boolean;
+  hasNonAscii: boolean;
+  hasNonUnicode: boolean;
+} => {
+  const isBinary = isBinaryFile(content);
+  const hasNonAscii = hasNonAsciiCharacters(content);
+  const hasNonUnicode = hasNonUnicodeCharacters(content);
+  
+  return {
+    isBinary,
+    hasNonAscii,
+    hasNonUnicode,
+  };
+};
+
+/**
  * 解析 JSONL 文件内容
  * 支持两种格式：
  * 1. JSON 数组格式：[{}, {}, {}]
@@ -62,6 +135,89 @@ const parseJsonlContent = (content: string): string => {
 
 export function useFileUpload() {
   const [fileUploadOpen, setFileUploadOpen] = useState(false);
+  const [confirmationOpen, setConfirmationOpen] = useState(false);
+  const [pendingFile, setPendingFile] = useState<{
+    file: File;
+    content: string;
+    analysis: {
+      isBinary: boolean;
+      hasNonAscii: boolean;
+      hasNonUnicode: boolean;
+    };
+    currentItems: string[];
+    allowDuplicates: boolean;
+    onSuccess: (newItems: string[], importedCount: number, skippedInfo?: string) => void;
+  } | null>(null);
+
+  const processFileContent = useCallback((
+    content: string,
+    file: File,
+    currentItems: string[],
+    allowDuplicates: boolean,
+    onSuccess: (newItems: string[], importedCount: number, skippedInfo?: string) => void
+  ) => {
+    const fileName = file.name.toLowerCase();
+    let processedContent = content;
+
+    // 根据文件扩展名选择解析方式
+    if (fileName.endsWith('.jsonl')) {
+      // JSONL 文件处理
+      processedContent = parseJsonlContent(content);
+    } else {
+      // TXT 文件处理（保持原有逻辑）
+      const lines = content
+          .split(/\r?\n/)
+          .map((line) => line.trim())
+          .filter((line) => line.length > 0);
+
+      if (lines.length === 0) {
+        toast.error('文件内容为空');
+        return;
+      }
+
+      processedContent = lines.join('\n');
+    }
+
+    if (!processedContent) {
+      toast.error('文件内容为空或格式无效');
+      return;
+    }
+
+    // 执行导入
+    handleBulkImportContentWithFilter(
+        processedContent,
+        currentItems,
+        allowDuplicates,
+        (updatedItems: string[], importedCount: number, skippedInfo?: string) => {
+          onSuccess(updatedItems, importedCount, skippedInfo);
+          const message = `从文件成功导入 ${importedCount} 个内容${skippedInfo || ''}`;
+          toast.success(message);
+          setFileUploadOpen(false);
+        },
+        (errorMessage: string) => {
+          toast.error(errorMessage);
+        },
+    );
+  }, []);
+
+  const handleConfirmUpload = useCallback(() => {
+    if (pendingFile) {
+      processFileContent(
+        pendingFile.content,
+        pendingFile.file,
+        pendingFile.currentItems,
+        pendingFile.allowDuplicates,
+        pendingFile.onSuccess
+      );
+      setPendingFile(null);
+      setConfirmationOpen(false);
+    }
+  }, [pendingFile, processFileContent]);
+
+  const handleCancelUpload = useCallback(() => {
+    setPendingFile(null);
+    setConfirmationOpen(false);
+  }, []);
 
   const handleFileUpload = useCallback((
       files: File[],
@@ -90,47 +246,25 @@ export function useFileUpload() {
     reader.onload = (e) => {
       const content = e.target?.result as string;
       if (content) {
-        let processedContent = content;
-
-        // 根据文件扩展名选择解析方式
-        if (fileName.endsWith('.jsonl')) {
-          // JSONL 文件处理
-          processedContent = parseJsonlContent(content);
-        } else {
-          // TXT 文件处理（保持原有逻辑）
-          const lines = content
-              .split(/\r?\n/)
-              .map((line) => line.trim())
-              .filter((line) => line.length > 0);
-
-          if (lines.length === 0) {
-            toast.error('文件内容为空');
-            return;
-          }
-
-          processedContent = lines.join('\n');
-        }
-
-        if (!processedContent) {
-          toast.error('文件内容为空或格式无效');
+        // 分析文件内容
+        const analysis = analyzeFileContent(content);
+        
+        // 如果是二进制文件或包含非 ASCII/Unicode 字符，显示确认对话框
+        if (analysis.isBinary || analysis.hasNonAscii || analysis.hasNonUnicode) {
+          setPendingFile({
+            file,
+            content,
+            analysis,
+            currentItems,
+            allowDuplicates,
+            onSuccess,
+          });
+          setConfirmationOpen(true);
           return;
         }
 
-        // 执行导入
-        handleBulkImportContentWithFilter(
-            processedContent,
-            currentItems,
-            allowDuplicates,
-            (updatedItems: string[], importedCount: number, skippedInfo?: string) => {
-              onSuccess(updatedItems, importedCount, skippedInfo);
-              const message = `从文件成功导入 ${importedCount} 个内容${skippedInfo || ''}`;
-              toast.success(message);
-              setFileUploadOpen(false);
-            },
-            (errorMessage: string) => {
-              toast.error(errorMessage);
-            },
-        );
+        // 直接处理文件
+        processFileContent(content, file, currentItems, allowDuplicates, onSuccess);
       }
     };
 
@@ -155,5 +289,10 @@ export function useFileUpload() {
     handleFileUpload,
     openFileUpload,
     closeFileUpload,
+    confirmationOpen,
+    setConfirmationOpen,
+    pendingFile,
+    handleConfirmUpload,
+    handleCancelUpload,
   };
 }

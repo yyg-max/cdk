@@ -25,6 +25,23 @@ interface BulkImportSectionProps {
   isMobile: boolean;
   mode?: 'create' | 'edit';
   totalExistingItems?: number;
+  // 新增确认对话框相关props
+  confirmationOpen: boolean;
+  onConfirmationOpenChange: (open: boolean) => void;
+  pendingFile: {
+    file: File;
+    content: string;
+    analysis: {
+      isBinary: boolean;
+      hasNonAscii: boolean;
+      hasNonUnicode: boolean;
+    };
+    currentItems: string[];
+    allowDuplicates: boolean;
+    onSuccess: (newItems: string[], importedCount: number, skippedInfo?: string) => void;
+  } | null;
+  onConfirmUpload: () => void;
+  onCancelUpload: () => void;
 }
 
 export function BulkImportSection({
@@ -43,6 +60,11 @@ export function BulkImportSection({
   isMobile,
   mode = 'create',
   totalExistingItems = 0,
+  confirmationOpen,
+  onConfirmationOpenChange,
+  pendingFile,
+  onConfirmUpload,
+  onCancelUpload,
 }: BulkImportSectionProps) {
   const isEditMode = mode === 'edit';
   const contentLabel = isEditMode ? '追加分发内容' : '导入分发内容';
@@ -214,6 +236,71 @@ export function BulkImportSection({
               className="w-full"
             >
               取消
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 文件内容确认对话框 */}
+      <Dialog open={confirmationOpen} onOpenChange={onConfirmationOpenChange}>
+        <DialogContent className={`${isMobile ? 'max-w-[90vw] max-h-[80vh]' : 'max-w-lg'}`}>
+          <DialogHeader>
+            <DialogTitle>文件内容确认</DialogTitle>
+            <DialogDescription className="text-sm">
+              检测到文件可能包含特殊字符，请确认是否继续导入。
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+              <div className="text-sm font-medium text-amber-900 dark:text-amber-100 mb-2">
+                文件信息
+              </div>
+              <div className="text-xs text-amber-700 dark:text-amber-300 space-y-1">
+                <div>文件名: {pendingFile?.file.name}</div>
+                <div>文件大小: {pendingFile ? (pendingFile.file.size / 1024).toFixed(1) : 0} KB</div>
+              </div>
+            </div>
+
+            {pendingFile && (
+              <div className="space-y-2">
+                {pendingFile.analysis.isBinary && (
+                  <div className="p-2 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded text-xs text-red-700 dark:text-red-300">
+                    ⚠️ 检测到二进制文件特征
+                  </div>
+                )}
+                {pendingFile.analysis.hasNonAscii && (
+                  <div className="p-2 bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded text-xs text-yellow-700 dark:text-yellow-300">
+                    ⚠️ 检测到非 ASCII 字符
+                  </div>
+                )}
+                {pendingFile.analysis.hasNonUnicode && (
+                  <div className="p-2 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded text-xs text-orange-700 dark:text-orange-300">
+                    ⚠️ 检测到非 Unicode 字符
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="text-xs text-muted-foreground">
+              继续导入可能会导致内容显示异常或数据处理错误。
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={onCancelUpload}
+              className="flex-1"
+            >
+              取消
+            </Button>
+            <Button
+              onClick={onConfirmUpload}
+              className="flex-1"
+              variant="default"
+            >
+              确定导入
             </Button>
           </DialogFooter>
         </DialogContent>
