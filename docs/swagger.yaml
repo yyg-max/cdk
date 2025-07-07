@@ -300,6 +300,8 @@ definitions:
       description:
         maxLength: 1024
         type: string
+      enable_filter:
+        type: boolean
       end_time:
         type: string
       hide_from_explore:

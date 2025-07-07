@@ -869,6 +869,9 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 1024
                 },
+                "enable_filter": {
+                    "type": "boolean"
+                },
                 "end_time": {
                     "type": "string"
                 },

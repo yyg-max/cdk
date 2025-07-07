@@ -194,6 +194,7 @@ func CreateProject(c *gin.Context) {
 type UpdateProjectRequestBody struct {
 	ProjectRequest
 	ProjectItems []string `json:"project_items" binding:"dive,min=1,max=1024"`
+	EnableFilter bool     `json:"enable_filter"`
 }
 
 // UpdateProject
@@ -229,15 +230,21 @@ func UpdateProject(c *gin.Context) {
 	project.RiskLevel = req.RiskLevel
 	project.HideFromExplore = req.HideFromExplore
 
-	projectItemsCount := int64(len(req.ProjectItems))
-	if projectItemsCount > 0 {
-		project.TotalItems += projectItemsCount
-		project.IsCompleted = false
-	}
-
 	// save to db
 	if err := db.DB(c.Request.Context()).Transaction(
 		func(tx *gorm.DB) error {
+			// Calculate actual items to be added (considering filter)
+			actualItemsCount, err := project.GetFilteredItemsCount(c.Request.Context(), tx, req.ProjectItems, req.EnableFilter)
+			if err != nil {
+				return err
+			}
+			
+			// Update project counts only if there are new items to add
+			if actualItemsCount > 0 {
+				project.TotalItems += actualItemsCount
+				project.IsCompleted = false
+			}
+			
 			// save project
 			if err := tx.Save(project).Error; err != nil {
 				return err
@@ -246,8 +253,8 @@ func UpdateProject(c *gin.Context) {
 			if err := project.RefreshTags(tx, req.ProjectTags); err != nil {
 				return err
 			}
-			// add items
-			if err := project.CreateItems(c.Request.Context(), tx, req.ProjectItems); err != nil {
+			// add items with filter
+			if err := project.CreateItemsWithFilter(c.Request.Context(), tx, req.ProjectItems, req.EnableFilter); err != nil {
 				return err
 			}
 			return nil
