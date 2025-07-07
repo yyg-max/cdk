@@ -41,6 +41,8 @@ export interface Project {
   created_at: string;
   /** 更新时间 */
   updated_at: string;
+  /** 是否在探索页面隐藏 */
+  hide_from_explore: boolean;
 }
 
 /**
@@ -67,6 +69,8 @@ export interface CreateProjectRequest {
   distribution_type: DistributionType;
   /** 项目物品列表 */
   project_items: string[];
+  /** 是否在探索页面隐藏 */
+  hide_from_explore?: boolean;
 }
 
 /**
@@ -91,6 +95,8 @@ export interface UpdateProjectRequest {
   risk_level?: number;
   /** 追加的项目物品列表 */
   project_items?: string[];
+  /** 是否在探索页面隐藏 */
+  hide_from_explore?: boolean;
 }
 
 /**
@@ -262,6 +268,8 @@ export interface ProjectListItem {
   tags: string[] | null;
   /** 创建时间 */
   created_at: string;
+  /** 是否在探索页面隐藏 */
+  hide_from_explore: boolean;
 }
 
 /**

@@ -52,6 +52,7 @@ type ProjectRequest struct {
 	MinimumTrustLevel oauth.TrustLevel `json:"minimum_trust_level" binding:"oneof=0 1 2 3 4"`
 	AllowSameIP       bool             `json:"allow_same_ip"`
 	RiskLevel         int8             `json:"risk_level" binding:"min=0,max=100"`
+	HideFromExplore   bool             `json:"hide_from_explore"`
 }
 type GetProjectResponseData struct {
 	Project             `json:",inline"` // 内嵌所有 Project 字段
@@ -159,6 +160,7 @@ func CreateProject(c *gin.Context) {
 		RiskLevel:         req.RiskLevel,
 		CreatorID:         userID,
 		IsCompleted:       false,
+		HideFromExplore:   req.HideFromExplore,
 	}
 
 	// create project
@@ -225,6 +227,7 @@ func UpdateProject(c *gin.Context) {
 	project.MinimumTrustLevel = req.MinimumTrustLevel
 	project.AllowSameIP = req.AllowSameIP
 	project.RiskLevel = req.RiskLevel
+	project.HideFromExplore = req.HideFromExplore
 
 	projectItemsCount := int64(len(req.ProjectItems))
 	if projectItemsCount > 0 {

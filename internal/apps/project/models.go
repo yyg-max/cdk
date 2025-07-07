@@ -52,6 +52,7 @@ type Project struct {
 	IsCompleted       bool             `json:"is_completed" gorm:"index:idx_projects_end_completed_trust_risk,priority:2"`
 	Status            ProjectStatus    `json:"status" gorm:"default:0;index;index:idx_projects_end_completed_trust_risk,priority:3"`
 	ReportCount       uint8            `json:"report_count" gorm:"default:0"`
+	HideFromExplore   bool             `json:"hide_from_explore" gorm:"default:false"`
 	Creator           oauth.User       `json:"-" gorm:"foreignKey:CreatorID"`
 	CreatedAt         time.Time        `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt         time.Time        `json:"updated_at" gorm:"autoUpdateTime"`
