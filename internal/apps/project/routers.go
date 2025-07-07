@@ -93,6 +93,12 @@ func GetProject(c *gin.Context) {
 		return
 	}
 
+	var user oauth.User
+	if errUser := user.Exact(db.DB(c.Request.Context()), project.CreatorID); errUser != nil {
+		c.JSON(http.StatusInternalServerError, ProjectResponse{ErrorMsg: errUser.Error()})
+		return
+	}
+
 	// compute claimed items using stock
 	stock, err := project.Stock(c.Request.Context())
 	if err != nil {
@@ -115,8 +121,8 @@ func GetProject(c *gin.Context) {
 
 	responseData := GetProjectResponseData{
 		Project:             project,
-		CreatorUsername:     project.Creator.Username,
-		CreatorNickname:     project.Creator.Nickname,
+		CreatorUsername:     user.Username,
+		CreatorNickname:     user.Nickname,
 		Tags:                tags,
 		AvailableItemsCount: availableItemsCount,
 		IsReceived:          isReceived,
