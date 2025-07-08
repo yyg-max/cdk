@@ -597,6 +597,7 @@ type ListProjectsResponseDataResult struct {
 	MinimumTrustLevel oauth.TrustLevel  `json:"minimum_trust_level"`
 	AllowSameIP       bool              `json:"allow_same_ip"`
 	RiskLevel         int8              `json:"risk_level"`
+	HideFromExplore   bool              `json:"hide_from_explore"`
 	Tags              utils.StringArray `json:"tags"`
 	CreatedAt         time.Time         `json:"created_at"`
 }
