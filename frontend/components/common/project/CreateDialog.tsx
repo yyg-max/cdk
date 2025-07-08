@@ -65,6 +65,11 @@ export function CreateDialog({
     fileUploadOpen,
     setFileUploadOpen,
     handleFileUpload: handleFileUploadBase,
+    confirmationOpen,
+    setConfirmationOpen,
+    pendingFile,
+    handleConfirmUpload,
+    handleCancelUpload,
   } = useFileUpload();
 
 
@@ -324,6 +329,11 @@ export function CreateDialog({
                     onFileUpload={handleFileUpload}
                     isMobile={isMobile}
                     mode="create"
+                    confirmationOpen={confirmationOpen}
+                    onConfirmationOpenChange={setConfirmationOpen}
+                    pendingFile={pendingFile}
+                    onConfirmUpload={handleConfirmUpload}
+                    onCancelUpload={handleCancelUpload}
                   />
                 ) : (
                   <div className="flex items-center justify-center py-12">

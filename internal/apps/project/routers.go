@@ -79,13 +79,23 @@ func GetProject(c *gin.Context) {
 	if err := db.DB(c.Request.Context()).Model(&Project{}).
 		Where("id = ? AND status = ? AND minimum_trust_level <= ? AND risk_level >= ?", c.Param("id"),
 			ProjectStatusNormal, currentUser.TrustLevel, currentUser.RiskLevel()).First(&project).Error; err != nil {
-		c.JSON(http.StatusNotFound, ProjectResponse{ErrorMsg: err.Error()})
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, ProjectResponse{ErrorMsg: RequirementsFailed})
+		} else {
+			c.JSON(http.StatusNotFound, ProjectResponse{ErrorMsg: err.Error()})
+		}
 		return
 	}
 
 	tags, err := project.GetTags(db.DB(c.Request.Context()))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ProjectResponse{ErrorMsg: err.Error()})
+		return
+	}
+
+	var user oauth.User
+	if errUser := user.Exact(db.DB(c.Request.Context()), project.CreatorID); errUser != nil {
+		c.JSON(http.StatusInternalServerError, ProjectResponse{ErrorMsg: errUser.Error()})
 		return
 	}
 
@@ -111,8 +121,8 @@ func GetProject(c *gin.Context) {
 
 	responseData := GetProjectResponseData{
 		Project:             project,
-		CreatorUsername:     project.Creator.Username,
-		CreatorNickname:     project.Creator.Nickname,
+		CreatorUsername:     user.Username,
+		CreatorNickname:     user.Nickname,
 		Tags:                tags,
 		AvailableItemsCount: availableItemsCount,
 		IsReceived:          isReceived,
