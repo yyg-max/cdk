@@ -130,6 +130,7 @@ export function EditDialog({
         risk_level: formData.riskLevel,
         hide_from_explore: formData.hideFromExplore,
         project_items: newItems.length > 0 ? newItems : undefined,
+        enable_filter: !allowDuplicates, // 如果不允许重复，则启用过滤
       };
 
       const result = await services.project.updateProjectSafe(

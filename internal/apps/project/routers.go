@@ -119,10 +119,15 @@ func GetProject(c *gin.Context) {
 		receivedContent = item.Content
 	}
 
+	creatorNickname := user.Nickname
+	if creatorNickname == "" {
+		creatorNickname = user.Username
+	}
+
 	responseData := GetProjectResponseData{
 		Project:             project,
 		CreatorUsername:     user.Username,
-		CreatorNickname:     user.Nickname,
+		CreatorNickname:     creatorNickname,
 		Tags:                tags,
 		AvailableItemsCount: availableItemsCount,
 		IsReceived:          isReceived,
@@ -204,6 +209,7 @@ func CreateProject(c *gin.Context) {
 type UpdateProjectRequestBody struct {
 	ProjectRequest
 	ProjectItems []string `json:"project_items" binding:"dive,min=1,max=1024"`
+	EnableFilter bool     `json:"enable_filter"`
 }
 
 // UpdateProject
@@ -239,15 +245,21 @@ func UpdateProject(c *gin.Context) {
 	project.RiskLevel = req.RiskLevel
 	project.HideFromExplore = req.HideFromExplore
 
-	projectItemsCount := int64(len(req.ProjectItems))
-	if projectItemsCount > 0 {
-		project.TotalItems += projectItemsCount
-		project.IsCompleted = false
-	}
-
 	// save to db
 	if err := db.DB(c.Request.Context()).Transaction(
 		func(tx *gorm.DB) error {
+			// Calculate actual items to be added (considering filter)
+			actualItemsCount, err := project.GetFilteredItemsCount(c.Request.Context(), tx, req.ProjectItems, req.EnableFilter)
+			if err != nil {
+				return err
+			}
+			
+			// Update project counts only if there are new items to add
+			if actualItemsCount > 0 {
+				project.TotalItems += actualItemsCount
+				project.IsCompleted = false
+			}
+			
 			// save project
 			if err := tx.Save(project).Error; err != nil {
 				return err
@@ -256,8 +268,8 @@ func UpdateProject(c *gin.Context) {
 			if err := project.RefreshTags(tx, req.ProjectTags); err != nil {
 				return err
 			}
-			// add items
-			if err := project.CreateItems(c.Request.Context(), tx, req.ProjectItems); err != nil {
+			// add items with filter
+			if err := project.CreateItemsWithFilter(c.Request.Context(), tx, req.ProjectItems, req.EnableFilter); err != nil {
 				return err
 			}
 			return nil
@@ -538,11 +550,15 @@ func ListReceiveHistory(c *gin.Context) {
 	// response
 	results := make([]ListReceiveHistoryResponseDataResult, len(items))
 	for i, item := range items {
+		creatorNickname := item.Project.Creator.Nickname
+		if creatorNickname == "" {
+			creatorNickname = item.Project.Creator.Username
+		}
 		results[i] = ListReceiveHistoryResponseDataResult{
 			ProjectID:              item.ProjectID,
 			ProjectName:            item.Project.Name,
 			ProjectCreator:         item.Project.Creator.Username,
-			ProjectCreatorNickname: item.Project.Creator.Nickname,
+			ProjectCreatorNickname: creatorNickname,
 			Content:                item.Content,
 			ReceivedAt:             item.ReceivedAt,
 		}
@@ -600,6 +616,7 @@ type ListProjectsResponseDataResult struct {
 	MinimumTrustLevel oauth.TrustLevel  `json:"minimum_trust_level"`
 	AllowSameIP       bool              `json:"allow_same_ip"`
 	RiskLevel         int8              `json:"risk_level"`
+	HideFromExplore   bool              `json:"hide_from_explore"`
 	Tags              utils.StringArray `json:"tags"`
 	CreatedAt         time.Time         `json:"created_at"`
 }
