@@ -119,10 +119,15 @@ func GetProject(c *gin.Context) {
 		receivedContent = item.Content
 	}
 
+	creatorNickname := user.Nickname
+	if creatorNickname == "" {
+		creatorNickname = user.Username
+	}
+
 	responseData := GetProjectResponseData{
 		Project:             project,
 		CreatorUsername:     user.Username,
-		CreatorNickname:     user.Nickname,
+		CreatorNickname:     creatorNickname,
 		Tags:                tags,
 		AvailableItemsCount: availableItemsCount,
 		IsReceived:          isReceived,
@@ -545,11 +550,15 @@ func ListReceiveHistory(c *gin.Context) {
 	// response
 	results := make([]ListReceiveHistoryResponseDataResult, len(items))
 	for i, item := range items {
+		creatorNickname := item.Project.Creator.Nickname
+		if creatorNickname == "" {
+			creatorNickname = item.Project.Creator.Username
+		}
 		results[i] = ListReceiveHistoryResponseDataResult{
 			ProjectID:              item.ProjectID,
 			ProjectName:            item.Project.Name,
 			ProjectCreator:         item.Project.Creator.Username,
-			ProjectCreatorNickname: item.Project.Creator.Nickname,
+			ProjectCreatorNickname: creatorNickname,
 			Content:                item.Content,
 			ReceivedAt:             item.ReceivedAt,
 		}
