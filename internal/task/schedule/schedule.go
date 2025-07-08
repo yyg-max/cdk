@@ -26,6 +26,7 @@ package schedule
 
 import (
 	"fmt"
+	"github.com/linux-do/cdk/internal/config"
 	"github.com/linux-do/cdk/internal/task"
 	"sync"
 	"time"
@@ -59,11 +60,11 @@ func StartScheduler() error {
 			},
 		)
 
-		if _, err = scheduler.Register("0 2 * * *", asynq.NewTask(task.UpdateUserBadgeScoresTask, nil)); err != nil {
+		if _, err = scheduler.Register(config.Config.Schedule.UpdateUserBadgeScoresTaskCron, asynq.NewTask(task.UpdateUserBadgeScoresTask, nil)); err != nil {
 			return
 		}
 
-		if _, err = scheduler.Register("0 1 * * *", asynq.NewTask(task.UpdateAllBadgesTask, nil)); err != nil {
+		if _, err = scheduler.Register(config.Config.Schedule.UpdateAllBadgesTaskCron, asynq.NewTask(task.UpdateAllBadgesTask, nil)); err != nil {
 			return
 		}
 
