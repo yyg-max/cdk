@@ -99,27 +99,27 @@ func ReviewProject(c *gin.Context) {
 		return
 	}
 
+	updates := map[string]interface{}{
+		"status": req.Status,
+	}
+
 	// 根据项目的状态更新项目
-	if req.Status == project.ProjectStatusNormal {
-		if err := db.DB(c.Request.Context()).Model(&project.Project{}).Where("id = ?", p.ID).
-			Updates(map[string]interface{}{
-				"status":       project.ProjectStatusNormal,
-				"report_count": 0,
-			}).Error; err != nil {
+	switch req.Status {
+	case project.ProjectStatusNormal:
+		updates["report_count"] = 0
+		if err := db.DB(c.Request.Context()).Model(p).Updates(updates).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, ReviewProjectResponse{ErrorMsg: err.Error()})
 			return
 		}
-	} else if req.Status == project.ProjectStatusHidden {
-		if err := db.DB(c.Request.Context()).Model(&project.Project{}).Where("id = ?", p.ID).
-			Update("status", project.ProjectStatusHidden).Error; err != nil {
+	case project.ProjectStatusHidden:
+		if err := db.DB(c.Request.Context()).Model(p).Updates(updates).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, ReviewProjectResponse{ErrorMsg: err.Error()})
 			return
 		}
-	} else if req.Status == project.ProjectStatusViolation {
+	case project.ProjectStatusViolation:
 		if err := db.DB(c.Request.Context()).Transaction(
 			func(tx *gorm.DB) error {
-				if err := tx.Model(&project.Project{}).Where("id = ?", p.ID).
-					Update("status", project.ProjectStatusViolation).Error; err != nil {
+				if err := tx.Model(p).Updates(updates).Error; err != nil {
 					return err
 				}
 				if err := tx.Model(&oauth.User{}).Where("id = ?", p.CreatorID).
