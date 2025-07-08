@@ -108,7 +108,7 @@ export function ReportButton({projectId, user, hasReported = false, variant = 'd
           className={
             variant === 'text' ?
               'h-auto p-0 text-sm text-muted-foreground hover:text-foreground font-normal justify-start' :
-              'h-8 px-3 text-xs border-muted-foreground/30 text-muted-foreground hover:text-foreground hover:border-muted-foreground'
+              'h-9 px-3 text-xs border-muted-foreground/30 text-muted-foreground hover:text-foreground hover:border-muted-foreground'
           }
         >
           <Flag className={variant === 'text' ? 'w-4 h-4 mr-2' : 'w-3 h-3 mr-1'} />
