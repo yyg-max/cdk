@@ -64,6 +64,11 @@ log:
   max_backups: 10
   compress: true
 
+# Schedule
+schedule:
+  updateUserBadgeScoresTaskCron: "0 2 * * *"
+  updateAllBadgesTaskCron: "0 1 * * *"
+
 # Worker
 worker:
   concurrency: 50
