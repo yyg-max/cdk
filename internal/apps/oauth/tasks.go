@@ -160,13 +160,13 @@ func HandleUpdateUserBadgeScores(ctx context.Context, t *asynq.Task) error {
 		}
 
 		for _, user := range users {
-			currentDelay += 10 * time.Second
+			currentDelay += 5 * time.Second
 
 			payload, _ := json.Marshal(map[string]interface{}{
 				"user_id": user.ID,
 			})
 
-			if _, errTask := schedule.AsynqClient.Enqueue(asynq.NewTask(task.UpdateSingleUserBadgeScoreTask, payload), asynq.ProcessIn(currentDelay)); errTask != nil {
+			if _, errTask := schedule.AsynqClient.Enqueue(asynq.NewTask(task.UpdateSingleUserBadgeScoreTask, payload), asynq.ProcessIn(currentDelay), asynq.MaxRetry(3)); errTask != nil {
 				logger.ErrorF(ctx, "下发用户[%s]徽章分数计算任务失败: %v", user.Username, errTask)
 				return errTask
 			} else {
