@@ -31,6 +31,7 @@ type configModel struct {
 	Database   databaseConfig   `mapstructure:"database"`
 	Redis      redisConfig      `mapstructure:"redis"`
 	Log        logConfig        `mapstructure:"log"`
+	Schedule   scheduleConfig   `mapstructure:"schedule"`
 	Worker     workerConfig     `mapstructure:"worker"`
 }
 
@@ -101,6 +102,12 @@ type logConfig struct {
 	MaxAge     int    `mapstructure:"max_age"`
 	MaxBackups int    `mapstructure:"max_backups"`
 	Compress   bool   `mapstructure:"compress"`
+}
+
+// scheduleConfig 定时任务配置
+type scheduleConfig struct {
+	UpdateUserBadgeScoresTaskCron string `mapstructure:"updateUserBadgeScoresTaskCron"`
+	UpdateAllBadgesTaskCron       string `mapstructure:"updateAllBadgesTaskCron"`
 }
 
 // workerConfig 工作配置

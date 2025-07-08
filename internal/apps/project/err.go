@@ -35,4 +35,5 @@ const (
 	NoStock            = "无库存"
 	NotFound           = "项目不存在"
 	AlreadyReported    = "已举报过当前项目"
+	RequirementsFailed = "未达到项目发起者设置的条件"
 )
