@@ -129,6 +129,76 @@ func (p *Project) CreateItems(ctx context.Context, tx *gorm.DB, items []string) 
 	return nil
 }
 
+func (p *Project) CreateItemsWithFilter(ctx context.Context, tx *gorm.DB, items []string, enableFilter bool) error {
+	// skip create
+	if len(items) <= 0 {
+		return nil
+	}
+	
+	filteredItems := items
+	if enableFilter {
+		// Get existing items for this project
+		var existingItems []string
+		if err := tx.Model(&ProjectItem{}).
+			Where("project_id = ?", p.ID).
+			Pluck("content", &existingItems).Error; err != nil {
+			return err
+		}
+		
+		// Create a set of existing items for O(1) lookup
+		existingSet := make(map[string]bool)
+		for _, item := range existingItems {
+			existingSet[item] = true
+		}
+		
+		// Filter out duplicates
+		filteredItems = make([]string, 0, len(items))
+		for _, item := range items {
+			if !existingSet[item] {
+				filteredItems = append(filteredItems, item)
+			}
+		}
+	}
+	
+	// Use the original CreateItems method with filtered items
+	return p.CreateItems(ctx, tx, filteredItems)
+}
+
+func (p *Project) GetFilteredItemsCount(ctx context.Context, tx *gorm.DB, items []string, enableFilter bool) (int64, error) {
+	// skip create
+	if len(items) <= 0 {
+		return 0, nil
+	}
+	
+	if !enableFilter {
+		return int64(len(items)), nil
+	}
+	
+	// Get existing items for this project
+	var existingItems []string
+	if err := tx.Model(&ProjectItem{}).
+		Where("project_id = ?", p.ID).
+		Pluck("content", &existingItems).Error; err != nil {
+		return 0, err
+	}
+	
+	// Create a set of existing items for O(1) lookup
+	existingSet := make(map[string]bool)
+	for _, item := range existingItems {
+		existingSet[item] = true
+	}
+	
+	// Count unique items
+	uniqueCount := int64(0)
+	for _, item := range items {
+		if !existingSet[item] {
+			uniqueCount++
+		}
+	}
+	
+	return uniqueCount, nil
+}
+
 func (p *Project) PrepareReceive(ctx context.Context) (uint64, error) {
 	val, err := db.Redis.LPop(ctx, p.ItemsKey()).Result()
 	if errors.Is(err, redis.Nil) {

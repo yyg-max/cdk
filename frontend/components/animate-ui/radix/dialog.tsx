@@ -105,7 +105,7 @@ function DialogContent({
   className,
   children,
   from = 'top',
-  transition = {type: 'spring', stiffness: 150, damping: 25},
+  transition = {type: 'spring', stiffness: 200, damping: 30},
   ...props
 }: DialogContentProps) {
   const {isOpen} = useDialog();
@@ -122,10 +122,10 @@ function DialogContent({
           <DialogOverlay asChild forceMount>
             <motion.div
               key="dialog-overlay"
-              initial={{opacity: 0, filter: 'blur(4px)'}}
-              animate={{opacity: 1, filter: 'blur(0px)'}}
-              exit={{opacity: 0, filter: 'blur(4px)'}}
-              transition={{duration: 0.2, ease: 'easeInOut'}}
+              initial={{opacity: 0}}
+              animate={{opacity: 1}}
+              exit={{opacity: 0}}
+              transition={{duration: 0.15, ease: 'easeOut'}}
             />
           </DialogOverlay>
           <DialogPrimitive.Content asChild forceMount {...props}>
@@ -134,20 +134,20 @@ function DialogContent({
               data-slot="dialog-content"
               initial={{
                 opacity: 0,
-                filter: 'blur(4px)',
-                transform: `perspective(500px) ${rotateAxis}(${initialRotation}) scale(0.8)`,
+                scale: 0.95,
+                transform: `perspective(500px) ${rotateAxis}(${initialRotation})`,
               }}
               animate={{
                 opacity: 1,
-                filter: 'blur(0px)',
-                transform: `perspective(500px) ${rotateAxis}(0deg) scale(1)`,
+                scale: 1,
+                transform: `perspective(500px) ${rotateAxis}(0deg)`,
               }}
               exit={{
                 opacity: 0,
-                filter: 'blur(4px)',
-                transform: `perspective(500px) ${rotateAxis}(${initialRotation}) scale(0.8)`,
+                scale: 0.95,
+                transform: `perspective(500px) ${rotateAxis}(${initialRotation})`,
               }}
-              transition={transition}
+              transition={{...transition, duration: 0.15, ease: 'easeOut'}}
               className={cn(
                   'fixed left-[50%] top-[50%] z-50 grid w-[calc(100%-2rem)] max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg rounded-xl',
                   className,
