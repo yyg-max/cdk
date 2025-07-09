@@ -94,10 +94,10 @@ export class ProjectService extends BaseService {
    */
   static async receiveProject(projectId: string, captchaToken: string): Promise<ReceiveProjectData> {
     const response = await apiClient.post<ReceiveProjectResponse>(
-      `${this.basePath}/${projectId}/receive`,
-      {
-        captcha_token: captchaToken,
-      }
+        `${this.basePath}/${projectId}/receive`,
+        {
+          captcha_token: captchaToken,
+        },
     );
     if (response.data.error_msg) {
       throw new Error(response.data.error_msg);

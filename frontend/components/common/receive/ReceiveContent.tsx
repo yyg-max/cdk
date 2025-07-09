@@ -184,12 +184,12 @@ export function ReceiveContent({data}: ReceiveContentProps) {
    */
   const handleReceive = () => {
     if (!projectId || hasReceived || isVerifying) return;
-    
+
     // 检查项目时间
     if (!isProjectAvailable()) {
       const startTime = new Date(currentProject.start_time);
       const endTime = new Date(currentProject.end_time);
-      
+
       if (currentTime < startTime) {
         toast.error('项目尚未开始，请等待开始时间');
       } else if (currentTime > endTime) {
@@ -211,7 +211,7 @@ export function ReceiveContent({data}: ReceiveContentProps) {
 
     if (result.success) {
       const content = result.data?.itemContent || '领取成功，但未获取到兑换内容';
-      
+
       setCurrentProject((prev) => ({
         ...prev,
         available_items_count: prev.available_items_count - 1,
