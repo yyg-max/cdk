@@ -86,8 +86,10 @@ func Serve() {
 
 	apiGroup := r.Group(config.Config.App.APIPrefix)
 	{
-		// Swagger
-		apiGroup.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+		if config.Config.App.Env == "development" {
+			// Swagger
+			apiGroup.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+		}
 
 		// API V1
 		apiV1Router := apiGroup.Group("/v1")
