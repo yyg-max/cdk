@@ -50,7 +50,7 @@ export function useProjectForm(options: UseProjectFormOptions) {
       allowSameIP: false,
       riskLevel: DEFAULT_FORM_VALUES.RISK_LEVEL,
       distributionType: DistributionType.ONE_FOR_EACH,
-      hideFromExplore: false,
+      hideFromExplore: true,
     };
   }, [initialData, mode, project]);
 
