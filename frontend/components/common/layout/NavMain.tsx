@@ -50,7 +50,7 @@ export function NavMain({
             return (
               <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton
-                  tooltip={item.title} 
+                  tooltip={item.title}
                   asChild
                   isActive={isActive}
                 >
