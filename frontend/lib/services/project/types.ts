@@ -97,6 +97,8 @@ export interface UpdateProjectRequest {
   project_items?: string[];
   /** 是否在探索页面隐藏 */
   hide_from_explore?: boolean;
+  /** 是否启用过滤（去重） */
+  enable_filter?: boolean;
 }
 
 /**

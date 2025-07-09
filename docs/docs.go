@@ -966,6 +966,9 @@ const docTemplate = `{
                 "end_time": {
                     "type": "string"
                 },
+                "hide_from_explore": {
+                    "type": "boolean"
+                },
                 "id": {
                     "type": "string"
                 },
@@ -1103,6 +1106,9 @@ const docTemplate = `{
                 "description": {
                     "type": "string",
                     "maxLength": 1024
+                },
+                "enable_filter": {
+                    "type": "boolean"
                 },
                 "end_time": {
                     "type": "string"
