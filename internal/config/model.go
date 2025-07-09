@@ -106,7 +106,7 @@ type logConfig struct {
 
 // scheduleConfig 定时任务配置
 type scheduleConfig struct {
-	UpdateUserBadgeScoresTaskCronInterval int    `mapstructure:"update_user_badges_scores_task_interval"`
+	UserBadgeScoreDispatchIntervalSeconds int    `mapstructure:"user_badge_score_dispatch_interval_seconds "`
 	UpdateUserBadgeScoresTaskCron         string `mapstructure:"update_user_badges_scores_task_cron"`
 	UpdateAllBadgesTaskCron               string `mapstructure:"update_all_badges_task_cron"`
 }
