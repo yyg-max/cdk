@@ -332,9 +332,9 @@ export function DataTable({data}: DataTableProps) {
                   </TableCell>
                   <TableCell className="text-xs text-gray-600 dark:text-gray-400">
                     <Link
-                        href={`https://linux.do/u/${item.project_creator}/summary`}
-                        target='_blank'
-                        rel='noopener noreferrer'
+                      href={`https://linux.do/u/${item.project_creator}/summary`}
+                      target='_blank'
+                      rel='noopener noreferrer'
                     >
                       {item.project_creator_nickname || item.project_creator}
                     </Link>

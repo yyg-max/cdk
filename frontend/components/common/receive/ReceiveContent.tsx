@@ -348,9 +348,9 @@ export function ReceiveContent({data}: ReceiveContentProps) {
           <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">发布人</div>
           <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
             <Link
-                href={`https://linux.do/u/${currentProject.creator_username}/summary`}
-                target='_blank'
-                rel='noopener noreferrer'
+              href={`https://linux.do/u/${currentProject.creator_username}/summary`}
+              target='_blank'
+              rel='noopener noreferrer'
             >
               {currentProject.creator_nickname || currentProject.creator_username}
             </Link>
