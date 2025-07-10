@@ -133,10 +133,10 @@ function TabsContent({
         data-slot="tabs-content"
         className={cn('flex-1 outline-none', className)}
         layout
-        initial={{opacity: 0, y: -10, filter: 'blur(4px)'}}
-        animate={{opacity: 1, y: 0, filter: 'blur(0px)'}}
-        exit={{opacity: 0, y: 10, filter: 'blur(4px)'}}
-        transition={transition}
+        initial={{opacity: 0, y: -10}}
+        animate={{opacity: 1, y: 0}}
+        exit={{opacity: 0, y: 10}}
+        transition={{...transition, duration: 0.1}}
         {...props}
       >
         {children}
@@ -154,7 +154,7 @@ type TabsContentsProps = HTMLMotionProps<'div'> & {
 function TabsContents({
   children,
   className,
-  transition = {type: 'spring', stiffness: 200, damping: 25},
+  transition = {type: 'spring', stiffness: 300, damping: 30},
   ...props
 }: TabsContentsProps) {
   const containerRef = React.useRef<HTMLDivElement | null>(null);
