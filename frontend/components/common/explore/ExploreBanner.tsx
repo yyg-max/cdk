@@ -76,7 +76,7 @@ export function ExploreBanner({
           </div>
 
           <div className="absolute -top-4 -right-4 bg-white/15 backdrop-blur-sm rounded-lg px-3 py-2 flex flex-col items-center">
-            <div className="text-blue-200 text-xs mt-1">剩余</div>
+            <div className="text-blue-200 text-xs mt-1">总量</div>
             <div className="text-3xl font-bold leading-none text-center">{project.total_items}</div>
           </div>
 
