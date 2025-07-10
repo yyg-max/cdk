@@ -73,7 +73,8 @@ export interface UserActivityData {
  */
 export interface ActiveCreatorData {
   avatar: string | null;
-  name: string;
+  nickname: string;
+  username: string;
   projectCount: number;
 }
 
@@ -82,7 +83,8 @@ export interface ActiveCreatorData {
  */
 export interface ActiveReceiverData {
   avatar: string | null;
-  name: string;
+  nickname: string;
+  username: string;
   receiveCount: number;
 }
 
