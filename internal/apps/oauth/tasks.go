@@ -143,10 +143,14 @@ func HandleUpdateUserBadgeScores(ctx context.Context, t *asynq.Task) error {
 	pageSize := 200
 	page := 0
 	currentDelay := 0 * time.Second
+	// 计算一周前日期
+	now := time.Now()
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	oneWeekAgo := today.AddDate(0, 0, -6)
 
 	for {
 		var users []User
-		if err := db.DB(ctx).Where("is_active = ?", true).
+		if err := db.DB(ctx).Where("last_login_at >= ? AND is_active = ?", oneWeekAgo, true).
 			Select("id, username").
 			Offset(page * pageSize).Limit(pageSize).
 			Find(&users).Error; err != nil {
