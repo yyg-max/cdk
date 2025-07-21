@@ -108,6 +108,7 @@ definitions:
     - 2
     - 3
     - 4
+    format: int32
     type: integer
     x-enum-varnames:
     - TrustLevelNewUser
@@ -177,6 +178,7 @@ definitions:
     enum:
     - 0
     - 1
+    format: int32
     type: integer
     x-enum-varnames:
     - DistributionTypeOneForEach
@@ -330,6 +332,7 @@ definitions:
     - 0
     - 1
     - 2
+    format: int32
     type: integer
     x-enum-varnames:
     - ProjectStatusNormal
@@ -410,6 +413,7 @@ paths:
         - 0
         - 1
         - 2
+        format: int32
         in: query
         name: status
         type: integer
