@@ -1,7 +1,6 @@
 'use client';
 
-import React, {useState, useEffect, useRef} from 'react';
-import Link from 'next/link';
+import {useState, useEffect, useRef} from 'react';
 import {useRouter} from 'next/navigation';
 import {toast} from 'sonner';
 import {Button} from '@/components/ui/button';
@@ -346,15 +345,7 @@ export function ReceiveContent({data}: ReceiveContentProps) {
       <motion.div className="grid grid-cols-2 md:grid-cols-4 gap-3" variants={itemVariants}>
         <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
           <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">发布人</div>
-          <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-            <Link
-              href={`https://linux.do/u/${currentProject.creator_username}/summary`}
-              target='_blank'
-              rel='noopener noreferrer'
-            >
-              {currentProject.creator_nickname || currentProject.creator_username}
-            </Link>
-          </div>
+          <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">{currentProject.creator_nickname || currentProject.creator_username}</div>
         </div>
         <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
           <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">最低风控等级</div>

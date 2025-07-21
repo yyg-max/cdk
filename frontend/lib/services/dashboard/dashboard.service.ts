@@ -9,9 +9,7 @@ import {
   ActivityData,
   ProjectTagsData,
   DistributeModeData,
-  RawActiveCreatorData,
   ActiveCreatorData,
-  RawActiveReceiverData,
   ActiveReceiverData,
   StatsSummary,
 } from './types';
@@ -97,8 +95,8 @@ export class DashboardService extends BaseService {
     const projectTags = parseJsonField<ProjectTagsData[]>(rawData.projectTags, []);
     const distributeModes = parseJsonField<DistributeModeData[]>(rawData.distributeModes, []);
     const hotProjects = parseJsonField<HotProjectData[]>(rawData.hotProjects, []);
-    const activeCreators = parseJsonField<RawActiveCreatorData[]>(rawData.activeCreators, []);
-    const activeReceivers = parseJsonField<RawActiveReceiverData[]>(rawData.activeReceivers, []);
+    const activeCreators = parseJsonField<ActiveCreatorData[]>(rawData.activeCreators, []);
+    const activeReceivers = parseJsonField<ActiveReceiverData[]>(rawData.activeReceivers, []);
     const summary = parseJsonField<StatsSummary>(rawData.summary, {
       totalUsers: 0,
       newUsers: 0,
@@ -114,28 +112,14 @@ export class DashboardService extends BaseService {
       receiveCount: project.receiveCount,
     }));
 
-    // 处理活跃创建者数据，转换nickname或username为name
-    const normalizedActiveCreators: ActiveCreatorData[] = activeCreators.map((activeCreator) => ({
-      avatar: activeCreator.avatar,
-      name: activeCreator.nickname || activeCreator.username,
-      projectCount: activeCreator.projectCount,
-    }));
-
-    // 处理活跃领取者数据，转换nickname或username为name
-    const normalizedActiveReceivers: ActiveReceiverData[] = activeReceivers.map((activeReceiver) => ({
-      avatar: activeReceiver.avatar,
-      name: activeReceiver.nickname || activeReceiver.username,
-      receiveCount: activeReceiver.receiveCount,
-    }));
-
     return {
       userGrowth,
       activityData,
       projectTags,
       distributeModes,
       hotProjects: normalizedHotProjects,
-      activeCreators: normalizedActiveCreators,
-      activeReceivers: normalizedActiveReceivers,
+      activeCreators,
+      activeReceivers,
       summary,
     };
   }

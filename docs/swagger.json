@@ -35,7 +35,6 @@
                             2
                         ],
                         "type": "integer",
-                        "format": "int32",
                         "x-enum-varnames": [
                             "ProjectStatusNormal",
                             "ProjectStatusHidden",
@@ -726,7 +725,6 @@
         },
         "oauth.TrustLevel": {
             "type": "integer",
-            "format": "int32",
             "enum": [
                 0,
                 1,
@@ -830,7 +828,6 @@
         },
         "project.DistributionType": {
             "type": "integer",
-            "format": "int32",
             "enum": [
                 0,
                 1
@@ -1062,7 +1059,6 @@
         },
         "project.ProjectStatus": {
             "type": "integer",
-            "format": "int32",
             "enum": [
                 0,
                 1,
