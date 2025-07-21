@@ -44,6 +44,7 @@ const docTemplate = `{
                             2
                         ],
                         "type": "integer",
+                        "format": "int32",
                         "x-enum-varnames": [
                             "ProjectStatusNormal",
                             "ProjectStatusHidden",
@@ -734,6 +735,7 @@ const docTemplate = `{
         },
         "oauth.TrustLevel": {
             "type": "integer",
+            "format": "int32",
             "enum": [
                 0,
                 1,
@@ -837,6 +839,7 @@ const docTemplate = `{
         },
         "project.DistributionType": {
             "type": "integer",
+            "format": "int32",
             "enum": [
                 0,
                 1
@@ -1068,6 +1071,7 @@ const docTemplate = `{
         },
         "project.ProjectStatus": {
             "type": "integer",
+            "format": "int32",
             "enum": [
                 0,
                 1,
