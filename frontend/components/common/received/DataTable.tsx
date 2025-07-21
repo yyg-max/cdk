@@ -276,6 +276,15 @@ export function DataTable({data}: DataTableProps) {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-[10px]">
+                <button
+                  className="font-medium hover:text-primary transition-colors"
+                  onClick={() => handleSort('received_at')}
+                >
+                  领取时间{renderSortIcon('received_at')}
+                </button>
+              </TableHead>
+              <TableHead className="text-right w-[60px]"></TableHead>
               <TableHead className="w-[120px]">
                 <button
                   className="font-medium hover:text-primary transition-colors"
@@ -300,15 +309,6 @@ export function DataTable({data}: DataTableProps) {
                   项目内容{renderSortIcon('content')}
                 </button>
               </TableHead>
-              <TableHead className="w-[10px]">
-                <button
-                  className="font-medium hover:text-primary transition-colors"
-                  onClick={() => handleSort('received_at')}
-                >
-                  领取时间{renderSortIcon('received_at')}
-                </button>
-              </TableHead>
-              <TableHead className="text-right w-[60px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -325,6 +325,22 @@ export function DataTable({data}: DataTableProps) {
             ) : (
               paginatedData.map((item) => (
                 <TableRow key={`${item.project_id}-${item.received_at}`}>
+                  <TableCell className="text-xs text-gray-600 dark:text-gray-400">
+                    {item.received_at ? formatDateTimeWithSeconds(item.received_at) : '-'}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end space-x-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openProjectDetail(item.project_id)}
+                        className="h-6 w-6 p-0"
+                        title="查看详情"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <div>
                       <span
@@ -346,7 +362,10 @@ export function DataTable({data}: DataTableProps) {
                     </Link>
                   </TableCell>
                   <TableCell className="text-xs font-mono text-gray-600 dark:text-gray-400">
-                    <div className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-sm flex items-center justify-between group hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                    <div className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-sm flex items-center justify-between group hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                      onDoubleClick={() => copyToClipboard(item.content)}
+                      title="双击复制内容"
+                    >
                       <div className="flex-1 min-w-0">
                         {item.content}
                       </div>
@@ -358,22 +377,6 @@ export function DataTable({data}: DataTableProps) {
                         title="复制项目内容"
                       >
                         <Copy className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-xs text-gray-600 dark:text-gray-400">
-                    {item.received_at ? formatDateTimeWithSeconds(item.received_at) : '-'}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end space-x-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openProjectDetail(item.project_id)}
-                        className="h-6 w-6 p-0"
-                        title="查看详情"
-                      >
-                        <ExternalLink className="h-3 w-3" />
                       </Button>
                     </div>
                   </TableCell>
