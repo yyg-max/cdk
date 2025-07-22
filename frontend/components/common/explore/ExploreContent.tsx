@@ -305,7 +305,7 @@ export function ExploreContent({data, LoadingSkeleton, pageSize = 20}: ExploreCo
       {/* 即将开始 */}
       {upcomingProjects.length > 0 && (
         <motion.div
-          className="space-y-6 relative"
+          className="space-y-6 relative py-4"
           variants={itemVariants}
         >
           <div className="flex items-center gap-2">
@@ -320,7 +320,7 @@ export function ExploreContent({data, LoadingSkeleton, pageSize = 20}: ExploreCo
             }}
             className="w-full"
           >
-            <CarouselContent className="-ml-2 md:-ml-4">
+            <CarouselContent className="-ml-2 md:-ml-4 px-2 py-2">
               {upcomingProjects.map((project, index) => (
                 <CarouselItem key={`upcoming-${project.id}`} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4">
                   <ProjectCard

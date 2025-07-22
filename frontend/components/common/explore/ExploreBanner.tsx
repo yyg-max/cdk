@@ -42,7 +42,7 @@ export function ExploreBanner({
     <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-700 to-purple-800 rounded-3xl p-8 text-white h-[250px]">
       <div className="relative z-10 h-full flex flex-col justify-center text-center">
         <h1 className="text-3xl lg:text-4xl font-bold mb-6">
-          欢迎使用 Linux Do CDK
+          欢迎使用 LINUX DO CDK
         </h1>
         <p className="text-blue-100 text-lg">
           高效分发省时省力，快速领取快人一步

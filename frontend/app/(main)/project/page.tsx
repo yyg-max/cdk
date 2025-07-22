@@ -3,7 +3,7 @@ import {ProjectMain} from '@/components/common/project';
 import {Metadata} from 'next';
 
 export const metadata: Metadata = {
-  title: '创建项目',
+  title: '我的项目',
 };
 
 export default function ProjectPage() {

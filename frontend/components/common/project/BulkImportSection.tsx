@@ -142,10 +142,10 @@ export function BulkImportSection({
 
         <div className="space-y-2">
           <Textarea
-            placeholder={`请输入${placeholderPrefix}分发内容，支持以下格式批量导入：\n• JSON 数组格式：[{}, {}, {}]\n• 每行一个内容\n• 逗号分隔（中英文逗号均可）`}
+            placeholder={`请输入${placeholderPrefix}分发内容，支持以下格式批量导入：\n• JSON 数组格式：[{}, {}, {}]\n• 每行一个内容\n• 逗号分隔（中英文逗号均可）\n导入重复内容请关闭右上角的 '过滤功能'`}
             value={bulkContent}
             onChange={(e) => setBulkContent(e.target.value)}
-            className="h-[100px] break-all overflow-x-auto whitespace-pre-wrap"
+            className="h-[120px] break-all overflow-x-auto whitespace-pre-wrap"
           />
           <div className="flex items-center gap-2">
             <Button

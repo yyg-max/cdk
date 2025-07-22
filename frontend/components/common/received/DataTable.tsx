@@ -10,6 +10,7 @@ import {formatDateTimeWithSeconds, copyToClipboard} from '@/lib/utils';
 import {ReceiveHistoryItem} from '@/lib/services/project/types';
 import {EmptyState} from '@/components/common/layout/EmptyState';
 import {motion} from 'motion/react';
+import {useIsMobile} from '@/hooks/use-mobile';
 
 const ITEMS_PER_PAGE = 20;
 const MAX_PAGINATION_BUTTONS = 5;
@@ -197,6 +198,7 @@ export function DataTable({data}: DataTableProps) {
   const [sortField, setSortField] = useState<SortField>('received_at');
   const [sortDirection, setSortDirection] = useState<SortDirection>(SORT_DIRECTIONS.DESC);
   const [currentPage, setCurrentPage] = useState(1);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     setCurrentPage(1);
@@ -276,7 +278,15 @@ export function DataTable({data}: DataTableProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[120px]">
+              <TableHead className="w-[10px]">
+                <button
+                  className="font-medium hover:text-primary transition-colors"
+                  onClick={() => handleSort('received_at')}
+                >
+                  领取时间{renderSortIcon('received_at')}
+                </button>
+              </TableHead>
+              <TableHead className="w-[120px] lg:w-[200px] xl:w-[300px]">
                 <button
                   className="font-medium hover:text-primary transition-colors"
                   onClick={() => handleSort('project_name')}
@@ -284,7 +294,7 @@ export function DataTable({data}: DataTableProps) {
                   项目名称{renderSortIcon('project_name')}
                 </button>
               </TableHead>
-              <TableHead className="w-[120px]">
+              <TableHead className="w-[120px] lg:w-[160px] xl:w-[200px]">
                 <button
                   className="font-medium hover:text-primary transition-colors"
                   onClick={() => handleSort('project_creator_nickname')}
@@ -292,20 +302,12 @@ export function DataTable({data}: DataTableProps) {
                   创建者{renderSortIcon('project_creator_nickname')}
                 </button>
               </TableHead>
-              <TableHead className="w-[240px]">
+              <TableHead className="w-[240px] lg:w-[400px] xl:w-[600px]">
                 <button
                   className="font-medium hover:text-primary transition-colors"
                   onClick={() => handleSort('content')}
                 >
                   项目内容{renderSortIcon('content')}
-                </button>
-              </TableHead>
-              <TableHead className="w-[10px]">
-                <button
-                  className="font-medium hover:text-primary transition-colors"
-                  onClick={() => handleSort('received_at')}
-                >
-                  领取时间{renderSortIcon('received_at')}
                 </button>
               </TableHead>
               <TableHead className="text-right w-[60px]"></TableHead>
@@ -325,44 +327,57 @@ export function DataTable({data}: DataTableProps) {
             ) : (
               paginatedData.map((item) => (
                 <TableRow key={`${item.project_id}-${item.received_at}`}>
+                  <TableCell className="text-xs text-gray-600 dark:text-gray-400">
+                    {item.received_at ? formatDateTimeWithSeconds(item.received_at) : '-'}
+                  </TableCell>
                   <TableCell>
-                    <div>
+                    <div className="max-w-[120px] lg:max-w-[200px] xl:max-w-[300px]">
                       <span
-                        className="text-xs text-gray-600 dark:text-gray-400 hover:text-primary hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer"
+                        className="text-xs text-gray-600 dark:text-gray-400 hover:text-primary hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer block overflow-hidden text-ellipsis whitespace-nowrap"
                         onClick={() => openProjectDetail(item.project_id)}
-                        title="点击查看项目详情"
+                        title={`${item.project_name} - 点击查看项目详情`}
                       >
                         {item.project_name}
                       </span>
                     </div>
                   </TableCell>
                   <TableCell className="text-xs text-gray-600 dark:text-gray-400">
-                    <Link
-                      href={`https://linux.do/u/${item.project_creator}/summary`}
-                      target='_blank'
-                      rel='noopener noreferrer'
-                    >
-                      {item.project_creator_nickname || item.project_creator}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="text-xs font-mono text-gray-600 dark:text-gray-400">
-                    <div className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-sm flex items-center justify-between group hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-                      <div className="flex-1 min-w-0">
-                        {item.content}
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => copyToClipboard(item.content)}
-                        className="h-5 w-5 p-0 ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-gray-300 dark:hover:bg-gray-600"
-                        title="复制项目内容"
+                    <div className="max-w-[120px] lg:max-w-[160px] xl:max-w-[200px]">
+                      <Link
+                        href={`https://linux.do/u/${item.project_creator}/summary`}
+                        target='_blank'
+                        rel='noopener noreferrer'
+                        className="hover:text-primary hover:text-blue-600 dark:hover:text-blue-400 transition-colors block overflow-hidden text-ellipsis whitespace-nowrap"
+                        title={`${item.project_creator_nickname || item.project_creator} - 点击查看用户主页`}
                       >
-                        <Copy className="h-3 w-3" />
-                      </Button>
+                        {item.project_creator_nickname || item.project_creator}
+                      </Link>
                     </div>
                   </TableCell>
-                  <TableCell className="text-xs text-gray-600 dark:text-gray-400">
-                    {item.received_at ? formatDateTimeWithSeconds(item.received_at) : '-'}
+                  <TableCell className="text-xs font-mono text-gray-600 dark:text-gray-400">
+                    <div className="max-w-[240px] lg:max-w-[400px] xl:max-w-[600px]">
+                      <div className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-sm flex items-center justify-between group hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                        onDoubleClick={() => copyToClipboard(item.content)}
+                        title={`${item.content} - 双击复制内容`}
+                      >
+                        <div className="flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
+                          {item.content}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => copyToClipboard(item.content)}
+                          className={`h-5 w-5 p-0 ml-2 transition-opacity duration-200 hover:bg-gray-300 dark:hover:bg-gray-600 ${
+                            isMobile ?
+                              'opacity-100' :
+                              'opacity-0 group-hover:opacity-100'
+                          }`}
+                          title="复制项目内容"
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end space-x-1">

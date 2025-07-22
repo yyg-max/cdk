@@ -67,10 +67,14 @@ export function CardList({title, icon, list, type}: Omit<CardListProps, 'iconBg'
     };
 
     const getProjectTags = () => {
-      if (type === 'project' && 'tags' in item && item.tags && Array.isArray(item.tags) && item.tags.length > 0) {
-        const displayTags = item.tags.slice(0, 3);
-        const remainingCount = item.tags.length - displayTags.length;
-        return displayTags.join('、') + (remainingCount > 0 ? ` +${remainingCount}` : '');
+      if (type === 'project' && 'tags' in item) {
+        if (item.tags && Array.isArray(item.tags) && item.tags.length > 0) {
+          const displayTags = item.tags.slice(0, 3);
+          const remainingCount = item.tags.length - displayTags.length;
+          return displayTags.join('、') + (remainingCount > 0 ? ` +${remainingCount}` : '');
+        } else {
+          return '无标签';
+        }
       }
       return null;
     };
@@ -94,18 +98,18 @@ export function CardList({title, icon, list, type}: Omit<CardListProps, 'iconBg'
 
     return (
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-medium truncate text-gray-900 dark:text-gray-100">
+        <div className="space-y-1">
+          <span className="text-sm font-medium truncate text-gray-900 dark:text-gray-100 block">
             {mainText}
           </span>
           {projectTags && (
-            <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">
+            <div className="text-xs text-gray-500 dark:text-gray-400">
               {projectTags}
-            </span>
+            </div>
           )}
         </div>
         {subText && (
-          <p className="text-xs text-gray-600 dark:text-gray-400">
+          <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
             {subText}
           </p>
         )}
