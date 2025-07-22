@@ -1,12 +1,15 @@
 'use client';
 
+import {useEffect, useState} from 'react';
 import {Label} from '@/components/ui/label';
 import {Input} from '@/components/ui/input';
+import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/components/ui/tooltip';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
 import {TagSelector} from '@/components/ui/tag-selector';
 import {DateTimePicker} from '@/components/ui/DateTimePicker';
 import {Checkbox} from '@/components/animate-ui/radix/checkbox';
 import MarkdownEditor from '@/components/common/markdown/Editor';
+import {HelpCircle} from 'lucide-react';
 import {FORM_LIMITS, TRUST_LEVEL_OPTIONS} from '@/components/common/project';
 import {TrustLevel} from '@/lib/services/core/types';
 import {ProjectFormData} from '@/hooks/use-project-form';
@@ -28,9 +31,26 @@ export function ProjectBasicForm({
   availableTags,
   isMobile,
 }: ProjectBasicFormProps) {
+  const [showTooltip, setShowTooltip] = useState(false);
+  
   const updateField = <K extends keyof ProjectFormData>(field: K, value: ProjectFormData[K]) => {
     onFormDataChange({...formData, [field]: value});
   };
+
+  useEffect(() => {
+    const hasSeenTooltip = localStorage.getItem('project-risk-level-tooltip-seen');
+    
+    if (!hasSeenTooltip) {
+      setShowTooltip(true);
+      
+      const timer = setTimeout(() => {
+        setShowTooltip(false);
+        localStorage.setItem('project-risk-level-tooltip-seen', 'true');
+      }, 5000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   return (
     <>
@@ -96,7 +116,21 @@ export function ProjectBasicForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="riskLevel">最高风险系数</Label>
+          <div className="flex items-center gap-2">
+            <Label htmlFor="riskLevel">最低用户分数</Label>
+            <TooltipProvider>
+              <Tooltip open={showTooltip} onOpenChange={setShowTooltip}>
+                <TooltipTrigger asChild>
+                  <div className="cursor-help text-muted-foreground hover:text-foreground">
+                    <HelpCircle size={14} />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>注：此参数使用方法已更新 2025/07/22 <br /> 低于最低用户分数将无法查看、领取该项目的所有内容！</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
           <Input
             id="riskLevel"
             type="number"
@@ -114,33 +148,35 @@ export function ProjectBasicForm({
         </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="hideFromExplore">显示在探索广场</Label>
-        <div className="flex items-center gap-2">
-          <Checkbox
-            id="hideFromExplore"
-            checked={!formData.hideFromExplore}
-            onCheckedChange={(checked) => updateField('hideFromExplore', !checked)}
-            className="data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-600 data-[state=checked]:text-white dark:data-[state=checked]:border-blue-700 dark:data-[state=checked]:bg-blue-700"
-          />
-          <p className="text-muted-foreground text-sm">
-            如果开启，项目将显示在探索广场中供其他用户浏览
-          </p>
+      <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2'} gap-4`}>
+        <div className="space-y-2">
+          <Label htmlFor="hideFromExplore">显示在探索广场</Label>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="hideFromExplore"
+              checked={!formData.hideFromExplore}
+              onCheckedChange={(checked) => updateField('hideFromExplore', !checked)}
+              className="data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-600 data-[state=checked]:text-white dark:data-[state=checked]:border-blue-700 dark:data-[state=checked]:bg-blue-700"
+            />
+            <p className="text-muted-foreground text-sm">
+              开启后，项目会显示在探索广场
+            </p>
+          </div>
         </div>
-      </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="allowSameIP">IP 管控</Label>
-        <div className="flex items-center gap-2">
-          <Checkbox
-            id="allowSameIP"
-            checked={formData.allowSameIP}
-            onCheckedChange={(checked) => updateField('allowSameIP', checked === true)}
-            className="data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-600 data-[state=checked]:text-white dark:data-[state=checked]:border-blue-700 dark:data-[state=checked]:bg-blue-700"
-          />
-          <p className="text-muted-foreground text-sm">
-            如果开启，则同一个 IP 可以多次领取内容
-          </p>
+        <div className="space-y-2">
+          <Label htmlFor="allowSameIP">允许相同 IP 领取</Label>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="allowSameIP"
+              checked={formData.allowSameIP}
+              onCheckedChange={(checked) => updateField('allowSameIP', checked === true)}
+              className="data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-600 data-[state=checked]:text-white dark:data-[state=checked]:border-blue-700 dark:data-[state=checked]:bg-blue-700"
+            />
+            <p className="text-muted-foreground text-sm">
+              开启后，相同 IP 可重复领取此项目
+            </p>
+          </div>
         </div>
       </div>
 
