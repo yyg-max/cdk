@@ -80,7 +80,7 @@ export function LoginForm({
               <div className="flex size-8 items-center justify-center rounded-md m-4">
                 <SquareArrowUpRight className="size-6" />
               </div>
-              <h1 className="text-xl font-bold">欢迎使用 Linux Do CDK</h1>
+              <h1 className="text-xl font-bold">欢迎使用 LINUX DO CDK</h1>
             </div>
 
             {/* 登出成功提示 */}
@@ -148,7 +148,7 @@ export function LoginForm({
                       <AccordionTrigger>1. 一般条款</AccordionTrigger>
                       <AccordionContent>
                         <div className="space-y-3 text-sm">
-                          <p>本服务条款（以下简称&ldquo;条款&rdquo;）规定了您使用 Linux Do CDK 服务的条件。</p>
+                          <p>本服务条款（以下简称&ldquo;条款&rdquo;）规定了您使用 LINUX DO CDK 服务的条件。</p>
                           <p>通过访问或使用我们的服务，您同意受这些条款的约束。如果您不同意这些条款，请不要使用我们的服务。</p>
                           <p>我们保留随时修改这些条款的权利。修改后的条款将在发布后立即生效。</p>
                         </div>

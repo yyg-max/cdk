@@ -1,4 +1,4 @@
-# Linux Do CDK Frontend
+# LINUX DO CDK Frontend
 
 🎨 Linux Do 社区 CDK 快速分享平台 - 前端应用
 

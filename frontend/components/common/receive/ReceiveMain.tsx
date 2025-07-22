@@ -126,7 +126,7 @@ export function ReceiveMain() {
 
   useEffect(() => {
     if (project?.name) {
-      document.title = `${project.name} - 项目信息 - Linux Do CDK`;
+      document.title = `${project.name} - 项目信息 - LINUX DO CDK`;
     }
   }, [project?.name]);
 

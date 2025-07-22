@@ -64,7 +64,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
                 <SquareArrowUpRight className="h-5 w-5" />
                 <RollingText
                   className="text-base font-semibold"
-                  text="Linux Do CDK"
+                  text="LINUX DO CDK"
                   loop={true}
                   loopDelay={6000}
                   inViewOnce={false}
