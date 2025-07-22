@@ -3,7 +3,7 @@ import {ExploreMain} from '@/components/common/explore';
 import {Metadata} from 'next';
 
 export const metadata: Metadata = {
-  title: '项目探索',
+  title: '探索广场',
 };
 
 export default function ExplorePage() {
