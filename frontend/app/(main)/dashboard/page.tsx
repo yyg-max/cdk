@@ -3,7 +3,7 @@ import {DashboardMain} from '@/components/common/dashboard';
 import {Metadata} from 'next';
 
 export const metadata: Metadata = {
-  title: '项目管理',
+  title: '实时数据',
 };
 
 export default function DashboardPage() {

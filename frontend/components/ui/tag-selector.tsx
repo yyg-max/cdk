@@ -170,7 +170,6 @@ function TagSelector({
     }
 
     setSearchValue('');
-    setIsOpen(false);
   }, [selectedTags, maxTags, maxTagLength, onTagsChange]);
 
   const removeTag = React.useCallback((tagToRemove: string) => {
@@ -226,7 +225,7 @@ function TagSelector({
               <div
                 ref={scrollElementRef}
                 data-slot="tag-selector-scroll-area"
-                className="h-[220px] overflow-auto overscroll-contain"
+                className="h-[180px] overflow-auto overscroll-contain"
                 style={{
                   scrollbarWidth: 'thin',
                   scrollbarColor: '#d1d5db transparent',
@@ -283,7 +282,10 @@ function TagSelector({
                         {item.type === 'create' && (
                           <div
                             className="flex items-center gap-2 rounded-sm px-3 text-sm cursor-pointer hover:bg-accent mx-1 h-full mt-2"
-                            onClick={() => addTag(item.content)}
+                            onClick={() => {
+                              addTag(item.content);
+                              setIsOpen(false);
+                            }}
                           >
                             <PlusCircle className="h-4 w-4" />
                             <span>创建 &quot;{item.content}&quot;</span>
@@ -305,6 +307,17 @@ function TagSelector({
                     );
                   })}
                 </div>
+              </div>
+
+              <div className="flex items-center justify-center gap-2 p-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => setIsOpen(false)}
+                >
+                  完成
+                </Button>
               </div>
             </div>
           </PopoverContent>

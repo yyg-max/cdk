@@ -84,7 +84,7 @@ export function CallbackHandler({
             <div className="flex size-8 items-center justify-center rounded-md">
               <GalleryVerticalEnd className="size-6" />
             </div>
-            <h1 className="text-xl font-bold">欢迎使用 Linux Do CDK</h1>
+            <h1 className="text-xl font-bold">欢迎使用 LINUX DO CDK</h1>
           </div>
           <div className="flex flex-col items-center gap-4">
             {status === 'loading' && (
@@ -119,7 +119,7 @@ export function CallbackHandler({
         </div>
         <div className="text-muted-foreground text-center text-xs text-balance">
           <span className="[&_a]:underline [&_a]:underline-offset-4 [&_a:hover]:text-primary">
-            Linux Do CDK - 让资源共享更简单.
+            LINUX DO CDK - 让资源共享更简单.
           </span>
         </div>
       </div>

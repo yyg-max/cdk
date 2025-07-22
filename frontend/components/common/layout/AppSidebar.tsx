@@ -64,13 +64,13 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
                 <SquareArrowUpRight className="h-5 w-5" />
                 <RollingText
                   className="text-base font-semibold"
-                  text="Linux Do CDK"
+                  text="LINUX DO CDK"
                   loop={true}
                   loopDelay={6000}
                   inViewOnce={false}
                   transition={{duration: 0.5, delay: 0.1, ease: 'easeOut'}}
                 />
-                <span className="text-xs text-muted-foreground">v 1.0.0</span>
+                <span className="text-xs text-muted-foreground">v 1.0.1</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

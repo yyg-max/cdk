@@ -1,4 +1,4 @@
-# Linux Do CDK
+# LINUX DO CDK
 
 🚀 Linux Do 社区 CDK (Content Distribution Kit) 快速分享平台
 
@@ -22,7 +22,7 @@
 
 ## 📖 项目简介
 
-Linux Do CDK 是一个为 Linux Do 社区打造的内容分发工具包，旨在提供快速、安全、便捷的 CDK 分享服务。平台支持多种分发方式，具备完善的用户权限管理和风险控制机制。
+LINUX DO CDK 是一个为 Linux Do 社区打造的内容分发工具包，旨在提供快速、安全、便捷的 CDK 分享服务。平台支持多种分发方式，具备完善的用户权限管理和风险控制机制。
 
 ### ✨ 主要特性
 

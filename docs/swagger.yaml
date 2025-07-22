@@ -394,7 +394,7 @@ definitions:
     type: object
 info:
   contact: {}
-  title: Linux Do CDK
+  title: LINUX DO CDK
   version: 0.1.0
 paths:
   /api/v1/admin/projects:
