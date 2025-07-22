@@ -130,8 +130,8 @@ const EnhancedTooltip = ({active, payload, label, labelFormatter}: TooltipProps)
       <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg min-w-[140px]">
         <div className="flex flex-col space-y-2">
           {/* 标题 */}
-          <div className="text-xs font-medium text-gray-600 dark:text-gray-400">
-            {labelFormatter && label ? labelFormatter(label, payload) : label}
+          <div className=" text-sm font-bold text-gray-600 dark:text-gray-400">
+            {label}
           </div>
 
           {/* 数据项 */}
@@ -146,7 +146,7 @@ const EnhancedTooltip = ({active, payload, label, labelFormatter}: TooltipProps)
                 <div key={`tooltip-item-${index}`} className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <div
-                      className="w-2.5 h-2.5 rounded-full"
+                      className="w-1.5 h-1.5 rounded-full"
                       style={{backgroundColor: itemColor as string}}
                     />
                     <span className="text-xs text-gray-600 dark:text-gray-400">数量</span>
@@ -179,25 +179,31 @@ const PieTooltip = ({active, payload}: TooltipProps) => {
     return (
       <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg min-w-[150px]">
         <div className="flex flex-col space-y-2">
-          <div className="flex items-center gap-2">
-            <div
-              className="w-3 h-3 rounded-full"
-              style={{backgroundColor: correctColor as string}}
-            />
-            <span className="text-xs font-medium text-gray-600 dark:text-gray-400 truncate">
-              {data.name}
-            </span>
+          <div className="text-sm font-bold text-gray-600 dark:text-gray-400">
+            {data.name}
           </div>
 
           <div className="space-y-1">
-            <div className="flex justify-between items-center">
-              <span className="text-xs text-gray-600 dark:text-gray-400">数量</span>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-1.5 h-1.5 rounded-full"
+                  style={{backgroundColor: correctColor as string}}
+                />
+                <span className="text-xs text-gray-600 dark:text-gray-400">数量</span>
+              </div>
               <span className="text-sm font-bold text-gray-900 dark:text-gray-100 tabular-nums">
                 {(data.value as number).toLocaleString()}
               </span>
             </div>
-            <div className="flex justify-between items-center">
-              <span className="text-xs text-gray-600 dark:text-gray-400">占比</span>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-1.5 h-1.5 rounded-full"
+                  style={{backgroundColor: correctColor as string}}
+                />
+                <span className="text-xs text-gray-600 dark:text-gray-400">占比</span>
+              </div>
               <span className="text-sm font-bold tabular-nums" style={{color: correctColor as string}}>
                 {percentage}%
               </span>
@@ -248,7 +254,7 @@ export function UserGrowthChart({data, isLoading, icon, range = 7}: UserGrowthCh
     <ChartContainer title="用户增长趋势" icon={icon} isLoading={isLoading}>
       <div className="h-[300px] transition-all duration-300 ease-in-out" key={`user-growth-${range}-${data?.length || 0}`}>
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={chartData} margin={{top: 10, right: 10, left: -32, bottom: 10}}>
+          <AreaChart data={chartData} margin={{top: 10, right: 10, left: -10, bottom: 10}}>
             <defs>
               <linearGradient id="userGrowthGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4}/>
@@ -277,7 +283,7 @@ export function UserGrowthChart({data, isLoading, icon, range = 7}: UserGrowthCh
               type="monotone"
               dataKey="value"
               stroke="#3b82f6"
-              strokeWidth={3}
+              strokeWidth={2}
               fillOpacity={1}
               fill="url(#userGrowthGradient)"
               activeDot={{
@@ -307,7 +313,7 @@ export function ActivityChart({data, isLoading, icon, range = 7}: ActivityChartP
     <ChartContainer title="领取活动趋势" icon={icon} isLoading={isLoading}>
       <div className="h-[300px] transition-all duration-300 ease-in-out" key={`activity-${range}-${data?.length || 0}`}>
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={chartData} margin={{top: 10, right: 10, left: -32, bottom: 10}}>
+          <AreaChart data={chartData} margin={{top: 10, right: 10, left: -10, bottom: 10}}>
             <defs>
               <linearGradient id="activityGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#10b981" stopOpacity={0.4}/>
@@ -336,7 +342,7 @@ export function ActivityChart({data, isLoading, icon, range = 7}: ActivityChartP
               type="monotone"
               dataKey="value"
               stroke="#10b981"
-              strokeWidth={3}
+              strokeWidth={2}
               fillOpacity={1}
               fill="url(#activityGradient)"
               activeDot={{
@@ -390,7 +396,7 @@ export function CategoryChart({data, isLoading, icon}: CategoryChartProps) {
     <ChartContainer title="项目标签分布" icon={icon} isLoading={isLoading}>
       <div className="h-[300px] w-full transition-all duration-300 ease-in-out" key={`category-${data?.length || 0}`}>
         <ResponsiveContainer width="100%" height="100%">
-          <PieChart margin={{top: 10, right: 10, bottom: 50, left: 10}}>
+          <PieChart margin={{top: 10, right: 10, left: -10, bottom: 50}}>
             <Pie
               data={enhancedData}
               dataKey="value"
@@ -399,7 +405,7 @@ export function CategoryChart({data, isLoading, icon}: CategoryChartProps) {
               cy="45%"
               outerRadius={100}
               innerRadius={45}
-              paddingAngle={2}
+              paddingAngle={1}
               label={false}
               {...ANIMATION_CONFIG.base}
               {...ANIMATION_CONFIG.pie}
@@ -409,10 +415,22 @@ export function CategoryChart({data, isLoading, icon}: CategoryChartProps) {
                   key={`cell-${index}`}
                   fill={ENHANCED_COLORS.pieChart[index % ENHANCED_COLORS.pieChart.length]}
                   stroke="#ffffff"
-                  strokeWidth={2}
+                  strokeWidth={1}
                   style={{
                     filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))',
                     outline: 'none',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease-in-out',
+                  }}
+                  onMouseEnter={(e) => {
+                    const target = e.target as HTMLElement;
+                    target.style.transform = 'scale(1.05)';
+                    target.style.filter = 'drop-shadow(0 4px 8px rgba(0,0,0,0.2))';
+                  }}
+                  onMouseLeave={(e) => {
+                    const target = e.target as HTMLElement;
+                    target.style.transform = 'scale(1)';
+                    target.style.filter = 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))';
                   }}
                 />
               ))}
@@ -475,17 +493,18 @@ export function DistributeModeChart({data, isLoading, icon}: DistributeModeChart
     );
   }
 
-  // 使用映射获取名称
-  const enhancedData = chartData.map((item) => ({
+  // 使用映射获取名称并添加颜色信息
+  const enhancedData = chartData.map((item, index) => ({
     ...item,
     name: DISTRIBUTION_MODE_NAMES[item.name] || item.name,
+    color: ENHANCED_COLORS.barChart[index % ENHANCED_COLORS.barChart.length],
   }));
 
   return (
     <ChartContainer title="分发模式统计" icon={icon} isLoading={isLoading}>
       <div className="h-[300px] w-full transition-all duration-300 ease-in-out" key={`distribute-${data?.length || 0}`}>
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={enhancedData} margin={{top: 10, right: 10, left: -32, bottom: 10}}>
+          <BarChart data={enhancedData} margin={{top: 10, right: 10, left: -10, bottom: 10}}>
             <XAxis
               dataKey="name"
               axisLine={false}
