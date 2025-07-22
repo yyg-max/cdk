@@ -126,7 +126,7 @@ export function ProjectBasicForm({
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>注：此参数使用方法已更新 2025/07/22 <br /> 低于最低用户分数将无法查看、领取该项目的所有内容！</p>
+                  <p>注：此参数使用方法已更新 2025/07/22 <br /> 低于此分数的用户将无法查看、领取该项目的所有内容！</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -136,14 +136,14 @@ export function ProjectBasicForm({
             type="number"
             min={0}
             max={100}
-            value={formData.riskLevel}
-            onChange={(e) =>
-              updateField(
-                  'riskLevel',
-                  Math.max(0, Math.min(100, parseInt(e.target.value) || 0)),
-              )
-            }
-            placeholder="输入0-100的风险系数"
+            value={100 - formData.riskLevel}
+            onChange={(e) => {
+              const userInput = parseInt(e.target.value) || 0;
+              const clampedInput = Math.max(0, Math.min(100, userInput));
+              const riskLevel = 100 - clampedInput;
+              updateField('riskLevel', riskLevel);
+            }}
+            placeholder="输入0-100的用户分数"
           />
         </div>
       </div>

@@ -357,8 +357,8 @@ export function ReceiveContent({data}: ReceiveContentProps) {
           </div>
         </div>
         <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-          <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">最低风控等级</div>
-          <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">{currentProject.risk_level}</div>
+          <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">最低用户分数</div>
+          <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">{100 - currentProject.risk_level}</div>
         </div>
         <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
           <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">信任等级</div>
