@@ -21,15 +21,17 @@ export const FloatingDock = ({
   items,
   desktopClassName,
   mobileClassName,
+  mobileButtonClassName,
 }: {
   items: { title: string; icon: React.ReactNode; href?: string; onClick?: () => void }[];
   desktopClassName?: string;
   mobileClassName?: string;
+  mobileButtonClassName?: string;
 }) => {
   return (
     <>
       <FloatingDockDesktop items={items} className={desktopClassName} />
-      <FloatingDockMobile items={items} className={mobileClassName} />
+      <FloatingDockMobile items={items} className={mobileClassName} buttonClassName={mobileButtonClassName} />
     </>
   );
 };
@@ -37,9 +39,11 @@ export const FloatingDock = ({
 const FloatingDockMobile = ({
   items,
   className,
+  buttonClassName,
 }: {
   items: { title: string; icon: React.ReactNode; href?: string; onClick?: () => void }[];
   className?: string;
+  buttonClassName?: string;
 }) => {
   const [open, setOpen] = useState(false);
   return (
@@ -71,7 +75,7 @@ const FloatingDockMobile = ({
                   <a
                     href={item.href}
                     key={item.title}
-                    className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-50 dark:bg-neutral-900"
+                    className={cn('flex h-8 w-8 items-center justify-center rounded-full bg-gray-50 dark:bg-neutral-900', buttonClassName)}
                     {...(item.href.startsWith('https://') ? {target: '_blank', rel: 'noopener noreferrer'} : {})}
                   >
                     <div className="flex items-center justify-center">{item.icon}</div>
@@ -80,7 +84,7 @@ const FloatingDockMobile = ({
                   <button
                     onClick={item.onClick}
                     key={item.title}
-                    className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-50 dark:bg-neutral-900"
+                    className={cn('flex h-8 w-8 items-center justify-center rounded-full bg-gray-50 dark:bg-neutral-900', buttonClassName)}
                   >
                     <div className="flex items-center justify-center">{item.icon}</div>
                   </button>
@@ -92,9 +96,14 @@ const FloatingDockMobile = ({
       </AnimatePresence>
       <button
         onClick={() => setOpen(!open)}
-        className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-50 dark:bg-neutral-800"
+        className={cn('flex h-8 w-8 items-center justify-center rounded-full bg-gray-50 dark:bg-neutral-800', buttonClassName)}
       >
-        <IconLayoutNavbarCollapse className="h-4 w-4 text-neutral-500 dark:text-neutral-400" />
+        <motion.div
+          animate={{rotate: open ? 180 : 0}}
+          transition={{duration: 0.3, ease: 'easeInOut'}}
+        >
+          <IconLayoutNavbarCollapse className="h-4 w-4 text-neutral-500 dark:text-neutral-400" />
+        </motion.div>
       </button>
     </div>
   );
