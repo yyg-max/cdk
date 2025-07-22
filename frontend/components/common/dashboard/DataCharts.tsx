@@ -124,7 +124,7 @@ const ENHANCED_COLORS = {
 /**
  * 工具提示组件
  */
-const EnhancedTooltip = ({active, payload, label, labelFormatter}: TooltipProps) => {
+const EnhancedTooltip = ({active, payload, label}: TooltipProps) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg min-w-[140px]">

@@ -32,22 +32,22 @@ export function ProjectBasicForm({
   isMobile,
 }: ProjectBasicFormProps) {
   const [showTooltip, setShowTooltip] = useState(false);
-  
+
   const updateField = <K extends keyof ProjectFormData>(field: K, value: ProjectFormData[K]) => {
     onFormDataChange({...formData, [field]: value});
   };
 
   useEffect(() => {
     const hasSeenTooltip = localStorage.getItem('project-risk-level-tooltip-seen');
-    
+
     if (!hasSeenTooltip) {
       setShowTooltip(true);
-      
+
       const timer = setTimeout(() => {
         setShowTooltip(false);
         localStorage.setItem('project-risk-level-tooltip-seen', 'true');
       }, 5000);
-      
+
       return () => clearTimeout(timer);
     }
   }, []);
