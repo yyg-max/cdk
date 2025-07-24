@@ -152,18 +152,14 @@ export function TagFilterPopover({
                   <Badge
                     key={tag}
                     variant="outline"
-                    className="px-2 py-0 h-6 bg-primary/5 text-xs text-primary border-primary/20 flex items-center gap-1 select-none"
+                    className="px-2 py-0 h-6 bg-primary/5 text-xs text-primary border-primary/20 flex items-center gap-1 select-none cursor-pointer hover:bg-primary/10 transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onTagToggle(tag);
+                    }}
                   >
                     {tag}
-                    <span className="cursor-pointer rounded-full p-0.25 hover:bg-primary/50 hover:text-white transition-all">
-                      <X
-                        className="h-3 w-3"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onTagToggle(tag);
-                        }}
-                      />
-                    </span>
+                    <X className="h-3 w-3" />
                   </Badge>
                 ))}
               </div>
