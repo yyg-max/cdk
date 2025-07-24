@@ -155,13 +155,15 @@ export function TagFilterPopover({
                     className="px-2 py-0 h-6 bg-primary/5 text-xs text-primary border-primary/20 flex items-center gap-1"
                   >
                     {tag}
-                    <X
-                      className="h-3 w-3 cursor-pointer hover:text-destructive"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onTagToggle(tag);
-                      }}
-                    />
+                    <span className="cursor-pointer rounded-full p-0.25 hover:bg-primary/50 hover:text-white transition-all">
+                      <X
+                        className="h-3 w-3"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onTagToggle(tag);
+                        }}
+                      />
+                    </span>
                   </Badge>
                 ))}
               </div>
