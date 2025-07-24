@@ -10,6 +10,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import {Search, Check, X} from 'lucide-react';
+import {cn} from '@/lib/utils';
 
 interface TagFilterPopoverProps {
   trigger: ReactNode;
@@ -106,17 +107,18 @@ export function TagFilterPopover({
                     return (
                       <div
                         key={tag}
-                        className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors hover:bg-muted ${
-                          isSelected ?
-                            'bg-primary/10 border border-primary/20' :
-                            ''
-                        }`}
+                        className={cn(
+                            'flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors hover:bg-muted',
+                            isSelected &&
+                            'bg-primary/10 border border-primary/20',
+                        )}
                         onClick={() => onTagToggle(tag)}
                       >
                         <span
-                          className={`text-xs font-medium ${
-                            isSelected ? 'text-primary' : 'text-foreground'
-                          }`}
+                          className={cn(
+                              'text-xs font-medium',
+                            isSelected ? 'text-primary' : 'text-foreground',
+                          )}
                         >
                           {tag}
                         </span>
