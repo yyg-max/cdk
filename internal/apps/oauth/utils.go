@@ -141,6 +141,11 @@ func doOAuth(ctx context.Context, code string) (*User, error) {
 			return nil, tx.Error
 		}
 	} else {
+		if !user.IsActive {
+			err = errors.New(BannedUser)
+			span.SetStatus(codes.Error, err.Error())
+			return nil, err
+		}
 		// update user
 		user.Username = userInfo.Username
 		user.Nickname = userInfo.Name
