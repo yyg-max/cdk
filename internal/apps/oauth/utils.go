@@ -104,6 +104,11 @@ func doOAuth(ctx context.Context, code string) (*User, error) {
 		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
+	if !userInfo.Active {
+		err = errors.New(BannedAccount)
+		span.SetStatus(codes.Error, err.Error())
+		return nil, err
+	}
 
 	// save to db
 	var user User
@@ -142,7 +147,7 @@ func doOAuth(ctx context.Context, code string) (*User, error) {
 		}
 	} else {
 		if !user.IsActive {
-			err = errors.New(BannedUser)
+			err = errors.New(BannedAccount)
 			span.SetStatus(codes.Error, err.Error())
 			return nil, err
 		}
