@@ -31,6 +31,7 @@ const (
 	TimeTooLate        = "已经结束"
 	TrustLevelNotMatch = "需要信任等级 %d"
 	UnknownError       = "未知异常"
+	ScoreNotEnough     = "分数未达标"
 	SameIPReceived     = "已有相同IP领取"
 	NoStock            = "无库存"
 	NotFound           = "项目不存在"

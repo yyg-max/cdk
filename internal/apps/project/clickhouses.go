@@ -60,7 +60,7 @@ func recordErrProjectReceive(c *gin.Context, reqTime time.Time, userId uint64, u
 
 	if errExec := db.ChConn.AsyncInsert(ctx, `
             INSERT INTO err_receive_logs (
-                timestamp, trace_id, user_id, user_name, project_id, project_start_time, project_end_time,
+                request_time, trace_id, user_id, user_name, project_id, project_start_time, project_end_time,
                 error_message, client_info
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		true,

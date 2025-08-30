@@ -249,7 +249,7 @@ func (p *Project) IsReceivable(ctx context.Context, now time.Time, user *oauth.U
 	}
 	// check risk level
 	if user.RiskLevel() > p.RiskLevel {
-		return errors.New(UnknownError)
+		return errors.New(ScoreNotEnough)
 	}
 	// check same ip
 	if sameIPReceived, err := p.CheckSameIPReceived(ctx, ip); err != nil {

@@ -4,7 +4,7 @@ USE linux_do_cdk;
 
 CREATE TABLE IF NOT EXISTS err_receive_logs
 (
-    timestamp          DateTime,
+    request_time       DateTime,
     trace_id           String,
     user_id            UInt64,
     user_name          String,
@@ -14,6 +14,9 @@ CREATE TABLE IF NOT EXISTS err_receive_logs
     error_message      String DEFAULT '',
     client_info        String DEFAULT ''
 ) ENGINE = MergeTree()
-      PARTITION BY toYYYYMM(timestamp)
-      ORDER BY (timestamp, user_id, project_id)
+      PARTITION BY toYYYYMM(request_time)
+      ORDER BY (request_time, user_id, project_id)
       SETTINGS index_granularity = 8192;
+ALTER TABLE err_receive_logs
+    ADD INDEX idx_user_id (user_id) TYPE bloom_filter(0.01) GRANULARITY 1,
+    ADD INDEX idx_project_id (project_id) TYPE bloom_filter(0.01) GRANULARITY 1;
