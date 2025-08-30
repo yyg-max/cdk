@@ -49,10 +49,7 @@ func recordErrProjectReceive(c *gin.Context, reqTime time.Time, userId uint64, u
 		"ip":         c.ClientIP(),
 		"user_agent": c.Request.UserAgent(),
 		"referer":    c.Request.Referer(),
-		"host":       c.Request.Host,
-		"method":     c.Request.Method,
-		"path":       c.Request.URL.Path,
-		"timestamp":  time.Now().Format(time.RFC3339),
+		"origin":     c.Request.Header.Get("Origin"),
 	}
 
 	clientInfoJSON, _ := json.Marshal(clientInfo)
