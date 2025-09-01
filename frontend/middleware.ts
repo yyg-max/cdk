@@ -19,6 +19,7 @@ interface ProjectData {
 
 interface ReceiveRequestBody {
   captcha_token?: string;
+
   [key: string]: string | number | boolean | null | undefined;
 }
 
@@ -93,7 +94,10 @@ async function verifyCaptcha(token: string, remoteip?: string): Promise<{ succes
 /**
  * 验证项目时间有效性
  */
-async function validateProjectTime(projectId: string, request: NextRequest): Promise<{ valid: boolean; error?: string }> {
+async function validateProjectTime(projectId: string, request: NextRequest): Promise<{
+  valid: boolean;
+  error?: string
+}> {
   try {
     const projectCheckUrl = `${BACKEND_BASE_URL}/api/v1/projects/${projectId}`;
 
@@ -163,8 +167,8 @@ async function handleReceiveRequest(request: NextRequest, pathname: string): Pro
     // 验证必要参数
     if (!body.captcha_token) {
       return NextResponse.json(
-          {error_msg: '缺少必要的验证信息'},
-          {status: 400},
+        {error_msg: '缺少必要的验证信息'},
+        {status: 400},
       );
     }
 
@@ -172,23 +176,9 @@ async function handleReceiveRequest(request: NextRequest, pathname: string): Pro
     const captchaResult = await verifyCaptcha(body.captcha_token, clientIP);
     if (!captchaResult.success) {
       return NextResponse.json(
-          {error_msg: captchaResult.error || '人机验证失败，请重新验证'},
-          {status: 400},
+        {error_msg: captchaResult.error || '人机验证失败，请重新验证'},
+        {status: 400},
       );
-    }
-
-    // 提取项目ID并验证时间
-    const pathParts = pathname.split('/');
-    const projectId = pathParts[4]; // /api/v1/projects/{id}/receive
-
-    if (projectId) {
-      const timeValidation = await validateProjectTime(projectId, request);
-      if (!timeValidation.valid) {
-        return NextResponse.json(
-            {error_msg: timeValidation.error},
-            {status: 400},
-        );
-      }
     }
 
     // 准备转发到后端的请求
@@ -204,6 +194,8 @@ async function handleReceiveRequest(request: NextRequest, pathname: string): Pro
         'X-Original-Host': request.headers.get('host') || '',
         'Cookie': request.headers.get('cookie') || '',
         'User-Agent': 'CDK-Frontend-Middleware',
+        'Referer': request.headers.get('referer') || '',
+        'Origin': request.headers.get('origin') || '',
       },
       body: Object.keys(backendBody).length > 0 ? JSON.stringify(backendBody) : undefined,
       credentials: 'include',
@@ -219,8 +211,8 @@ async function handleReceiveRequest(request: NextRequest, pathname: string): Pro
     });
   } catch (error) {
     return NextResponse.json(
-        {error_msg: formatErrorMessage(error, '服务器内部错误，请稍后重试')},
-        {status: 500},
+      {error_msg: formatErrorMessage(error, '服务器内部错误，请稍后重试')},
+      {status: 500},
     );
   }
 }
