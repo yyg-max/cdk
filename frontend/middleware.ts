@@ -10,13 +10,6 @@ interface HCaptchaResponse {
   'error-codes'?: string[];
 }
 
-interface ProjectData {
-  data?: {
-    start_time: string;
-    end_time: string;
-  };
-}
-
 interface ReceiveRequestBody {
   captcha_token?: string;
 
@@ -104,8 +97,8 @@ async function handleReceiveRequest(request: NextRequest, pathname: string): Pro
     // 验证必要参数
     if (!body.captcha_token) {
       return NextResponse.json(
-        {error_msg: '缺少必要的验证信息'},
-        {status: 400},
+          {error_msg: '缺少必要的验证信息'},
+          {status: 400},
       );
     }
 
@@ -113,8 +106,8 @@ async function handleReceiveRequest(request: NextRequest, pathname: string): Pro
     const captchaResult = await verifyCaptcha(body.captcha_token, clientIP);
     if (!captchaResult.success) {
       return NextResponse.json(
-        {error_msg: captchaResult.error || '人机验证失败，请重新验证'},
-        {status: 400},
+          {error_msg: captchaResult.error || '人机验证失败，请重新验证'},
+          {status: 400},
       );
     }
 
@@ -148,8 +141,8 @@ async function handleReceiveRequest(request: NextRequest, pathname: string): Pro
     });
   } catch (error) {
     return NextResponse.json(
-      {error_msg: formatErrorMessage(error, '服务器内部错误，请稍后重试')},
-      {status: 500},
+        {error_msg: formatErrorMessage(error, '服务器内部错误，请稍后重试')},
+        {status: 500},
     );
   }
 }
