@@ -68,6 +68,7 @@ type OAuth2Config struct {
 
 // databaseConfig 数据库配置
 type databaseConfig struct {
+	Enabled         bool   `mapstructure:"enabled"`
 	Host            string `mapstructure:"host"`
 	Port            int    `mapstructure:"port"`
 	Username        string `mapstructure:"username"`
@@ -94,6 +95,7 @@ type clickHouseConfig struct {
 
 // redisConfig Redis配置
 type redisConfig struct {
+	Enabled      bool   `mapstructure:"enabled"`
 	Host         string `mapstructure:"host"`
 	Port         int    `mapstructure:"port"`
 	Username     string `mapstructure:"username"`

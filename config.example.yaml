@@ -30,6 +30,7 @@ oauth2:
 
 # DB
 database:
+  enabled: true
   host: "127.0.0.1"
   port: 3306
   username: "root"
@@ -55,6 +56,7 @@ clickhouse:
 
 # Redis配置
 redis:
+  enabled: true
   host: "127.0.0.1"
   port: 6379
   username: ""

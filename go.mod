@@ -3,6 +3,7 @@ module github.com/linux-do/cdk
 go 1.24
 
 require (
+	github.com/ClickHouse/clickhouse-go/v2 v2.23.2
 	github.com/gin-contrib/sessions v1.0.4
 	github.com/gin-gonic/gin v1.10.1
 	github.com/google/uuid v1.6.0
@@ -30,7 +31,6 @@ require (
 
 require (
 	github.com/ClickHouse/ch-go v0.61.5 // indirect
-	github.com/ClickHouse/clickhouse-go/v2 v2.23.2 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/andybalholm/brotli v1.1.0 // indirect
 	github.com/boj/redistore v1.4.1 // indirect
