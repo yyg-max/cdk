@@ -10,15 +10,9 @@ interface HCaptchaResponse {
   'error-codes'?: string[];
 }
 
-interface ProjectData {
-  data?: {
-    start_time: string;
-    end_time: string;
-  };
-}
-
 interface ReceiveRequestBody {
   captcha_token?: string;
+
   [key: string]: string | number | boolean | null | undefined;
 }
 
@@ -91,66 +85,6 @@ async function verifyCaptcha(token: string, remoteip?: string): Promise<{ succes
 }
 
 /**
- * 验证项目时间有效性
- */
-async function validateProjectTime(projectId: string, request: NextRequest): Promise<{ valid: boolean; error?: string }> {
-  try {
-    const projectCheckUrl = `${BACKEND_BASE_URL}/api/v1/projects/${projectId}`;
-
-    // 使用 AbortController 实现超时
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5秒超时
-
-    const projectResponse = await fetch(projectCheckUrl, {
-      headers: {
-        'Cookie': request.headers.get('cookie') || '',
-        'User-Agent': 'CDK-Frontend-Middleware',
-      },
-      credentials: 'include',
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!projectResponse.ok) {
-      if (projectResponse.status === 404) {
-        return {valid: false, error: '项目不存在或已被删除'};
-      }
-      if (projectResponse.status === 403) {
-        return {valid: false, error: '无权访问此项目'};
-      }
-      return {valid: false, error: `获取项目信息失败 (${projectResponse.status})，请稍后重试`};
-    }
-
-    const projectData: ProjectData = await projectResponse.json();
-
-    if (!projectData.data) {
-      return {valid: false, error: '项目不存在'};
-    }
-
-    const now = new Date();
-    const startTime = new Date(projectData.data.start_time);
-    const endTime = new Date(projectData.data.end_time);
-
-    if (now < startTime) {
-      return {valid: false, error: '项目尚未开始'};
-    }
-
-    if (now > endTime) {
-      return {valid: false, error: '项目已结束'};
-    }
-
-    return {valid: true};
-  } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
-      return {valid: false, error: '验证超时，请稍后重试'};
-    }
-
-    return {valid: false, error: formatErrorMessage(error, '服务器暂时无法验证项目信息，请稍后重试')};
-  }
-}
-
-/**
  * 处理领取请求
  */
 async function handleReceiveRequest(request: NextRequest, pathname: string): Promise<NextResponse> {
@@ -177,20 +111,6 @@ async function handleReceiveRequest(request: NextRequest, pathname: string): Pro
       );
     }
 
-    // 提取项目ID并验证时间
-    const pathParts = pathname.split('/');
-    const projectId = pathParts[4]; // /api/v1/projects/{id}/receive
-
-    if (projectId) {
-      const timeValidation = await validateProjectTime(projectId, request);
-      if (!timeValidation.valid) {
-        return NextResponse.json(
-            {error_msg: timeValidation.error},
-            {status: 400},
-        );
-      }
-    }
-
     // 准备转发到后端的请求
     // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
     const {captcha_token: _captchaToken, ...backendBody} = body;
@@ -204,6 +124,8 @@ async function handleReceiveRequest(request: NextRequest, pathname: string): Pro
         'X-Original-Host': request.headers.get('host') || '',
         'Cookie': request.headers.get('cookie') || '',
         'User-Agent': 'CDK-Frontend-Middleware',
+        'Referer': request.headers.get('referer') || '',
+        'Origin': request.headers.get('origin') || '',
       },
       body: Object.keys(backendBody).length > 0 ? JSON.stringify(backendBody) : undefined,
       credentials: 'include',

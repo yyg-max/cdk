@@ -41,6 +41,11 @@ var (
 func init() {
 	redisConfig := config.Config.Redis
 
+	if !redisConfig.Enabled {
+		log.Println("[Redis] is disabled, skipping Redis initialization")
+		return
+	}
+
 	addr := fmt.Sprintf("%s:%d", redisConfig.Host, redisConfig.Port)
 
 	Redis = redis.NewClient(

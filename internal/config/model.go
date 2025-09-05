@@ -33,6 +33,7 @@ type configModel struct {
 	Log        logConfig        `mapstructure:"log"`
 	Schedule   scheduleConfig   `mapstructure:"schedule"`
 	Worker     workerConfig     `mapstructure:"worker"`
+	ClickHouse clickHouseConfig `mapstructure:"clickhouse"`
 }
 
 // appConfig 应用基本配置
@@ -67,6 +68,7 @@ type OAuth2Config struct {
 
 // databaseConfig 数据库配置
 type databaseConfig struct {
+	Enabled         bool   `mapstructure:"enabled"`
 	Host            string `mapstructure:"host"`
 	Port            int    `mapstructure:"port"`
 	Username        string `mapstructure:"username"`
@@ -78,8 +80,22 @@ type databaseConfig struct {
 	LogLevel        string `mapstructure:"log_level"`
 }
 
+// clickhouse 配置
+type clickHouseConfig struct {
+	Enabled         bool     `mapstructure:"enabled"`
+	Hosts           []string `mapstructure:"hosts"`
+	Username        string   `mapstructure:"username"`
+	Password        string   `mapstructure:"password"`
+	Database        string   `mapstructure:"database"`
+	MaxIdleConn     int      `mapstructure:"max_idle_conn"`
+	MaxOpenConn     int      `mapstructure:"max_open_conn"`
+	ConnMaxLifetime int      `mapstructure:"conn_max_lifetime"`
+	DialTimeout     int      `mapstructure:"dial_timeout"`
+}
+
 // redisConfig Redis配置
 type redisConfig struct {
+	Enabled      bool   `mapstructure:"enabled"`
 	Host         string `mapstructure:"host"`
 	Port         int    `mapstructure:"port"`
 	Username     string `mapstructure:"username"`

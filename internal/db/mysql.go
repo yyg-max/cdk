@@ -40,6 +40,11 @@ var (
 )
 
 func init() {
+	if !config.Config.Database.Enabled {
+		log.Println("[MySQL] is disabled, skipping MySQL initialization")
+		return
+	}
+
 	var err error
 
 	dsn := fmt.Sprintf(
