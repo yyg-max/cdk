@@ -26,10 +26,16 @@ package project
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	utils2 "gorm.io/gorm/utils"
+	"net/http"
+	"regexp"
 	"strconv"
 	"time"
+
+	"github.com/linux-do/cdk/internal/utils"
 
 	"github.com/linux-do/cdk/internal/apps/oauth"
 	"github.com/linux-do/cdk/internal/db"
@@ -104,11 +110,92 @@ func (p *Project) GetTags(tx *gorm.DB) ([]string, error) {
 	return tags, nil
 }
 
-func (p *Project) CreateItems(ctx context.Context, tx *gorm.DB, items []string) error {
+type TopicResponse struct {
+	HighestPostNumber uint     `json:"highest_post_number"`
+	Tags              []string `json:"tags"`
+}
+
+func (p *Project) CreateItems(ctx context.Context, tx *gorm.DB, items []string, userName string, topicId uint64) error {
 	// skip create
 	if len(items) <= 0 {
 		return nil
 	}
+
+	isLottery := p.DistributionType == DistributionTypeLottery
+	var winners []string
+
+	if isLottery {
+		// 获取话题基本信息
+		url := fmt.Sprintf("https://linux.do/t/%d.json", topicId)
+		topicResp, errRequest := utils.Request(ctx, http.MethodGet, url, nil)
+		if errRequest != nil {
+			return errRequest
+		}
+		defer topicResp.Body.Close()
+
+		if topicResp.StatusCode != http.StatusOK {
+			return fmt.Errorf("获取话题信息失败，状态码: %d", topicResp.StatusCode)
+		}
+
+		var response TopicResponse
+		if errDecode := json.NewDecoder(topicResp.Body).Decode(&response); errDecode != nil {
+			return fmt.Errorf("解析话题信息失败: %w", errDecode)
+		}
+
+		if len(response.Tags) == 0 || !utils2.Contains(response.Tags, "抽奖") {
+			return errors.New("话题未添加抽奖标签，无法创建抽奖项目")
+		}
+
+		// 获取抽奖结果
+		url = fmt.Sprintf("https://linux.do/raw/%d/%d", topicId, response.HighestPostNumber)
+		resultResp, errRequest := utils.Request(ctx, http.MethodGet, url, nil)
+		if errRequest != nil {
+			return errRequest
+		}
+		defer resultResp.Body.Close()
+
+		if resultResp.StatusCode != http.StatusOK {
+			return fmt.Errorf("获取话题抽奖结果失败，状态码: %d", resultResp.StatusCode)
+		}
+
+		var content string
+		if errDecode := json.NewDecoder(resultResp.Body).Decode(&content); errDecode != nil {
+			return fmt.Errorf("解析中奖信息失败: %w", errDecode)
+		}
+
+		// 提取作者和中奖用户
+		authorMatches := regexp.MustCompile(`帖子作者: (.+?)\n`).FindStringSubmatch(content)
+		if len(authorMatches) <= 1 {
+			return errors.New("未找到帖子作者信息")
+		}
+
+		if authorMatches[1] != userName {
+			return errors.New("非话题作者，无法创建抽奖项目")
+		}
+
+		winnerSection := regexp.MustCompile(`### 以下为中奖佬友及对应楼层：\n((?s).+)`).FindStringSubmatch(content)
+		if len(winnerSection) < 2 {
+			return errors.New("未找到中奖用户部分")
+		}
+
+		// 提取所有中奖用户名
+		winnersMatches := regexp.MustCompile(`@([^\s-]+)`).FindAllStringSubmatch(winnerSection[1], -1)
+		if len(winnersMatches) == 0 {
+			return errors.New("未找到任何中奖用户")
+		}
+
+		winners = make([]string, 0, len(winnersMatches))
+		for _, match := range winnersMatches {
+			if len(match) > 1 {
+				winners = append(winners, match[1])
+			}
+		}
+
+		if len(winners) != len(items) {
+			return fmt.Errorf("中奖用户数量(%d)与奖品数量(%d)不符", len(winners), len(items))
+		}
+	}
+
 	// create items
 	projectItems := make([]ProjectItem, len(items))
 	for i, content := range items {
@@ -117,21 +204,31 @@ func (p *Project) CreateItems(ctx context.Context, tx *gorm.DB, items []string) 
 	if err := tx.Create(&projectItems).Error; err != nil {
 		return err
 	}
-	// load item ids
-	itemIDs := make([]interface{}, len(projectItems))
-	for i, item := range projectItems {
-		itemIDs[i] = item.ID
-	}
-	// push items to redis
-	if err := db.Redis.RPush(ctx, p.ItemsKey(), itemIDs...).Err(); err != nil {
-		return err
+	if isLottery {
+		itemUserMap := make(map[string]interface{}, len(projectItems))
+		for i, item := range projectItems {
+			itemUserMap[winners[i]] = item.ID
+		}
+		// push items to redis
+		if err := db.Redis.HSet(ctx, p.ItemsKey(), itemUserMap).Err(); err != nil {
+			return err
+		}
+	} else {
+		itemIDs := make([]interface{}, len(projectItems))
+		for i, item := range projectItems {
+			itemIDs[i] = item.ID
+		}
+		// push items to redis
+		if err := db.Redis.RPush(ctx, p.ItemsKey(), itemIDs...).Err(); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
 func (p *Project) CreateItemsWithFilter(ctx context.Context, tx *gorm.DB, items []string, enableFilter bool) error {
 	// skip create
-	if len(items) <= 0 {
+	if p.DistributionType == DistributionTypeLottery || len(items) <= 0 {
 		return nil
 	}
 
@@ -161,7 +258,7 @@ func (p *Project) CreateItemsWithFilter(ctx context.Context, tx *gorm.DB, items 
 	}
 
 	// Use the original CreateItems method with filtered items
-	return p.CreateItems(ctx, tx, filteredItems)
+	return p.CreateItems(ctx, tx, filteredItems, "", 0)
 }
 
 func (p *Project) GetFilteredItemsCount(ctx context.Context, tx *gorm.DB, items []string, enableFilter bool) (int64, error) {
@@ -199,8 +296,16 @@ func (p *Project) GetFilteredItemsCount(ctx context.Context, tx *gorm.DB, items 
 	return uniqueCount, nil
 }
 
-func (p *Project) PrepareReceive(ctx context.Context) (uint64, error) {
-	val, err := db.Redis.LPop(ctx, p.ItemsKey()).Result()
+func (p *Project) PrepareReceive(ctx context.Context, userName string) (uint64, error) {
+	var val string
+	var err error
+
+	if p.DistributionType == DistributionTypeLottery {
+		val, err = db.Redis.HGet(ctx, p.ItemsKey(), userName).Result()
+	} else {
+		val, err = db.Redis.LPop(ctx, p.ItemsKey()).Result()
+	}
+
 	if errors.Is(err, redis.Nil) {
 		return 0, errors.New(NoStock)
 	} else if err != nil {
@@ -225,6 +330,9 @@ func (p *Project) CheckSameIPReceived(ctx context.Context, ip string) (bool, err
 }
 
 func (p *Project) Stock(ctx context.Context) (int64, error) {
+	if p.DistributionType == DistributionTypeLottery {
+		return db.Redis.HLen(ctx, p.ItemsKey()).Result()
+	}
 	return db.Redis.LLen(ctx, p.ItemsKey()).Result()
 }
 

@@ -141,6 +141,7 @@ type CreateProjectRequestBody struct {
 	ProjectRequest
 	DistributionType DistributionType `json:"distribution_type" binding:"oneof=0 1"`
 	ProjectItems     []string         `json:"project_items" binding:"required,min=1,dive,min=1,max=1024"`
+	TopicId          uint64           `json:"topic_id" binding:"omitempty,gt=0"`
 }
 
 // CreateProject
@@ -159,7 +160,7 @@ func CreateProject(c *gin.Context) {
 	}
 
 	// init session
-	userID := oauth.GetUserIDFromContext(c)
+	currentUser, _ := oauth.GetUserFromContext(c)
 
 	// init project
 	project := Project{
@@ -173,7 +174,7 @@ func CreateProject(c *gin.Context) {
 		MinimumTrustLevel: req.MinimumTrustLevel,
 		AllowSameIP:       req.AllowSameIP,
 		RiskLevel:         req.RiskLevel,
-		CreatorID:         userID,
+		CreatorID:         currentUser.ID,
 		IsCompleted:       false,
 		HideFromExplore:   req.HideFromExplore,
 	}
@@ -190,7 +191,7 @@ func CreateProject(c *gin.Context) {
 				return err
 			}
 			// create content
-			if err := project.CreateItems(c.Request.Context(), tx, req.ProjectItems); err != nil {
+			if err := project.CreateItems(c.Request.Context(), tx, req.ProjectItems, currentUser.Username, req.TopicId); err != nil {
 				return err
 			}
 			return nil
@@ -229,11 +230,7 @@ func UpdateProject(c *gin.Context) {
 	}
 
 	// load project
-	project := &Project{}
-	if err := project.Exact(db.DB(c.Request.Context()), c.Param("id"), true); err != nil {
-		c.JSON(http.StatusNotFound, ProjectResponse{ErrorMsg: err.Error()})
-		return
-	}
+	project, _ := GetProjectFromContext(c)
 
 	// init project
 	project.Name = req.Name
@@ -245,6 +242,16 @@ func UpdateProject(c *gin.Context) {
 	project.RiskLevel = req.RiskLevel
 	project.HideFromExplore = req.HideFromExplore
 
+	if project.DistributionType == DistributionTypeLottery {
+		// save project
+		if err := db.DB(c.Request.Context()).Save(&project).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, ProjectResponse{ErrorMsg: err.Error()})
+		} else {
+			c.JSON(http.StatusOK, ProjectResponse{})
+		}
+		return
+	}
+
 	// save to db
 	if err := db.DB(c.Request.Context()).Transaction(
 		func(tx *gorm.DB) error {
@@ -253,13 +260,13 @@ func UpdateProject(c *gin.Context) {
 			if err != nil {
 				return err
 			}
-			
+
 			// Update project counts only if there are new items to add
 			if actualItemsCount > 0 {
 				project.TotalItems += actualItemsCount
 				project.IsCompleted = false
 			}
-			
+
 			// save project
 			if err := tx.Save(project).Error; err != nil {
 				return err
@@ -292,11 +299,7 @@ func UpdateProject(c *gin.Context) {
 // @Router /api/v1/projects/{id} [delete]
 func DeleteProject(c *gin.Context) {
 	// load project
-	project := &Project{}
-	if err := project.Exact(db.DB(c.Request.Context()), c.Param("id"), true); err != nil {
-		c.JSON(http.StatusNotFound, ProjectResponse{ErrorMsg: err.Error()})
-		return
-	}
+	project, _ := GetProjectFromContext(c)
 
 	// check for received
 	var count int64
@@ -350,7 +353,7 @@ func DeleteProject(c *gin.Context) {
 // @Router /api/v1/projects/{id}/receive [post]
 func ReceiveProject(c *gin.Context) {
 	// init
-	userID := oauth.GetUserIDFromContext(c)
+	currentUser, _ := oauth.GetUserFromContext(c)
 
 	// load project
 	project := &Project{}
@@ -360,7 +363,7 @@ func ReceiveProject(c *gin.Context) {
 	}
 
 	// prepare item
-	itemID, err := project.PrepareReceive(c.Request.Context())
+	itemID, err := project.PrepareReceive(c.Request.Context(), currentUser.Username)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, ProjectResponse{ErrorMsg: err.Error()})
 		return
@@ -378,7 +381,7 @@ func ReceiveProject(c *gin.Context) {
 		func(tx *gorm.DB) error {
 			now := time.Now()
 			// save to db
-			item.ReceiverID = &userID
+			item.ReceiverID = &currentUser.ID
 			item.ReceivedAt = &now
 			if err := tx.Save(item).Error; err != nil {
 				return err
@@ -406,11 +409,21 @@ func ReceiveProject(c *gin.Context) {
 					return err
 				}
 			}
+
+			// if lottery, remove user from redis set
+			if project.DistributionType == DistributionTypeLottery {
+				if err := db.Redis.HDel(c.Request.Context(), project.ItemsKey(), currentUser.Username).Err(); err != nil {
+					return err
+				}
+			}
+
 			return nil
 		},
 	); err != nil {
-		// push items to redis
-		db.Redis.RPush(c.Request.Context(), project.ItemsKey(), itemID)
+		if project.DistributionType == DistributionTypeOneForEach {
+			// push items to redis
+			db.Redis.RPush(c.Request.Context(), project.ItemsKey(), itemID)
+		}
 		// response
 		c.JSON(http.StatusInternalServerError, ProjectResponse{ErrorMsg: err.Error()})
 		return

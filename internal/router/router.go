@@ -109,7 +109,7 @@ func Serve() {
 			{
 				projectRouter.GET("/mine", project.ListMyProjects)
 				projectRouter.GET("", project.ListProjects)
-				projectRouter.POST("", project.CreateProject)
+				projectRouter.POST("", project.ProjectCreateRateLimitMiddleware(), project.CreateProject)
 				projectRouter.PUT("/:id", project.ProjectCreatorPermMiddleware(), project.UpdateProject)
 				projectRouter.DELETE("/:id", project.ProjectCreatorPermMiddleware(), project.DeleteProject)
 				projectRouter.POST("/:id/receive", project.ReceiveProjectMiddleware(), project.ReceiveProject)

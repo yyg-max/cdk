@@ -168,6 +168,8 @@ definitions:
         type: integer
       start_time:
         type: string
+      topic_id:
+        type: integer
     required:
     - end_time
     - name
@@ -178,10 +180,12 @@ definitions:
     enum:
     - 0
     - 1
+    - 2
     format: int32
     type: integer
     x-enum-varnames:
     - DistributionTypeOneForEach
+    - DistributionTypeLottery
     - DistributionTypeInvite
   project.GetProjectResponseData:
     properties:
