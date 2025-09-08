@@ -241,7 +241,7 @@ func (p *Project) CreateItems(ctx context.Context, tx *gorm.DB, items []string, 
 
 func (p *Project) CreateItemsWithFilter(ctx context.Context, tx *gorm.DB, items []string, enableFilter bool) error {
 	// skip create
-	if p.DistributionType == DistributionTypeLottery || len(items) <= 0 {
+	if len(items) <= 0 {
 		return nil
 	}
 
