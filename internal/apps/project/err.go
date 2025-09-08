@@ -37,4 +37,5 @@ const (
 	NotFound           = "项目不存在"
 	AlreadyReported    = "已举报过当前项目"
 	RequirementsFailed = "未达到项目发起者设置的条件"
+	TooManyRequests    = "创建项目太频繁，请稍后再试"
 )

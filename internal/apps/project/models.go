@@ -29,11 +29,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	utils2 "gorm.io/gorm/utils"
+	"github.com/linux-do/cdk/internal/config"
+	"io"
 	"net/http"
 	"regexp"
 	"strconv"
 	"time"
+
+	utils2 "gorm.io/gorm/utils"
 
 	"github.com/linux-do/cdk/internal/utils"
 
@@ -113,6 +116,7 @@ func (p *Project) GetTags(tx *gorm.DB) ([]string, error) {
 type TopicResponse struct {
 	HighestPostNumber uint     `json:"highest_post_number"`
 	Tags              []string `json:"tags"`
+	Closed            bool     `json:"closed"`
 }
 
 func (p *Project) CreateItems(ctx context.Context, tx *gorm.DB, items []string, userName string, topicId uint64) error {
@@ -125,9 +129,12 @@ func (p *Project) CreateItems(ctx context.Context, tx *gorm.DB, items []string, 
 	var winners []string
 
 	if isLottery {
+		cookies := map[string]string{
+			"_t": config.Config.LinuxDo.Token,
+		}
 		// 获取话题基本信息
 		url := fmt.Sprintf("https://linux.do/t/%d.json", topicId)
-		topicResp, errRequest := utils.Request(ctx, http.MethodGet, url, nil)
+		topicResp, errRequest := utils.Request(ctx, http.MethodGet, url, nil, cookies)
 		if errRequest != nil {
 			return errRequest
 		}
@@ -146,9 +153,13 @@ func (p *Project) CreateItems(ctx context.Context, tx *gorm.DB, items []string, 
 			return errors.New("话题未添加抽奖标签，无法创建抽奖项目")
 		}
 
+		if !response.Closed {
+			return errors.New("抽奖还未结束，无法创建抽奖项目")
+		}
+
 		// 获取抽奖结果
 		url = fmt.Sprintf("https://linux.do/raw/%d/%d", topicId, response.HighestPostNumber)
-		resultResp, errRequest := utils.Request(ctx, http.MethodGet, url, nil)
+		resultResp, errRequest := utils.Request(ctx, http.MethodGet, url, nil, cookies)
 		if errRequest != nil {
 			return errRequest
 		}
@@ -158,15 +169,17 @@ func (p *Project) CreateItems(ctx context.Context, tx *gorm.DB, items []string, 
 			return fmt.Errorf("获取话题抽奖结果失败，状态码: %d", resultResp.StatusCode)
 		}
 
-		var content string
-		if errDecode := json.NewDecoder(resultResp.Body).Decode(&content); errDecode != nil {
-			return fmt.Errorf("解析中奖信息失败: %w", errDecode)
+		var bodyBytes []byte
+		bodyBytes, errRead := io.ReadAll(resultResp.Body)
+		if errRead != nil {
+			return fmt.Errorf("读取中奖信息失败: %w", errRead)
 		}
+		content := string(bodyBytes)
 
 		// 提取作者和中奖用户
 		authorMatches := regexp.MustCompile(`帖子作者: (.+?)\n`).FindStringSubmatch(content)
 		if len(authorMatches) <= 1 {
-			return errors.New("未找到帖子作者信息")
+			return errors.New("未找到话题作者信息")
 		}
 
 		if authorMatches[1] != userName {

@@ -34,6 +34,7 @@ type configModel struct {
 	Schedule   scheduleConfig   `mapstructure:"schedule"`
 	Worker     workerConfig     `mapstructure:"worker"`
 	ClickHouse clickHouseConfig `mapstructure:"clickhouse"`
+	LinuxDo    linuxDoConfig    `mapstructure:"linuxdo"`
 }
 
 // appConfig 应用基本配置
@@ -134,4 +135,9 @@ type scheduleConfig struct {
 // workerConfig 工作配置
 type workerConfig struct {
 	Concurrency int `mapstructure:"concurrency"`
+}
+
+// linuxDoConfig
+type linuxDoConfig struct {
+	Token string `mapstructure:"token"`
 }

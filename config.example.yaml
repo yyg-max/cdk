@@ -100,3 +100,7 @@ schedule:
 # Worker
 worker:
   concurrency: 50
+
+# linuxDo
+linuxDo:
+  token: "<LINUX_DO_Auth_Token>"

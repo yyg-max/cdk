@@ -42,7 +42,7 @@ func ProjectCreateRateLimitMiddleware() gin.HandlerFunc {
 
 		ctx := c.Request.Context()
 		userLimit := config.Config.ProjectApp.CreateProjectRateLimit[user.TrustLevel]
-		key := fmt.Sprintf("rate_limit:project:create:%d:%d", user.ID, userLimit.IntervalSeconds)
+		key := fmt.Sprintf("rate_limit:project:create:%d:%s:%d", user.ID, user.Username, userLimit.IntervalSeconds)
 
 		// get count
 		count, err := db.Redis.Get(ctx, key).Int()
@@ -50,9 +50,9 @@ func ProjectCreateRateLimitMiddleware() gin.HandlerFunc {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, ProjectResponse{ErrorMsg: err.Error()})
 			return
 		}
-		if count > userLimit.MaxCount {
+		if count >= userLimit.MaxCount {
 			c.AbortWithStatusJSON(http.StatusTooManyRequests, ProjectResponse{
-				ErrorMsg: "创建项目太频繁，请稍后再试",
+				ErrorMsg: TooManyRequests,
 			})
 			return
 		}
