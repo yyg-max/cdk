@@ -77,7 +77,7 @@ func loadBadgeScores(ctx context.Context) (map[int]int, error) {
 // getUserBadges 获取用户的徽章
 func getUserBadges(ctx context.Context, username string) (*UserBadgeResponse, error) {
 	url := fmt.Sprintf("https://linux.do/user-badges/%s.json", username)
-	resp, err := utils.Request(ctx, http.MethodGet, url, nil, nil)
+	resp, err := utils.Request(ctx, http.MethodGet, url, nil, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +210,7 @@ func HandleUpdateSingleUserBadgeScore(ctx context.Context, t *asynq.Task) error 
 // getAllBadges 获取所有徽章数据
 func getAllBadges(ctx context.Context) (*UserBadgeResponse, error) {
 	url := "https://linux.do/badges.json"
-	resp, err := utils.Request(ctx, http.MethodGet, url, nil, nil)
+	resp, err := utils.Request(ctx, http.MethodGet, url, nil, nil, nil)
 	if err != nil {
 		return nil, err
 	}

@@ -139,5 +139,5 @@ type workerConfig struct {
 
 // linuxDoConfig
 type linuxDoConfig struct {
-	Token string `mapstructure:"token"`
+	ApiKey string `mapstructure:"api_key"`
 }

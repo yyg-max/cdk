@@ -129,12 +129,12 @@ func (p *Project) CreateItems(ctx context.Context, tx *gorm.DB, items []string, 
 	var winners []string
 
 	if isLottery {
-		cookies := map[string]string{
-			"_t": config.Config.LinuxDo.Token,
+		headers := map[string]string{
+			"User-Api-Key": config.Config.LinuxDo.ApiKey,
 		}
 		// 获取话题基本信息
 		url := fmt.Sprintf("https://linux.do/t/%d.json", topicId)
-		topicResp, errRequest := utils.Request(ctx, http.MethodGet, url, nil, cookies)
+		topicResp, errRequest := utils.Request(ctx, http.MethodGet, url, nil, headers, nil)
 		if errRequest != nil {
 			return errRequest
 		}
@@ -159,7 +159,7 @@ func (p *Project) CreateItems(ctx context.Context, tx *gorm.DB, items []string, 
 
 		// 获取抽奖结果
 		url = fmt.Sprintf("https://linux.do/raw/%d/%d", topicId, response.HighestPostNumber)
-		resultResp, errRequest := utils.Request(ctx, http.MethodGet, url, nil, cookies)
+		resultResp, errRequest := utils.Request(ctx, http.MethodGet, url, nil, headers, nil)
 		if errRequest != nil {
 			return errRequest
 		}

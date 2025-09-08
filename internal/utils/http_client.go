@@ -42,7 +42,7 @@ var httpClient = &http.Client{
 	},
 }
 
-func Request(ctx context.Context, method, url string, body io.Reader, cookies map[string]string) (*http.Response, error) {
+func Request(ctx context.Context, method, url string, body io.Reader, headers, cookies map[string]string) (*http.Response, error) {
 	req, err := http.NewRequestWithContext(ctx, method, url, body)
 	if err != nil {
 		return nil, fmt.Errorf("创建HTTP请求失败: %w", err)
@@ -51,6 +51,12 @@ func Request(ctx context.Context, method, url string, body io.Reader, cookies ma
 	if cookies != nil {
 		for key, value := range cookies {
 			req.AddCookie(&http.Cookie{Name: key, Value: value})
+		}
+	}
+
+	if headers != nil {
+		for key, value := range headers {
+			req.Header.Set(key, value)
 		}
 	}
 
