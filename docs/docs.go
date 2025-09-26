@@ -834,6 +834,9 @@ const docTemplate = `{
                 },
                 "start_time": {
                     "type": "string"
+                },
+                "topic_id": {
+                    "type": "integer"
                 }
             }
         },
@@ -842,10 +845,12 @@ const docTemplate = `{
             "format": "int32",
             "enum": [
                 0,
-                1
+                1,
+                2
             ],
             "x-enum-varnames": [
                 "DistributionTypeOneForEach",
+                "DistributionTypeLottery",
                 "DistributionTypeInvite"
             ]
         },
