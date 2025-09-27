@@ -5,11 +5,11 @@ import {useIsMobile} from '@/hooks/use-mobile';
 import {toast} from 'sonner';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
-import {Badge} from '@/components/ui/badge';
+
 import {ScrollArea} from '@/components/ui/scroll-area';
 import {Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription} from '@/components/animate-ui/radix/dialog';
 import {EmptyState} from '@/components/common/layout/EmptyState';
-import {Users, Search, User, Copy, CheckCircle, AlertCircle, Loader2} from 'lucide-react';
+import {Users, Search, Copy, CheckCircle, AlertCircle, Loader2} from 'lucide-react';
 import services from '@/lib/services';
 import {ProjectReceiver} from '@/lib/services/project/types';
 
@@ -128,7 +128,6 @@ export function ReceiverDialog({
       >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
             项目领取人
           </DialogTitle>
           <DialogDescription>
@@ -194,11 +193,7 @@ export function ReceiverDialog({
                       className="p-2 border rounded-md hover:bg-muted/50 transition-colors"
                     >
                       <div className="flex items-center gap-2">
-                        <User className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                        <span className="font-medium text-sm">{receiver.nickname}</span>
-                        <Badge variant="secondary" className="text-xs px-1.5 py-0">
-                          @{receiver.username}
-                        </Badge>
+                        <span className="font-medium text-sm">{receiver.username} ({receiver.nickname})</span>
                         <span className="text-xs text-muted-foreground">-</span>
                         <span className="text-xs font-mono truncate flex-1 min-w-0">{receiver.content}</span>
                         <Button
