@@ -297,3 +297,20 @@ export interface ReportProjectRequest {
  * 举报项目响应类型
  */
 export type ReportProjectResponse = BackendResponse<null>;
+
+/**
+ * 项目领取者信息
+ */
+export interface ProjectReceiver {
+  /** 用户名 */
+  username: string;
+  /** 用户昵称 */
+  nickname: string;
+  /** 领取到的内容 */
+  content: string;
+}
+
+/**
+ * 项目领取者响应类型
+ */
+export type ProjectReceiversResponse = BackendResponse<ProjectReceiver[] | null>;
