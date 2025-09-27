@@ -220,10 +220,10 @@ export function EditDialog({
               )}
             </TabsList>
 
-            <TabsContents className="mx-1 mb-1 -mt-2 rounded-sm h-full bg-background">
+            <TabsContents className="mb-1 -mt-2 rounded-sm h-full bg-background">
               <TabsContent
                 value="basic"
-                className={`space-y-6 py-6 px-1 ${isMobile ? 'max-h-[65vh]' : 'max-h-[60vh]'} overflow-y-auto`}
+                className={`space-y-6 py-6 ${isMobile ? 'max-h-[65vh]' : 'max-h-[60vh]'} overflow-y-auto`}
               >
                 <ProjectBasicForm
                   formData={formData}
@@ -238,7 +238,7 @@ export function EditDialog({
               {project.distribution_type !== DistributionType.LOTTERY && (
                 <TabsContent
                   value="content"
-                  className={`space-y-6 py-6 px-1 ${isMobile ? 'max-h-[65vh]' : 'max-h-[60vh]'} overflow-y-auto`}
+                  className={`space-y-6 py-6 ${isMobile ? 'max-h-[65vh]' : 'max-h-[60vh]'} overflow-y-auto`}
                 >
                   <BulkImportSection
                     items={newItems}

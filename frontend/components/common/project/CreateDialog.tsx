@@ -296,10 +296,10 @@ export function CreateDialog({
               <TabsTrigger value="distribution">分发内容</TabsTrigger>
             </TabsList>
 
-            <TabsContents className="mx-1 mb-1 -mt-2 rounded-sm h-full bg-background">
+            <TabsContents className="mb-1 -mt-2 rounded-sm h-full bg-background">
               <TabsContent
                 value="basic"
-                className={`space-y-6 py-6 px-1 ${isMobile ? 'max-h-[65vh]' : 'max-h-[60vh]'} overflow-y-auto`}
+                className={`space-y-6 py-6 ${isMobile ? 'max-h-[65vh]' : 'max-h-[60vh]'} overflow-y-auto`}
               >
                 <ProjectBasicForm
                   formData={formData}
@@ -313,7 +313,7 @@ export function CreateDialog({
 
               <TabsContent
                 value="distribution"
-                className={`space-y-6 py-6 px-1 ${isMobile ? 'max-h-[65vh]' : 'max-h-[60vh]'} overflow-y-auto`}
+                className={`space-y-6 py-6 ${isMobile ? 'max-h-[65vh]' : 'max-h-[60vh]'} overflow-y-auto`}
               >
                 <DistributionModeSelect
                   distributionType={formData.distributionType}
