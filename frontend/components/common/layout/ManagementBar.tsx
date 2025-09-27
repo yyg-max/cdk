@@ -238,6 +238,16 @@ export function ManagementBar() {
                   </Link>
                 </div>
               </div>
+
+              <div>
+                <h4 className="text-sm font-semibold mb-3 text-muted-foreground">关于 Linux Do CDK</h4>
+                <div className='space-y-2'>
+                  <div className="text-xs text-muted-foreground font-light">版本: 1.1.0</div>
+                  <div className="text-xs text-muted-foreground font-light">构建时间: 2025-09-27</div>
+                  <div className="text-xs text-muted-foreground font-light">Linux Do CDK 是一个为 Linux Do 社区打造的内容分发工具平台，旨在提供快速、安全、便捷的 CDK 分享服务。平台支持多种分发方式，具备完善的用户权限管理和风险控制机制。</div>
+                </div>
+              </div>
+
               {!isLoading && !user && (
                 <div className="text-center text-muted-foreground">
                   未登录用户
