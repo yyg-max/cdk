@@ -1,7 +1,6 @@
 import {useState, useEffect} from 'react';
 import {FloatingDock} from '@/components/ui/floating-dock';
 import {
-  MoonIcon,
   MessageCircleIcon,
   SendIcon,
   BarChartIcon,
@@ -17,17 +16,15 @@ import {useThemeUtils} from '@/hooks/use-theme-utils';
 import {useAuth} from '@/hooks/use-auth';
 import {CreateDialog} from '@/components/common/project/CreateDialog';
 import {CountingNumber} from '@/components/animate-ui/text/counting-number';
+import {Button} from '@/components/ui/button';
 import Link from 'next/link';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/animate-ui/radix/dialog';
 import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
 import {TrustLevel} from '@/lib/services/core';
 
@@ -105,42 +102,53 @@ export function ManagementBar() {
       title: '个人信息',
       icon: <User {...IconOptions} />,
       customComponent: (
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
+        <Dialog>
+          <DialogTrigger asChild>
             <div className="w-full h-full flex items-center justify-center cursor-pointer rounded transition-colors">
               <User className="h-4 w-4" />
             </div>
-          </AlertDialogTrigger>
-          <AlertDialogContent className="max-w-md">
-            <AlertDialogHeader>
-              <AlertDialogTitle>个人信息</AlertDialogTitle>
-            </AlertDialogHeader>
+          </DialogTrigger>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>个人信息</DialogTitle>
+            </DialogHeader>
             <div className="space-y-4">
               {!isLoading && user && (
                 <>
                   {/* 用户信息卡片 */}
                   <div className="bg-muted/20 rounded-lg p-4 space-y-4">
-                    {/* 用户基本信息 */}
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-12 w-12 rounded-full ring-2 ring-background">
-                        <AvatarImage src={user.avatar_url} alt={user.username} />
-                        <AvatarFallback className="rounded-lg bg-primary/10 text-primary font-medium">CN</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-semibold truncate">
-                          {user.username}
-                        </div>
-                        {user.nickname && (
-                          <div className="text-sm text-muted-foreground truncate">
-                            {user.nickname}
+                    {/* 用户基本信息和登出按钮 */}
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <Avatar className="h-12 w-12 rounded-full ring-2 ring-background">
+                          <AvatarImage src={user.avatar_url} alt={user.username} />
+                          <AvatarFallback className="rounded-lg bg-primary/10 text-primary font-medium">CN</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold truncate">
+                            {user.username}
                           </div>
-                        )}
-                        <div className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
-                          <span>{user.trust_level !== undefined ? getTrustLevelText(user.trust_level) : '未知'}</span>
-                          <span>•</span>
-                          <span>{user.id}</span>
+                          {user.nickname && (
+                            <div className="text-sm text-muted-foreground truncate">
+                              {user.nickname}
+                            </div>
+                          )}
+                          <div className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
+                            <span>{user.trust_level !== undefined ? getTrustLevelText(user.trust_level) : '未知'}</span>
+                            <span>•</span>
+                            <span>{user.id}</span>
+                          </div>
                         </div>
                       </div>
+                      <Button
+                        onClick={handleLogout}
+                        variant="destructive"
+                        size="sm"
+                        className="shrink-0"
+                      >
+                        <LogOutIcon className="w-4 h-4 mr-1" />
+                        登出
+                      </Button>
                     </div>
 
                   </div>
@@ -161,91 +169,83 @@ export function ManagementBar() {
                     </div>
                   )}
 
-                  {/* 主题设置 */}
-                  <div>
-                    <h4 className="text-sm font-semibold mb-3 text-muted-foreground">主题设置</h4>
-                    <div className="flex items-center justify-between">
-                      <button
-                        onClick={themeUtils.toggle}
-                        className="flex items-center gap-2 px-3 py-2 rounded-md bg-muted/50 hover:bg-muted/80 transition-colors"
-                      >
-                        {mounted ? themeUtils.getIcon('h-4 w-4') : <MoonIcon className="h-4 w-4" />}
-                        <span className="text-sm">{mounted ? themeUtils.getAction() : '切换'}</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* 快速链接区域 */}
-                  <div>
-                    <h4 className="text-sm font-semibold mb-3 text-muted-foreground">快速链接</h4>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Link
-                        href="https://linux.do"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 transition-colors group"
-                      >
-                        <div className="flex items-center justify-center w-8 h-8 rounded-md bg-orange-500/10 group-hover:bg-orange-500/20 transition-colors">
-                          <ExternalLinkIcon className="h-4 w-4 text-orange-600" />
-                        </div>
-                        <span className="text-sm font-medium">Linux Do 社区</span>
-                      </Link>
-                      <Link
-                        href="https://github.com/linux-do/cdk"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 transition-colors group"
-                      >
-                        <div className="flex items-center justify-center w-8 h-8 rounded-md bg-gray-500/10 group-hover:bg-gray-500/20 transition-colors">
-                          <Github className="h-4 w-4 text-gray-700 dark:text-gray-300" />
-                        </div>
-                        <span className="text-sm font-medium">GitHub 仓库</span>
-                      </Link>
-                      <Link
-                        href="https://github.com/linux-do/cdk/issues/new/choose"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 transition-colors group"
-                      >
-                        <div className="flex items-center justify-center w-8 h-8 rounded-md bg-green-500/10 group-hover:bg-green-500/20 transition-colors">
-                          <MessageCircleIcon className="h-4 w-4 text-green-600" />
-                        </div>
-                        <span className="text-sm font-medium">功能反馈</span>
-                      </Link>
-                      <Link
-                        href="https://t.me/linuxdocdk"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 transition-colors group"
-                      >
-                        <div className="flex items-center justify-center w-8 h-8 rounded-md bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors">
-                          <SendIcon className="h-4 w-4 text-blue-500" />
-                        </div>
-                        <span className="text-sm font-medium">群组交流</span>
-                      </Link>
-                    </div>
-                  </div>
                 </>
               )}
+
+              {/* 主题设置 */}
+              {mounted && (
+                <div>
+                  <h4 className="text-sm font-semibold mb-3 text-muted-foreground">主题设置</h4>
+                  <div className="flex items-center justify-between">
+                    <button
+                      onClick={themeUtils.toggle}
+                      className="flex items-center gap-2 px-3 py-2 rounded-md bg-muted/50 hover:bg-muted/80 transition-colors"
+                    >
+                      {themeUtils.getIcon('h-4 w-4')}
+                      <span className="text-sm">{themeUtils.getAction()}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* 快速链接区域 */}
+              <div>
+                <h4 className="text-sm font-semibold mb-3 text-muted-foreground">快速链接</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  <Link
+                    href="https://linux.do"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 transition-colors group"
+                  >
+                    <div className="flex items-center justify-center w-8 h-8 rounded-md bg-orange-500/10 group-hover:bg-orange-500/20 transition-colors">
+                      <ExternalLinkIcon className="h-4 w-4 text-orange-600" />
+                    </div>
+                    <span className="text-sm font-medium">Linux Do 社区</span>
+                  </Link>
+                  <Link
+                    href="https://github.com/linux-do/cdk"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 transition-colors group"
+                  >
+                    <div className="flex items-center justify-center w-8 h-8 rounded-md bg-gray-500/10 group-hover:bg-gray-500/20 transition-colors">
+                      <Github className="h-4 w-4 text-gray-700 dark:text-gray-300" />
+                    </div>
+                    <span className="text-sm font-medium">GitHub 仓库</span>
+                  </Link>
+                  <Link
+                    href="https://github.com/linux-do/cdk/issues/new/choose"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 transition-colors group"
+                  >
+                    <div className="flex items-center justify-center w-8 h-8 rounded-md bg-green-500/10 group-hover:bg-green-500/20 transition-colors">
+                      <MessageCircleIcon className="h-4 w-4 text-green-600" />
+                    </div>
+                    <span className="text-sm font-medium">功能反馈</span>
+                  </Link>
+                  <Link
+                    href="https://t.me/linuxdocdk"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 transition-colors group"
+                  >
+                    <div className="flex items-center justify-center w-8 h-8 rounded-md bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors">
+                      <SendIcon className="h-4 w-4 text-blue-500" />
+                    </div>
+                    <span className="text-sm font-medium">群组交流</span>
+                  </Link>
+                </div>
+              </div>
               {!isLoading && !user && (
                 <div className="text-center text-muted-foreground">
                   未登录用户
                 </div>
               )}
             </div>
-            <AlertDialogFooter>
-              <AlertDialogCancel>关闭</AlertDialogCancel>
-              {!isLoading && user && (
-                <AlertDialogAction
-                  onClick={handleLogout}
-                >
-                  <LogOutIcon className="w-4 h-4" />
-                  登出
-                </AlertDialogAction>
-              )}
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+          </DialogContent>
+        </Dialog>
       ),
     },
   ];
