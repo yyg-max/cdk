@@ -26,6 +26,10 @@ package project
 
 import (
 	"errors"
+	"net/http"
+	"strings"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/linux-do/cdk/internal/apps/oauth"
@@ -33,9 +37,6 @@ import (
 	"github.com/linux-do/cdk/internal/db"
 	"github.com/linux-do/cdk/internal/utils"
 	"gorm.io/gorm"
-	"net/http"
-	"strings"
-	"time"
 )
 
 type ProjectResponse struct {
@@ -342,6 +343,38 @@ func DeleteProject(c *gin.Context) {
 
 	// response
 	c.JSON(http.StatusOK, ProjectResponse{})
+}
+
+// ListProjectReceivers
+// @Tags project
+// @Accept json
+// @Produce json
+// @Param id path string true "项目ID"
+// @Success 200 {object} ProjectResponse
+// @Router /api/v1/projects/{id}/receivers [get]
+func ListProjectReceivers(c *gin.Context) {
+	// load project
+	project, _ := GetProjectFromContext(c)
+
+	// query db
+	var receivers []struct {
+		Username string `json:"username"`
+		Nickname string `json:"nickname"`
+		Content  string `json:"content"`
+	}
+	if err := db.DB(c.Request.Context()).
+		Model(&ProjectItem{}).
+		Select("users.username, users.nickname, project_items.content").
+		Joins("JOIN users ON users.id = project_items.receiver_id").
+		Where("project_items.project_id = ?", project.ID).
+		Order("project_items.received_at DESC").
+		Scan(&receivers).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, ProjectResponse{ErrorMsg: err.Error()})
+		return
+	}
+
+	// response
+	c.JSON(http.StatusOK, ProjectResponse{Data: receivers})
 }
 
 // ReceiveProject
