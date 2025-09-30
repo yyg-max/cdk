@@ -345,29 +345,61 @@ func DeleteProject(c *gin.Context) {
 	c.JSON(http.StatusOK, ProjectResponse{})
 }
 
+type ListProjectReceiversRequest struct {
+	Current int    `json:"current" form:"current" binding:"min=1"`
+	Size    int    `json:"size" form:"size" binding:"min=1,max=100"`
+	Search  string `json:"search" form:"search" binding:"max=1024"`
+}
+
 // ListProjectReceivers
 // @Tags project
 // @Accept json
 // @Produce json
-// @Param id path string true "项目ID"
+// @Param id path string true "项目ID (Project ID)"
+// @Param request query ListProjectReceiversRequest true "request query"
 // @Success 200 {object} ProjectResponse
 // @Router /api/v1/projects/{id}/receivers [get]
 func ListProjectReceivers(c *gin.Context) {
 	// load project
 	project, _ := GetProjectFromContext(c)
 
-	// query db
+	// validate pagination request
+	req := &ListProjectReceiversRequest{}
+	if err := c.ShouldBindQuery(req); err != nil {
+		c.JSON(http.StatusBadRequest, ProjectResponse{ErrorMsg: err.Error()})
+		return
+	}
+	offset := (req.Current - 1) * req.Size
+
+	// build optimized query with proper indexing strategy
+	query := db.DB(c.Request.Context()).
+		Model(&ProjectItem{}).
+		Select("users.username, users.nickname, project_items.content").
+		Joins("JOIN users ON users.id = project_items.receiver_id").
+		Where("project_items.project_id = ?", project.ID)
+
+	if req.Search != "" {
+		searchPattern := strings.TrimSpace(req.Search) + "%"
+		if len(searchPattern) <= 20 {
+			query = query.Where(
+				"users.username LIKE ? OR users.nickname LIKE ? OR project_items.content LIKE ?",
+				searchPattern, "%"+searchPattern, "%"+searchPattern)
+		} else {
+			query = query.Where(
+				"users.nickname LIKE ? OR project_items.content LIKE ?",
+				"%"+searchPattern, "%"+searchPattern)
+		}
+	}
+
+	// query db with optimizations
 	var receivers []struct {
 		Username string `json:"username"`
 		Nickname string `json:"nickname"`
 		Content  string `json:"content"`
 	}
-	if err := db.DB(c.Request.Context()).
-		Model(&ProjectItem{}).
-		Select("users.username, users.nickname, project_items.content").
-		Joins("JOIN users ON users.id = project_items.receiver_id").
-		Where("project_items.project_id = ?", project.ID).
-		Order("project_items.received_at DESC").
+	if err := query.
+		Offset(offset).
+		Limit(req.Size).
 		Scan(&receivers).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, ProjectResponse{ErrorMsg: err.Error()})
 		return
