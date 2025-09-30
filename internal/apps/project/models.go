@@ -29,12 +29,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/linux-do/cdk/internal/config"
 	"io"
 	"net/http"
 	"regexp"
 	"strconv"
 	"time"
+
+	"github.com/linux-do/cdk/internal/config"
 
 	utils2 "gorm.io/gorm/utils"
 
@@ -125,10 +126,7 @@ func (p *Project) CreateItems(ctx context.Context, tx *gorm.DB, items []string, 
 		return nil
 	}
 
-	isLottery := p.DistributionType == DistributionTypeLottery
-	var winners []string
-
-	if isLottery {
+	if p.DistributionType == DistributionTypeLottery {
 		headers := map[string]string{
 			"User-Api-Key": config.Config.LinuxDo.ApiKey,
 		}
@@ -192,41 +190,79 @@ func (p *Project) CreateItems(ctx context.Context, tx *gorm.DB, items []string, 
 		}
 
 		// 提取所有中奖用户名
-		winnersMatches := regexp.MustCompile(`@([^\s-]+)`).FindAllStringSubmatch(winnerSection[1], -1)
+		winnersMatches := regexp.MustCompile(`@(\S+)`).FindAllStringSubmatch(winnerSection[1], -1)
 		if len(winnersMatches) == 0 {
 			return errors.New("未找到任何中奖用户")
 		}
 
-		winners = make([]string, 0, len(winnersMatches))
-		for _, match := range winnersMatches {
+		if len(winnersMatches) != len(items) {
+			return fmt.Errorf("中奖用户数量(%d)与奖品数量(%d)不符", len(winnersMatches), len(items))
+		}
+
+		// 抽奖中奖者
+		winners := make(map[string][]int)
+		for i, match := range winnersMatches {
 			if len(match) > 1 {
-				winners = append(winners, match[1])
+				winner := match[1]
+				winners[winner] = append(winners[winner], i)
 			}
 		}
 
-		if len(winners) != len(items) {
-			return fmt.Errorf("中奖用户数量(%d)与奖品数量(%d)不符", len(winners), len(items))
+		type winnerItem struct {
+			username string
+			item     ProjectItem
 		}
-	}
 
-	// create items
-	projectItems := make([]ProjectItem, len(items))
-	for i, content := range items {
-		projectItems[i] = ProjectItem{ProjectID: p.ID, Content: content}
-	}
-	if err := tx.Create(&projectItems).Error; err != nil {
-		return err
-	}
-	if isLottery {
-		itemUserMap := make(map[string]interface{}, len(projectItems))
-		for i, item := range projectItems {
-			itemUserMap[winners[i]] = item.ID
+		winnerItems := make([]winnerItem, 0, len(winners))
+
+		// 合并多个奖品内容，并保存对应的用户名
+		for winner, indices := range winners {
+			mergedContent := ""
+			for i, idx := range indices {
+				if i > 0 {
+					mergedContent += "$\n*"
+				}
+				mergedContent += fmt.Sprintf("中奖码%d: %s", i+1, items[idx])
+			}
+			item := ProjectItem{
+				ProjectID: p.ID,
+				Content:   mergedContent,
+			}
+			winnerItems = append(winnerItems, winnerItem{
+				username: winner,
+				item:     item,
+			})
+		}
+
+		projectItems := make([]ProjectItem, len(winnerItems))
+		for i, wi := range winnerItems {
+			projectItems[i] = wi.item
+		}
+
+		if err := tx.Create(&projectItems).Error; err != nil {
+			return err
+		}
+
+		itemUserMap := make(map[string]interface{}, len(winners))
+		for i, wi := range winnerItems {
+			itemUserMap[wi.username] = projectItems[i].ID
 		}
 		// push items to redis
 		if err := db.Redis.HSet(ctx, p.ItemsKey(), itemUserMap).Err(); err != nil {
 			return err
 		}
 	} else {
+		// create items
+		projectItems := make([]ProjectItem, len(items))
+
+		for i, content := range items {
+			projectItems[i] = ProjectItem{ProjectID: p.ID, Content: content}
+		}
+
+		if err := tx.Create(&projectItems).Error; err != nil {
+			return err
+		}
+
 		itemIDs := make([]interface{}, len(projectItems))
 		for i, item := range projectItems {
 			itemIDs[i] = item.ID
