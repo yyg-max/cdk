@@ -219,6 +219,9 @@ func (p *Project) CreateItems(ctx context.Context, tx *gorm.DB, items []string, 
 		for winner, indices := range winners {
 			mergedContent := ""
 			for i, idx := range indices {
+				if i > 0 {
+					mergedContent += "$\n*"
+				}
 				mergedContent += fmt.Sprintf("中奖码%d: %s", i+1, items[idx])
 			}
 			item := ProjectItem{
