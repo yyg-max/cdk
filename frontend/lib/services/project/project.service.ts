@@ -97,12 +97,12 @@ export class ProjectService extends BaseService {
    * @returns 项目领取者列表
    */
   static async getProjectReceivers(
-    projectId: string,
-    current: number = 1,
-    size: number = 10,
-    search: string = ''
+      projectId: string,
+      current: number = 1,
+      size: number = 10,
+      search: string = '',
   ): Promise<ProjectReceiver[]> {
-    const response = await apiClient.get<ProjectReceiversResponse>(`${this.basePath}/${projectId}/receivers`,{
+    const response = await apiClient.get<ProjectReceiversResponse>(`${this.basePath}/${projectId}/receivers`, {
       params: {
         current,
         size,
@@ -498,10 +498,10 @@ export class ProjectService extends BaseService {
    * @returns 获取结果，包含成功状态、领取者列表和错误信息
    */
   static async getProjectReceiversSafe(
-    projectId: string,
-    current: number = 1,
-    size: number = 10,
-    search: string = ''
+      projectId: string,
+      current: number = 1,
+      size: number = 10,
+      search: string = '',
   ): Promise<{
     success: boolean;
     data?: ProjectReceiver[];

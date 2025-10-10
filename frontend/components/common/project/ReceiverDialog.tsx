@@ -65,8 +65,8 @@ export function ReceiverDialog({
     try {
       // 拆分内容并整理成多行格式
       const contentItems = content.split('$\n*');
-      const cleanedItems = contentItems.map(item =>
-        item.replace(/^[\u4e00-\u9fa5\w]+\d*:\s*/, '')
+      const cleanedItems = contentItems.map((item) =>
+        item.replace(/^[\u4e00-\u9fa5\w]+\d*:\s*/, ''),
       );
       const formattedContent = cleanedItems.join('\n');
       await navigator.clipboard.writeText(formattedContent);
