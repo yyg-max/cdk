@@ -91,10 +91,24 @@ export class ProjectService extends BaseService {
   /**
    * 获取项目领取者列表（仅项目创建者可访问）
    * @param projectId - 项目ID
+   * @param current - 当前页码，默认为1
+   * @param size - 每页大小，默认为10
+   * @param search - 搜索关键词，可选
    * @returns 项目领取者列表
    */
-  static async getProjectReceivers(projectId: string): Promise<ProjectReceiver[]> {
-    const response = await apiClient.get<ProjectReceiversResponse>(`${this.basePath}/${projectId}/receivers`);
+  static async getProjectReceivers(
+    projectId: string,
+    current: number = 1,
+    size: number = 10,
+    search: string = ''
+  ): Promise<ProjectReceiver[]> {
+    const response = await apiClient.get<ProjectReceiversResponse>(`${this.basePath}/${projectId}/receivers`,{
+      params: {
+        current,
+        size,
+        search,
+      },
+    });
     if (response.data.error_msg) {
       throw new Error(response.data.error_msg);
     }
@@ -478,15 +492,23 @@ export class ProjectService extends BaseService {
   /**
    * 获取项目领取者列表（带错误处理，仅项目创建者可访问）
    * @param projectId - 项目ID
+   * @param current - 当前页码，默认为1
+   * @param size - 每页大小，默认为10
+   * @param search - 搜索关键词，可选
    * @returns 获取结果，包含成功状态、领取者列表和错误信息
    */
-  static async getProjectReceiversSafe(projectId: string): Promise<{
+  static async getProjectReceiversSafe(
+    projectId: string,
+    current: number = 1,
+    size: number = 10,
+    search: string = ''
+  ): Promise<{
     success: boolean;
     data?: ProjectReceiver[];
     error?: string;
   }> {
     try {
-      const data = await this.getProjectReceivers(projectId);
+      const data = await this.getProjectReceivers(projectId, current, size, search);
       return {
         success: true,
         data,

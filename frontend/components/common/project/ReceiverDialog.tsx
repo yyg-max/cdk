@@ -2,6 +2,7 @@
 
 import {useState, useEffect, useCallback} from 'react';
 import {useIsMobile} from '@/hooks/use-mobile';
+import {useDebounce} from '@/hooks/use-debounce';
 import {toast} from 'sonner';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
@@ -29,9 +30,9 @@ export function ReceiverDialog({
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [receivers, setReceivers] = useState<ProjectReceiver[]>([]);
   const [filteredReceivers, setFilteredReceivers] = useState<ProjectReceiver[]>([]);
   const [searchKeyword, setSearchKeyword] = useState('');
+  const debouncedSearchKeyword = useDebounce(searchKeyword, 500);
   const [error, setError] = useState<string | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
@@ -43,10 +44,9 @@ export function ReceiverDialog({
     setError(null);
 
     try {
-      const result = await services.project.getProjectReceiversSafe(projectId);
+      const result = await services.project.getProjectReceiversSafe(projectId, 1, 100, debouncedSearchKeyword);
 
       if (result.success) {
-        setReceivers(result.data || []);
         setFilteredReceivers(result.data || []);
       } else {
         setError(result.error || '获取领取人列表失败');
@@ -56,27 +56,20 @@ export function ReceiverDialog({
     } finally {
       setLoading(false);
     }
-  }, [projectId]);
-
-  /**
-   * 搜索功能
-   */
-  const handleSearch = useCallback((keyword: string) => {
-    const filtered = receivers.filter((receiver) =>
-      receiver.username.toLowerCase().includes(keyword.toLowerCase()) ||
-      receiver.nickname.toLowerCase().includes(keyword.toLowerCase()) ||
-      receiver.content.toLowerCase().includes(keyword.toLowerCase()),
-    );
-
-    setFilteredReceivers(filtered);
-  }, [receivers]);
+  }, [projectId, debouncedSearchKeyword]);
 
   /**
    * 复制内容到剪贴板
    */
   const handleCopy = async (content: string, index: number) => {
     try {
-      await navigator.clipboard.writeText(content);
+      // 拆分内容并整理成多行格式
+      const contentItems = content.split('$\n*');
+      const cleanedItems = contentItems.map(item =>
+        item.replace(/^[\u4e00-\u9fa5\w]+\d*:\s*/, '')
+      );
+      const formattedContent = cleanedItems.join('\n');
+      await navigator.clipboard.writeText(formattedContent);
       setCopiedIndex(index);
       toast.success('已复制到剪贴板');
 
@@ -102,16 +95,8 @@ export function ReceiverDialog({
   useEffect(() => {
     if (open) {
       fetchReceivers();
-      setSearchKeyword('');
     }
   }, [open, fetchReceivers]);
-
-  /**
-   * 搜索关键词变化时过滤数据
-   */
-  useEffect(() => {
-    handleSearch(searchKeyword);
-  }, [searchKeyword, handleSearch]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -145,16 +130,6 @@ export function ReceiverDialog({
               className="pl-10"
             />
           </div>
-
-          {/* 统计信息 */}
-          {!loading && !error && (
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <span>
-                共 {receivers.length} 人领取
-                {searchKeyword && ` · 筛选出 ${filteredReceivers.length} 条结果`}
-              </span>
-            </div>
-          )}
 
           {/* 内容区域 */}
           <div className="min-h-[300px]">
@@ -194,7 +169,11 @@ export function ReceiverDialog({
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-sm">{receiver.username} ({receiver.nickname})</span>
                         <span className="text-xs text-muted-foreground">-</span>
-                        <span className="text-xs font-mono truncate flex-1 min-w-0">{receiver.content}</span>
+                        <div className="text-xs font-mono flex-1 min-w-0 max-h-24 overflow-y-auto">
+                          {receiver.content.split('$\n*').map((item, itemIndex) => (
+                            <div key={itemIndex} className="truncate">{item}</div>
+                          ))}
+                        </div>
                         <Button
                           variant="secondary"
                           size="sm"

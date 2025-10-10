@@ -380,14 +380,14 @@ func ListProjectReceivers(c *gin.Context) {
 
 	if req.Search != "" {
 		searchPattern := strings.TrimSpace(req.Search) + "%"
-		if len(searchPattern) <= 20 {
-			query = query.Where(
-				"users.username LIKE ? OR users.nickname LIKE ? OR project_items.content LIKE ?",
-				searchPattern, "%"+searchPattern, "%"+searchPattern)
-		} else {
+		if len(searchPattern) > 21 {
 			query = query.Where(
 				"users.nickname LIKE ? OR project_items.content LIKE ?",
 				"%"+searchPattern, "%"+searchPattern)
+		} else {
+			query = query.Where(
+				"users.username LIKE ? OR users.nickname LIKE ? OR project_items.content LIKE ?",
+				searchPattern, "%"+searchPattern, "%"+searchPattern)
 		}
 	}
 
