@@ -764,11 +764,24 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: 项目ID
+      - description: 项目ID (Project ID)
         in: path
         name: id
         required: true
         type: string
+      - in: query
+        minimum: 1
+        name: current
+        type: integer
+      - in: query
+        maxLength: 1024
+        name: search
+        type: string
+      - in: query
+        maximum: 100
+        minimum: 1
+        name: size
+        type: integer
       produces:
       - application/json
       responses:

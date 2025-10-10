@@ -24,7 +24,8 @@ export const DEFAULT_FORM_VALUES = {
  */
 export const DISTRIBUTION_MODE_NAMES: Record<number, string> = {
   0: '一码一用',
-  1: '邀请制',
+  1: '抽奖分发',
+  2: '邀请制',
 };
 
 /**

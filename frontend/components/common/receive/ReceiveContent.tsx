@@ -62,24 +62,31 @@ const ReceiveButton = ({
   onReceive,
 }: ReceiveButtonProps) => {
   if (hasReceived && receivedContent) {
+    const contentItems = receivedContent.split('$\n*');
+
     return (
       <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg -mt-4">
         <div className="text-xs text-muted-foreground mb-2">分发内容</div>
-        <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
-          <code className="block text-sm font-bold text-gray-900 dark:text-gray-100 break-all">
-            {receivedContent}
-          </code>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="ml-3 flex-shrink-0 h-7 w-7 p-0"
-            onClick={() => {
-              copyToClipboard(receivedContent);
-              toast.success('复制成功');
-            }}
-          >
-            <Copy className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-          </Button>
+        <div className="space-y-2">
+          {contentItems.map((item, index) => (
+            <div key={index} className="flex-1 min-w-0 flex items-center justify-between gap-2">
+              <code className="block text-sm font-bold text-gray-900 dark:text-gray-100 break-all">
+                {item}
+              </code>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="ml-3 flex-shrink-0 h-7 w-7 p-0"
+                onClick={() => {
+                  const cleanContent = item.replace(/^[\u4e00-\u9fa5\w]+\d*:\s*/, '');
+                  copyToClipboard(cleanContent);
+                  toast.success('复制成功');
+                }}
+              >
+                <Copy className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+              </Button>
+            </div>
+          ))}
         </div>
       </div>
     );
