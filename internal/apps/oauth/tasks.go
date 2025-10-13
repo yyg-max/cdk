@@ -74,57 +74,8 @@ func loadBadgeScores(ctx context.Context) (map[int]int, error) {
 	return badgeScores, nil
 }
 
-// getUserBadges 获取用户的徽章
-func getUserBadges(ctx context.Context, username string) (*UserBadgeResponse, error) {
-	url := fmt.Sprintf("https://linux.do/user-badges/%s.json", username)
-	resp, err := utils.Request(ctx, http.MethodGet, url, nil, nil, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("获取用户徽章失败，状态码: %d", resp.StatusCode)
-	}
-
-	var response UserBadgeResponse
-	if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return nil, fmt.Errorf("解析用户徽章响应失败: %w", err)
-	}
-	return &response, nil
-}
-
-// calculateUserScore 计算用户分数
-func calculateUserScore(user *User, badges []Badge, badgeScores map[int]int) int {
-	var totalScore int
-	for _, badge := range badges {
-		// 从缓存中查找徽章分数
-		if score, exists := badgeScores[badge.ID]; exists {
-			totalScore += score
-		}
-	}
-	return totalScore - int(config.Config.ProjectApp.DeductionPerOffense)*int(user.ViolationCount)
-}
-
-// updateUserScore 更新用户分数
-func updateUserScore(ctx context.Context, user *User, newScore int) error {
-	// 如果分数没变化，不更新
-	if int(user.Score) == newScore || (newScore > MaxUserScore && int(user.Score) == MaxUserScore) {
-		return nil
-	}
-
-	// 更新用户分数
-	if err := user.SetScore(db.DB(ctx), newScore); err != nil {
-		return fmt.Errorf("更新用户[%s]分数失败: %w", user.Username, err)
-	}
-
-	logger.InfoF(ctx, "用户[%s]徽章分数更新成功: %d -> %d", user.Username, user.Score, newScore)
-	return nil
-}
-
 // HandleUpdateUserBadgeScores 处理所有用户徽章分数更新任务
 func HandleUpdateUserBadgeScores(ctx context.Context, t *asynq.Task) error {
-
 	// 分页处理用户
 	pageSize := 200
 	page := 0
@@ -194,17 +145,17 @@ func HandleUpdateSingleUserBadgeScore(ctx context.Context, t *asynq.Task) error 
 	}
 
 	// 获取用户徽章
-	response, err := getUserBadges(ctx, user.Username)
+	response, err := user.GetUserBadges(ctx)
 	if err != nil {
 		logger.ErrorF(ctx, "处理用户[%s]失败: %v", user.Username, err)
 		return err
 	}
 
 	// 计算用户分数
-	totalScore := calculateUserScore(&user, response.Badges, badgeScores)
+	totalScore := user.CalculateUserScore(response.Badges, badgeScores)
 
 	// 更新用户分数
-	return updateUserScore(ctx, &user, totalScore)
+	return user.UpdateUserScore(ctx, totalScore)
 }
 
 // getAllBadges 获取所有徽章数据
