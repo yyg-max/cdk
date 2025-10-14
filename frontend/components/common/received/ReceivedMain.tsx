@@ -1,6 +1,6 @@
 'use client';
 
-import {useState, useEffect} from 'react';
+import {useState, useEffect, useCallback} from 'react';
 import {toast} from 'sonner';
 import {Skeleton} from '@/components/ui/skeleton';
 import {Separator} from '@/components/ui/separator';
@@ -9,8 +9,9 @@ import {DataChart, DataTable} from '@/components/common/received';
 import services from '@/lib/services';
 import {ReceiveHistoryItem} from '@/lib/services/project/types';
 import {motion} from 'motion/react';
+import {useDebounce} from '@/hooks/use-debounce';
 
-const PAGE_SIZE = 100;
+const PAGE_SIZE = 20;
 
 /**
  * 数据图表骨架屏组件
@@ -136,59 +137,95 @@ const DataTableSkeleton = () => (
  * 我的领取页面主组件
  */
 export function ReceivedMain() {
-  const [data, setData] = useState<ReceiveHistoryItem[]>([]);
-  const [Loading, setLoading] = useState(true);
+  const [chartData, setChartData] = useState<ReceiveHistoryItem[]>([]);
+  const [tableData, setTableData] = useState<ReceiveHistoryItem[]>([]);
+  const [totalItems, setTotalItems] = useState(0);
+  const [chartLoading, setChartLoading] = useState(true);
+  const [tableLoading, setTableLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchInput, setSearchInput] = useState('');
+  const debouncedSearch = useDebounce(searchInput, 500);
 
   /**
-   * 获取所有领取记录
+   * 获取图表数据
    */
-  const fetchAllReceiveHistory = async () => {
+  const fetchChartData = async () => {
     try {
-      setLoading(true);
+      setChartLoading(true);
 
       const firstPageResult = await services.project.getReceiveHistorySafe({
         current: 1,
-        size: PAGE_SIZE,
+        size: 100,
       });
 
       if (!firstPageResult.success || !firstPageResult.data) {
-        throw new Error(firstPageResult.error || '获取数据失败');
+        throw new Error(firstPageResult.error || '获取图表数据失败');
       }
 
       const {total, results} = firstPageResult.data;
-      const allResults = [...results];
+      const allResults = [...(results || [])];
 
-      if (total > PAGE_SIZE) {
-        const totalPages = Math.ceil(total / PAGE_SIZE);
+      if (total > 100) {
+        const totalPages = Math.ceil(total / 100);
         const remainingPages = Array.from({length: totalPages - 1}, (_, i) => i + 2);
 
         const remainingRequests = remainingPages.map((page) =>
           services.project.getReceiveHistorySafe({
             current: page,
-            size: PAGE_SIZE,
+            size: 100,
           }),
         );
 
         const remainingResults = await Promise.all(remainingRequests);
 
         remainingResults.forEach((result) => {
-          if (result.success && result.data) {
+          if (result.success && result.data && result.data.results) {
             allResults.push(...result.data.results);
           }
         });
       }
 
-      setData(allResults);
+      setChartData(allResults);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : '获取数据失败');
+      toast.error(err instanceof Error ? err.message : '获取图表数据失败');
     } finally {
-      setLoading(false);
+      setChartLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchAllReceiveHistory();
+    //fetchChartData();
   }, []);
+
+  /**
+   * 获取表格数据
+   */
+  const fetchTableData = async (page: number, search: string) => {
+    try {
+      setTableLoading(true);
+
+      const result = await services.project.getReceiveHistorySafe({
+        current: page,
+        size: PAGE_SIZE,
+        search,
+      });
+
+      if (!result.success || !result.data) {
+        throw new Error(result.error || '获取表格数据失败');
+      }
+
+      setTableData(result.data.results || []);
+      setTotalItems(result.data.total);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '获取表格数据失败');
+    } finally {
+      setTableLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTableData(currentPage, debouncedSearch);
+  }, [currentPage, debouncedSearch]);
 
   const containerVariants = {
     hidden: {opacity: 0},
@@ -211,6 +248,18 @@ export function ReceivedMain() {
     },
   };
 
+  const handlePageChange = useCallback((page: number) => {
+    setCurrentPage(page);
+  }, []);
+
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchInput(value);
+  }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch]);
+
   return (
     <motion.div
       className="space-y-6"
@@ -232,18 +281,26 @@ export function ReceivedMain() {
       </motion.div>
 
       <motion.div className="space-y-6" variants={itemVariants}>
-        {Loading ? (
-          <>
-            <DataChartSkeleton />
-            <Separator className="my-8" />
-            <DataTableSkeleton />
-          </>
+        {chartLoading ? (
+          <DataChartSkeleton />
         ) : (
-          <>
-            <DataChart data={data} />
-            <Separator className="my-8" />
-            <DataTable data={data} />
-          </>
+          <DataChart data={chartData} />
+        )}
+
+        <Separator className="my-8" />
+
+        {tableLoading ? (
+          <DataTableSkeleton />
+        ) : (
+          <DataTable
+            data={tableData}
+            currentPage={currentPage}
+            totalItems={totalItems}
+            pageSize={PAGE_SIZE}
+            onPageChange={handlePageChange}
+            searchTerm={searchInput}
+            onSearchChange={handleSearchChange}
+          />
         )}
       </motion.div>
     </motion.div>

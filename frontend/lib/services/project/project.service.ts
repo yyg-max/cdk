@@ -145,6 +145,7 @@ export class ProjectService extends BaseService {
       params: {
         current: params.current,
         size: params.size,
+        search: params.search || '',
       },
     });
 

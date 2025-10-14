@@ -69,6 +69,7 @@ const StatCard = ({title, value, suffix = ''}: {title: string; value: number; su
 export function DataChart({data}: DataChartProps) {
   const isMobile = useIsMobile();
   const [timeRange, setTimeRange] = React.useState<TimeRange>('7d');
+  const safeData = data || [];
 
   React.useEffect(() => {
     if (isMobile) setTimeRange('7d');
@@ -84,7 +85,7 @@ export function DataChart({data}: DataChartProps) {
     const startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
     const statsMap = new Map<string, number>();
-    data.forEach((item) => {
+    safeData.forEach((item) => {
       if (item.received_at) {
         const date = new Date(item.received_at);
         let key: string;
@@ -139,7 +140,7 @@ export function DataChart({data}: DataChartProps) {
         count: statsMap.get(dateKey) || 0,
       };
     });
-  }, [data, timeRange]);
+  }, [safeData, timeRange]);
 
   /**
    * 计算统计数据（总计、今日、本月、日均）
@@ -152,7 +153,7 @@ export function DataChart({data}: DataChartProps) {
     let todayCount = 0;
     let thisMonthCount = 0;
 
-    data.forEach((item) => {
+    safeData.forEach((item) => {
       if (item.received_at) {
         const date = new Date(item.received_at);
         const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -171,12 +172,12 @@ export function DataChart({data}: DataChartProps) {
     const avgDaily = currentDay > 0 ? Math.round(thisMonthCount / currentDay * 10) / 10 : 0;
 
     return {
-      total: data.length,
+      total: safeData.length,
       today: todayCount,
       thisMonth: thisMonthCount,
       avgDaily,
     };
-  }, [data]);
+  }, [safeData]);
 
   const containerVariants = {
     hidden: {opacity: 0, y: 20},

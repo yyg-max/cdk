@@ -566,8 +566,9 @@ func ReportProject(c *gin.Context) {
 }
 
 type ListReceiveHistoryRequest struct {
-	Current int `json:"current" form:"current" binding:"min=1"`
-	Size    int `json:"size" form:"size" binding:"min=1,max=100"`
+	Current int    `json:"current" form:"current" binding:"min=1"`
+	Size    int    `json:"size" form:"size" binding:"min=1,max=100"`
+	Search  string `json:"search" form:"search" binding:"max=255"`
 }
 
 type ListReceiveHistoryResponseDataResult struct {
@@ -607,40 +608,55 @@ func ListReceiveHistory(c *gin.Context) {
 	}
 	offset := (req.Current - 1) * req.Size
 
-	// query db
-	var total int64
-	if err := db.DB(c.Request.Context()).Model(&ProjectItem{}).Where("receiver_id = ?", userID).Count(&total).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, ListReceiveHistoryResponse{ErrorMsg: err.Error()})
-		return
+	// build base query
+	baseQuery := db.DB(c.Request.Context()).
+		Table("project_items").
+		Joins("INNER JOIN projects ON projects.id = project_items.project_id").
+		Joins("INNER JOIN users ON users.id = projects.creator_id").
+		Where("project_items.receiver_id = ?", userID)
+
+	// apply search filter
+	if req.Search != "" {
+		searchPattern := strings.TrimSpace(req.Search) + "%"
+		if len(searchPattern) > 21 {
+			baseQuery = baseQuery.Where(
+				"users.nickname LIKE ? OR projects.name LIKE ?",
+				"%"+searchPattern, "%"+searchPattern,
+			)
+		} else {
+			baseQuery = baseQuery.Where(
+				"users.username LIKE ? OR users.nickname LIKE ? OR projects.name LIKE ?",
+				searchPattern, "%"+searchPattern, "%"+searchPattern,
+			)
+		}
 	}
-	var items []*ProjectItem
-	if err := db.DB(c.Request.Context()).
-		Model(&ProjectItem{}).
-		Where("receiver_id = ?", userID).
-		Offset(offset).
-		Limit(req.Size).
-		Preload("Project.Creator").
-		Find(&items).Error; err != nil {
+
+	// query total count
+	var total int64
+	if err := baseQuery.Count(&total).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, ListReceiveHistoryResponse{ErrorMsg: err.Error()})
 		return
 	}
 
-	// response
-	results := make([]ListReceiveHistoryResponseDataResult, len(items))
-	for i, item := range items {
-		creatorNickname := item.Project.Creator.Nickname
-		if creatorNickname == "" {
-			creatorNickname = item.Project.Creator.Username
-		}
-		results[i] = ListReceiveHistoryResponseDataResult{
-			ProjectID:              item.ProjectID,
-			ProjectName:            item.Project.Name,
-			ProjectCreator:         item.Project.Creator.Username,
-			ProjectCreatorNickname: creatorNickname,
-			Content:                item.Content,
-			ReceivedAt:             item.ReceivedAt,
-		}
+	// build data query with COALESCE for nickname default
+	var results []ListReceiveHistoryResponseDataResult
+	if err := baseQuery.
+		Select(`
+            project_items.project_id,
+            projects.name as project_name,
+            users.username as project_creator,
+            COALESCE(NULLIF(users.nickname, ''), users.username) as project_creator_nickname,
+            project_items.content,
+            project_items.received_at
+        `).
+		Order("project_items.received_at DESC, project_items.id DESC").
+		Offset(offset).
+		Limit(req.Size).
+		Scan(&results).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, ListReceiveHistoryResponse{ErrorMsg: err.Error()})
+		return
 	}
+
 	c.JSON(
 		http.StatusOK,
 		ListReceiveHistoryResponse{

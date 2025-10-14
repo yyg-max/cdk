@@ -173,6 +173,8 @@ export interface ReceiveHistoryRequest {
   current: number;
   /** 每页数量 */
   size: number;
+  /** 搜索关键词 */
+  search?: string;
 }
 
 /**

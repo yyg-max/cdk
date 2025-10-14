@@ -28,12 +28,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/linux-do/cdk/internal/config"
 	"github.com/linux-do/cdk/internal/task"
 	"github.com/linux-do/cdk/internal/task/schedule"
 	"github.com/linux-do/cdk/internal/utils"
-	"net/http"
-	"time"
 
 	"github.com/hibiken/asynq"
 	"github.com/linux-do/cdk/internal/db"
@@ -80,16 +81,23 @@ func HandleUpdateUserBadgeScores(ctx context.Context, t *asynq.Task) error {
 	pageSize := 200
 	page := 0
 	currentDelay := 0 * time.Second
+
 	// 计算一周前日期
 	now := time.Now()
 	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
-	oneWeekAgo := today.AddDate(0, 0, -6)
+	sessionAgeDays := config.Config.App.SessionAge / 86400
+	if sessionAgeDays < 7 {
+		sessionAgeDays = 7
+	}
+	oneWeekAgo := today.AddDate(0, 0, -sessionAgeDays)
 
 	for {
 		var users []User
-		if err := db.DB(ctx).Where("last_login_at >= ? AND is_active = ?", oneWeekAgo, true).
-			Select("id, username").
-			Offset(page * pageSize).Limit(pageSize).
+		if err := db.DB(ctx).
+			Table("users u").
+			Select("u.id, u.username").
+			Joins("INNER JOIN (SELECT id FROM users WHERE last_login_at >= ? ORDER BY last_login_at DESC LIMIT ? OFFSET ?) tmp ON u.id = tmp.id",
+				oneWeekAgo, pageSize, page*pageSize).
 			Find(&users).Error; err != nil {
 			logger.ErrorF(ctx, "查询用户失败: %v", err)
 			return err
