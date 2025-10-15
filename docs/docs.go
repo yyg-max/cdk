@@ -433,6 +433,12 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "maxLength": 255,
+                        "type": "string",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
                         "maximum": 100,
                         "minimum": 1,
                         "type": "integer",
@@ -445,6 +451,33 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/project.ListReceiveHistoryResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/projects/received/chart": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "project"
+                ],
+                "parameters": [
+                    {
+                        "maximum": 180,
+                        "minimum": 1,
+                        "type": "integer",
+                        "name": "day",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/project.ListReceiveHistoryChartResponse"
                         }
                     }
                 }
@@ -1188,6 +1221,20 @@ const docTemplate = `{
                 }
             }
         },
+        "project.ListReceiveHistoryChartResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/project.ReceiveHistoryChartPoint"
+                    }
+                },
+                "error_msg": {
+                    "type": "string"
+                }
+            }
+        },
         "project.ListReceiveHistoryResponse": {
             "type": "object",
             "properties": {
@@ -1272,6 +1319,20 @@ const docTemplate = `{
                 "ProjectStatusHidden",
                 "ProjectStatusViolation"
             ]
+        },
+        "project.ReceiveHistoryChartPoint": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "label": {
+                    "type": "string"
+                }
+            }
         },
         "project.ReportProjectRequestBody": {
             "type": "object",

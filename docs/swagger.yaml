@@ -326,6 +326,15 @@ definitions:
       total_items:
         type: integer
     type: object
+  project.ListReceiveHistoryChartResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/project.ReceiveHistoryChartPoint'
+        type: array
+      error_msg:
+        type: string
+    type: object
   project.ListReceiveHistoryResponse:
     properties:
       data:
@@ -383,6 +392,15 @@ definitions:
     - ProjectStatusNormal
     - ProjectStatusHidden
     - ProjectStatusViolation
+  project.ReceiveHistoryChartPoint:
+    properties:
+      count:
+        type: integer
+      date:
+        type: string
+      label:
+        type: string
+    type: object
   project.ReportProjectRequestBody:
     properties:
       reason:
@@ -851,6 +869,10 @@ paths:
         name: current
         type: integer
       - in: query
+        maxLength: 255
+        name: search
+        type: string
+      - in: query
         maximum: 100
         minimum: 1
         name: size
@@ -862,6 +884,23 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/project.ListReceiveHistoryResponse'
+      tags:
+      - project
+  /api/v1/projects/received/chart:
+    get:
+      parameters:
+      - in: query
+        maximum: 180
+        minimum: 1
+        name: day
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/project.ListReceiveHistoryChartResponse'
       tags:
       - project
   /api/v1/tags:
