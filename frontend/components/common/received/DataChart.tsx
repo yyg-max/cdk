@@ -73,7 +73,7 @@ const StatCard = ({title, value, suffix = ''}: {title: string; value: number; su
 export function DataChart({data, selectedDay, onRangeChange}: DataChartProps) {
   const isMobile = useIsMobile();
   const [timeRange, setTimeRange] = React.useState<TimeRange>('7d');
-  const safeData = data || [];
+  const safeData = React.useMemo(() => data ?? [], [data]);
 
   React.useEffect(() => {
     if (isMobile) setTimeRange('7d');
