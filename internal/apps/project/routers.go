@@ -778,3 +778,74 @@ func ListMyProjects(c *gin.Context) {
 		Data: pagedData,
 	})
 }
+
+type ListReceiveHistoryChartRequest struct {
+	Day int `json:"day" form:"day" binding:"min=1,max=180"`
+}
+
+type ReceiveHistoryChartPoint struct {
+	Date  string `json:"date"`
+	Label string `json:"label"`
+	Count int64  `json:"count"`
+}
+
+type ListReceiveHistoryChartResponse struct {
+	ErrorMsg string                     `json:"error_msg"`
+	Data     []ReceiveHistoryChartPoint `json:"data"`
+}
+
+// ListReceiveHistoryChart
+// @Tags project
+// @Param request query ListReceiveHistoryChartRequest true "request query"
+// @Produce json
+// @Success 200 {object} ListReceiveHistoryChartResponse
+// @Router /api/v1/projects/received/chart [get]
+func ListReceiveHistoryChart(c *gin.Context) {
+	userID := oauth.GetUserIDFromContext(c)
+
+	req := &ListReceiveHistoryChartRequest{}
+	if err := c.ShouldBindQuery(req); err != nil {
+		c.JSON(http.StatusBadRequest, ListReceiveHistoryChartResponse{ErrorMsg: err.Error()})
+		return
+	}
+
+	now := time.Now()
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	startDate := today.AddDate(0, 0, -(req.Day - 1))
+	nextDay := today.AddDate(0, 0, 1)
+
+	var rows []struct {
+		Day   time.Time `json:"day"`
+		Count int64     `json:"count"`
+	}
+
+	if err := db.DB(c.Request.Context()).
+		Table("project_items").
+		Select("DATE(received_at) AS day, COUNT(*) AS count").
+		Where("receiver_id = ? AND received_at IS NOT NULL AND received_at >= ? AND received_at < ?", userID, startDate, nextDay).
+		Group("DATE(received_at)").
+		Order("day ASC").
+		Scan(&rows).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, ListReceiveHistoryChartResponse{ErrorMsg: err.Error()})
+		return
+	}
+
+	dayCountMap := make(map[string]int64, len(rows))
+	for _, row := range rows {
+		key := row.Day.Format("2006-01-02")
+		dayCountMap[key] = row.Count
+	}
+
+	results := make([]ReceiveHistoryChartPoint, 0, req.Day)
+	for i := 0; i < req.Day; i++ {
+		day := startDate.AddDate(0, 0, i)
+		key := day.Format("2006-01-02")
+		results = append(results, ReceiveHistoryChartPoint{
+			Date:  key,
+			Label: day.Format("01/02"),
+			Count: dayCountMap[key],
+		})
+	}
+
+	c.JSON(http.StatusOK, ListReceiveHistoryChartResponse{Data: results})
+}

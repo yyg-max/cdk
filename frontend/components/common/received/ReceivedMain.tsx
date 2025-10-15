@@ -7,7 +7,7 @@ import {Separator} from '@/components/ui/separator';
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '@/components/ui/table';
 import {DataChart, DataTable} from '@/components/common/received';
 import services from '@/lib/services';
-import {ReceiveHistoryItem} from '@/lib/services/project/types';
+import {ReceiveHistoryItem, ReceiveHistoryChartPoint} from '@/lib/services/project/types';
 import {motion} from 'motion/react';
 import {useDebounce} from '@/hooks/use-debounce';
 
@@ -137,7 +137,7 @@ const DataTableSkeleton = () => (
  * 我的领取页面主组件
  */
 export function ReceivedMain() {
-  const [chartData, setChartData] = useState<ReceiveHistoryItem[]>([]);
+  const [chartData, setChartData] = useState<ReceiveHistoryChartPoint[]>([]);
   const [tableData, setTableData] = useState<ReceiveHistoryItem[]>([]);
   const [totalItems, setTotalItems] = useState(0);
   const [chartLoading, setChartLoading] = useState(true);
@@ -145,47 +145,24 @@ export function ReceivedMain() {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchInput, setSearchInput] = useState('');
   const debouncedSearch = useDebounce(searchInput, 500);
+  const [chartDay, setChartDay] = useState(7);
 
   /**
    * 获取图表数据
    */
-  const fetchChartData = async () => {
+  const fetchChartData = async (day: number) => {
     try {
       setChartLoading(true);
 
-      const firstPageResult = await services.project.getReceiveHistorySafe({
-        current: 1,
-        size: 100,
+      const result = await services.project.getReceiveHistoryChartSafe({
+        day,
       });
 
-      if (!firstPageResult.success || !firstPageResult.data) {
-        throw new Error(firstPageResult.error || '获取图表数据失败');
+      if (!result.success || !result.data) {
+        throw new Error(result.error || '获取图表数据失败');
       }
 
-      const {total, results} = firstPageResult.data;
-      const allResults = [...(results || [])];
-
-      if (total > 100) {
-        const totalPages = Math.ceil(total / 100);
-        const remainingPages = Array.from({length: totalPages - 1}, (_, i) => i + 2);
-
-        const remainingRequests = remainingPages.map((page) =>
-          services.project.getReceiveHistorySafe({
-            current: page,
-            size: 100,
-          }),
-        );
-
-        const remainingResults = await Promise.all(remainingRequests);
-
-        remainingResults.forEach((result) => {
-          if (result.success && result.data && result.data.results) {
-            allResults.push(...result.data.results);
-          }
-        });
-      }
-
-      setChartData(allResults);
+      setChartData(result.data);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '获取图表数据失败');
     } finally {
@@ -194,8 +171,8 @@ export function ReceivedMain() {
   };
 
   useEffect(() => {
-    //fetchChartData();
-  }, []);
+    fetchChartData(chartDay);
+  }, [chartDay]);
 
   /**
    * 获取表格数据
@@ -284,7 +261,7 @@ export function ReceivedMain() {
         {chartLoading ? (
           <DataChartSkeleton />
         ) : (
-          <DataChart data={chartData} />
+          <DataChart data={chartData} selectedDay={chartDay} onRangeChange={setChartDay} />
         )}
 
         <Separator className="my-8" />

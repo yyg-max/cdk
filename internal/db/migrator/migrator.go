@@ -26,6 +26,7 @@ package migrator
 
 import (
 	"context"
+	"github.com/linux-do/cdk/internal/config"
 	"log"
 	"os"
 	"strings"
@@ -36,6 +37,10 @@ import (
 )
 
 func Migrate() {
+	if !config.Config.Database.Enabled {
+		return
+	}
+
 	if err := db.DB(context.Background()).AutoMigrate(
 		&oauth.User{},
 		&project.Project{},

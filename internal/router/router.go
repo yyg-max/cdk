@@ -27,6 +27,9 @@ package router
 import (
 	"context"
 	"fmt"
+	"log"
+	"strconv"
+
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/redis"
 	"github.com/gin-gonic/gin"
@@ -41,8 +44,6 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
-	"log"
-	"strconv"
 )
 
 func Serve() {
@@ -115,6 +116,7 @@ func Serve() {
 				projectRouter.GET("/:id/receivers", project.ProjectCreatorPermMiddleware(), project.ListProjectReceivers)
 				projectRouter.POST("/:id/receive", project.ReceiveProjectMiddleware(), project.ReceiveProject)
 				projectRouter.POST("/:id/report", project.ReportProject)
+				projectRouter.GET("/received/chart", project.ListReceiveHistoryChart)
 				projectRouter.GET("/received", project.ListReceiveHistory)
 				projectRouter.GET("/:id", project.GetProject)
 			}

@@ -316,3 +316,28 @@ export interface ProjectReceiver {
  * 项目领取者响应类型
  */
 export type ProjectReceiversResponse = BackendResponse<ProjectReceiver[] | null>;
+
+/**
+ * 领取历史图表数据点
+ */
+export interface ReceiveHistoryChartPoint {
+  /** 日期（yyyy-MM-dd） */
+  date: string;
+  /** 展示标签 */
+  label: string;
+  /** 领取数量 */
+  count: number;
+}
+
+/**
+ * 领取历史图表请求参数
+ */
+export interface ReceiveHistoryChartRequest {
+  /** 查询天数（最大6个月） */
+  day: number;
+}
+
+/**
+ * 领取历史图表响应类型
+ */
+export type ReceiveHistoryChartResponse = BackendResponse<ReceiveHistoryChartPoint[]>;
