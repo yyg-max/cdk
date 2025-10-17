@@ -59,7 +59,7 @@ database:
   search_path: "public"
   prefer_simple_protocol: false
   statement_cache_capacity: 256
-  default_query_exec_mode: "prepare"
+  default_query_exec_mode: "cache_statement"
 
 # clickhouse
 clickhouse:
