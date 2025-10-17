@@ -61,8 +61,8 @@ func GetAllDashboardData(ctx context.Context, days int) (*map[string]interface{}
 		}
 	}
 
-	// 调用存储过程获取仪表板数据
-	query := "CALL get_dashboard_data(?,10)"
+	// 调用函数获取仪表板数据
+	query := "SELECT * FROM get_dashboard_data($1, 10)"
 
 	var rawResult map[string]interface{}
 	if err := db.DB(ctx).Raw(query, days).Scan(&rawResult).Error; err != nil {

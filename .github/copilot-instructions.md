@@ -16,7 +16,7 @@
 ## 后端规范
 
 - 后端开发使用 Go 语言，所有接口需要符合 Restful 风格
-- 数据库使用 MySQL 作为主存储，Redis 作为缓存和会话存储
+- 数据库使用 PostgreSQL 作为主存储，Redis 作为缓存和会话存储
 - Go 代码遵循 gofmt 标准格式，使用 snake_case 命名数据库字段
 - 所有 API 接口必须编写完整的 Swagger 文档
 - API 响应格式统一为 {"error_msg": "", "data": {}} 结构

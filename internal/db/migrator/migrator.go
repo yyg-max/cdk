@@ -26,13 +26,12 @@ package migrator
 
 import (
 	"context"
-	"github.com/linux-do/cdk/internal/config"
 	"log"
 	"os"
-	"strings"
 
 	"github.com/linux-do/cdk/internal/apps/oauth"
 	"github.com/linux-do/cdk/internal/apps/project"
+	"github.com/linux-do/cdk/internal/config"
 	"github.com/linux-do/cdk/internal/db"
 )
 
@@ -48,34 +47,24 @@ func Migrate() {
 		&project.ProjectTag{},
 		&project.ProjectReport{},
 	); err != nil {
-		log.Fatalf("[MySQL] auto migrate failed: %v\n", err)
+		log.Fatalf("[PostgreSQL] auto migrate failed: %v\n", err)
 	}
-	log.Printf("[MySQL] auto migrate success\n")
+	log.Printf("[PostgreSQL] auto migrate success\n")
 
-	// 创建存储过程
-	if err := createStoredProcedures(); err != nil {
-		log.Fatalf("[MySQL] create stored procedures failed: %v\n", err)
+	// 创建函数
+	if err := createFunctions(); err != nil {
+		log.Fatalf("[PostgreSQL] create functions failed: %v\n", err)
 	}
 }
 
-// 创建存储过程
-func createStoredProcedures() error {
-	// 读取SQL文件
-	sqlFile := "support-files/sql/create_dashboard_proc.sql"
-	content, err := os.ReadFile(sqlFile)
+// 创建函数
+func createFunctions() error {
+	content, err := os.ReadFile("support-files/sql/create_dashboard_fn.sql")
 	if err != nil {
 		return err
 	}
 
-	// 处理SQL脚本，替换DELIMITER并分割成单独的语句
-	sqlContent := string(content)
-	// 移除DELIMITER声明行
-	sqlContent = strings.Replace(sqlContent, "DELIMITER $$", "", -1)
-	sqlContent = strings.Replace(sqlContent, "DELIMITER ;", "", -1)
-	sqlContent = strings.Replace(sqlContent, "$$", ";", -1)
-
-	// 执行SQL语句
-	if err := db.DB(context.Background()).Exec(sqlContent).Error; err != nil {
+	if err := db.DB(context.Background()).Exec(string(content)).Error; err != nil {
 		return err
 	}
 

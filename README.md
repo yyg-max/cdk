@@ -31,16 +31,16 @@ LINUX DO CDK 是一个为 Linux Do 社区打造的内容分发工具平台，旨
 - 🛡️ **风险控制** - 完善的信任等级和风险评估系统
 - 📊 **实时监控** - 详细的分发统计和用户行为分析
 - 🎨 **现代化界面** - 基于 Next.js 15 和 React 19 的响应式设计
-- ⚡ **高性能** - Go 后端 + Redis 缓存 + MySQL 数据库
+- ⚡ **高性能** - Go 后端 + Redis 缓存 + PostgreSQL 数据库
 
 ## 🏗️ 架构概览
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Frontend      │    │    Backend      │    │   Database      │
-│   (Next.js)     │◄──►│     (Go)        │◄──►│  (MySQL/Redis)  │
+│   (Next.js)     │◄──►│     (Go)        │◄──►│  (PostgreSQL)  │
 │                 │    │                 │    │                 │
-│ • React 19      │    │ • Gin Framework │    │ • MySQL         │
+│ • React 19      │    │ • Gin Framework │    │ • PostgreSQL    │
 │ • TypeScript    │    │ • OAuth2        │    │ • Redis Cache   │
 │ • Tailwind CSS  │    │ • OpenTelemetry │    │ • Session Store │
 │ • Shadcn UI     │    │ • Swagger API   │    │                 │
@@ -54,7 +54,7 @@ LINUX DO CDK 是一个为 Linux Do 社区打造的内容分发工具平台，旨
 - **Gin** - Web 框架
 - **GORM** - ORM 框架
 - **Redis** - 缓存和会话存储
-- **MySQL** - 主数据库
+- **PostgreSQL** - 主数据库
 - **OpenTelemetry** - 可观测性
 - **Swagger** - API 文档
 
@@ -70,7 +70,7 @@ LINUX DO CDK 是一个为 Linux Do 社区打造的内容分发工具平台，旨
 
 - **Go** >= 1.24
 - **Node.js** >= 18.0
-- **MySQL** >= 8.0
+- **PostgreSQL** >= 18
 - **Redis** >= 6.0
 - **pnpm** >= 8.0 (推荐)
 
@@ -97,7 +97,10 @@ cp config.example.yaml config.yaml
 
 ```bash
 # 创建数据库
-mysql -u root -p -e "CREATE DATABASE linux_do_cdk CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+createdb -h <主机> -p 5432 -U postgres linux_do_cdk
+
+# 如果需要指定字符集，可使用
+# psql -h <主机> -p 5432 -U postgres -c "CREATE DATABASE linux_do_cdk WITH ENCODING 'UTF8' LC_COLLATE='zh_CN.UTF-8' LC_CTYPE='zh_CN.UTF-8' TEMPLATE template0;"
 
 # 运行迁移（启动后端时会自动执行）
 ```
@@ -141,7 +144,15 @@ pnpm dev
 |--------|------|------|
 | `app.addr` | 后端服务监听地址 | `:8000` |
 | `oauth2.client_id` | OAuth2 客户端 ID | `your_client_id` |
-| `database.host` | MySQL 数据库地址 | `127.0.0.1` |
+| `database.host` | PostgreSQL 数据库地址 | `127.0.0.1` |
+| `database.port` | PostgreSQL 数据库端口 | `5432` |
+| `database.username` | PostgreSQL 数据库用户名 | `postgres` |
+| `database.password` | PostgreSQL 数据库密码 | `password` |
+| `database.database` | PostgreSQL 数据库名称 | `linux_do_cdk` |
+| `database.ssl_mode` | PostgreSQL SSL 模式 | `disable` |
+| `database.application_name` | PostgreSQL 应用标识 | `cdk-server` |
+| `database.search_path` | PostgreSQL 搜索路径 | `public` |
+| `database.default_query_exec_mode` | SQL 缓存模式 | `cache_statement` |
 | `redis.host` | Redis 服务器地址 | `127.0.0.1` |
 
 详细配置说明请参考 `config.example.yaml` 文件。

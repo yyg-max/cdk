@@ -44,14 +44,22 @@ oauth2:
 database:
   enabled: true
   host: "127.0.0.1"
-  port: 3306
-  username: "root"
+  port: 5432
+  username: "postgres"
   password: ""
   database: "linux_do_cdk"
-  max_idle_conn: 10
-  max_open_conn: 100
-  conn_max_lifetime: 3600
+  max_idle_conn: 16
+  max_open_conn: 128
+  conn_max_lifetime: 1800
+  conn_max_idle_time: 600
   log_level: "info"  # error, warn, info, debug, silent
+  ssl_mode: "disable"
+  time_zone: "Asia/Shanghai"
+  application_name: "cdk-server"
+  search_path: "public"
+  prefer_simple_protocol: false
+  statement_cache_capacity: 256
+  default_query_exec_mode: "prepare"
 
 # clickhouse
 clickhouse:

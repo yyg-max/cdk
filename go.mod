@@ -24,7 +24,7 @@ require (
 	go.uber.org/zap v1.27.0
 	golang.org/x/oauth2 v0.30.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
-	gorm.io/driver/mysql v1.5.7
+	gorm.io/driver/postgres v1.5.11
 	gorm.io/gorm v1.30.0
 	gorm.io/plugin/opentelemetry v0.1.14
 )
@@ -118,5 +118,5 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gorm.io/driver/clickhouse v0.6.1 // indirect
-	gorm.io/driver/postgres v1.5.11 // indirect
+	gorm.io/driver/mysql v1.5.7 // indirect
 )

@@ -26,13 +26,16 @@ package db
 
 import (
 	"context"
-	"fmt"
+	"log"
+	"net"
+	"net/url"
+	"strconv"
+	"time"
+
 	"github.com/linux-do/cdk/internal/config"
-	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/plugin/opentelemetry/tracing"
-	"log"
-	"time"
 )
 
 var (
@@ -41,41 +44,78 @@ var (
 
 func init() {
 	if !config.Config.Database.Enabled {
-		log.Println("[MySQL] is disabled, skipping MySQL initialization")
+		log.Println("[PostgreSQL] is disabled, skipping initialization")
 		return
 	}
 
 	var err error
 
-	dsn := fmt.Sprintf(
-		"%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local",
-		config.Config.Database.Username,
-		config.Config.Database.Password,
-		config.Config.Database.Host,
-		config.Config.Database.Port,
-		config.Config.Database.Database,
-	)
-	db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{DisableForeignKeyConstraintWhenMigrating: true})
+	dbConfig := config.Config.Database
+	pqURL := &url.URL{
+		Scheme: "postgres",
+		Host:   net.JoinHostPort(dbConfig.Host, strconv.Itoa(dbConfig.Port)),
+		Path:   dbConfig.Database,
+	}
+	if dbConfig.Username != "" {
+		pqURL.User = url.UserPassword(dbConfig.Username, dbConfig.Password)
+	}
+
+	query := pqURL.Query()
+	sslMode := dbConfig.SSLMode
+	if sslMode == "" {
+		sslMode = "disable"
+	}
+	query.Set("sslmode", sslMode)
+	if dbConfig.TimeZone != "" {
+		query.Set("TimeZone", dbConfig.TimeZone)
+	}
+	if dbConfig.ApplicationName != "" {
+		query.Set("application_name", dbConfig.ApplicationName)
+	}
+	if dbConfig.SearchPath != "" {
+		query.Set("search_path", dbConfig.SearchPath)
+	}
+	if dbConfig.DefaultQueryExecMode != "" {
+		query.Set("default_query_exec_mode", dbConfig.DefaultQueryExecMode)
+	}
+	if dbConfig.StatementCacheCapacity > 0 {
+		query.Set("statement_cache_capacity", strconv.Itoa(dbConfig.StatementCacheCapacity))
+	}
+
+	pqURL.RawQuery = query.Encode()
+
+	pgConfig := postgres.Config{
+		DSN: pqURL.String(),
+	}
+
+	pgConfig.PreferSimpleProtocol = dbConfig.PreferSimpleProtocol
+
+	db, err = gorm.Open(postgres.New(pgConfig), &gorm.Config{DisableForeignKeyConstraintWhenMigrating: true})
 	if err != nil {
-		log.Fatalf("[MySQL] init connection failed: %v\n", err)
+		log.Fatalf("[PostgreSQL] init connection failed: %v\n", err)
 	}
 
 	// Trace 注入
 	if err := db.Use(tracing.NewPlugin(tracing.WithoutMetrics())); err != nil {
-		log.Fatalf("[MySQL] init trace failed: %v\n", err)
+		log.Fatalf("[PostgreSQL] init trace failed: %v\n", err)
 	}
 
 	// 获取通用数据库对象
 	sqlDB, err := db.DB()
 	if err != nil {
-		log.Fatalf("[MySQL] load sql db failed: %v\n", err)
+		log.Fatalf("[PostgreSQL] load sql db failed: %v\n", err)
 	}
 
 	// 设置连接池参数
-	dbConfig := config.Config.Database
 	sqlDB.SetMaxIdleConns(dbConfig.MaxIdleConn)
 	sqlDB.SetMaxOpenConns(dbConfig.MaxOpenConn)
-	sqlDB.SetConnMaxLifetime(time.Duration(dbConfig.ConnMaxLifetime) * time.Second)
+
+	if dbConfig.ConnMaxLifetime > 0 {
+		sqlDB.SetConnMaxLifetime(time.Duration(dbConfig.ConnMaxLifetime) * time.Second)
+	}
+	if dbConfig.ConnMaxIdleTime > 0 {
+		sqlDB.SetConnMaxIdleTime(time.Duration(dbConfig.ConnMaxIdleTime) * time.Second)
+	}
 }
 
 func DB(ctx context.Context) *gorm.DB {
