@@ -47,6 +47,11 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	// projectItemInsertBatchSize limits batch inserts to avoid exceeding MySQL's placeholder ceiling.
+	projectItemInsertBatchSize = 1000
+)
+
 type Project struct {
 	ID                string           `json:"id" gorm:"primaryKey;size:64"`
 	Name              string           `json:"name" gorm:"size:32"`
@@ -239,7 +244,7 @@ func (p *Project) CreateItems(ctx context.Context, tx *gorm.DB, items []string, 
 			projectItems[i] = wi.item
 		}
 
-		if err := tx.Create(&projectItems).Error; err != nil {
+		if err := tx.CreateInBatches(&projectItems, projectItemInsertBatchSize).Error; err != nil {
 			return err
 		}
 
@@ -259,7 +264,7 @@ func (p *Project) CreateItems(ctx context.Context, tx *gorm.DB, items []string, 
 			projectItems[i] = ProjectItem{ProjectID: p.ID, Content: content}
 		}
 
-		if err := tx.Create(&projectItems).Error; err != nil {
+		if err := tx.CreateInBatches(&projectItems, projectItemInsertBatchSize).Error; err != nil {
 			return err
 		}
 
