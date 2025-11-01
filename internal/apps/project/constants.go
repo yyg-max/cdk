@@ -26,6 +26,8 @@ package project
 
 const (
 	ProjectObjKey = "project_obj"
+	// projectItemInsertBatchSize limits batch inserts to avoid exceeding MySQL's placeholder ceiling.
+	projectItemInsertBatchSize = 1000
 )
 
 type DistributionType int8

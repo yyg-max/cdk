@@ -47,11 +47,6 @@ import (
 	"gorm.io/gorm"
 )
 
-const (
-	// projectItemInsertBatchSize limits batch inserts to avoid exceeding MySQL's placeholder ceiling.
-	projectItemInsertBatchSize = 1000
-)
-
 type Project struct {
 	ID                string           `json:"id" gorm:"primaryKey;size:64"`
 	Name              string           `json:"name" gorm:"size:32"`
