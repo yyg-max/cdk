@@ -20,6 +20,9 @@ import {
   ReportProjectResponse,
   ProjectReceiver,
   ProjectReceiversResponse,
+  ReceiveHistoryChartPoint,
+  ReceiveHistoryChartRequest,
+  ReceiveHistoryChartResponse,
 } from './types';
 import apiClient from '../core/api-client';
 
@@ -145,6 +148,7 @@ export class ProjectService extends BaseService {
       params: {
         current: params.current,
         size: params.size,
+        search: params.search || '',
       },
     });
 
@@ -153,6 +157,25 @@ export class ProjectService extends BaseService {
     }
 
     return response.data.data;
+  }
+
+  /**
+   * 获取领取历史图表
+   * @param params - 图表参数
+   * @returns 领取历史图表数据
+   */
+  static async getReceiveHistoryChart(params: ReceiveHistoryChartRequest): Promise<ReceiveHistoryChartPoint[]> {
+    const response = await apiClient.get<ReceiveHistoryChartResponse>(`${this.basePath}/received/chart`, {
+      params: {
+        day: params.day,
+      },
+    });
+
+    if (response.data.error_msg) {
+      throw new Error(response.data.error_msg);
+    }
+
+    return response.data.data || [];
   }
 
   /**
@@ -385,6 +408,32 @@ export class ProjectService extends BaseService {
       return {
         success: false,
         data: {total: 0, results: []},
+        error: errorMessage,
+      };
+    }
+  }
+
+  /**
+   * 获取领取历史图表（带错误处理）
+   * @param params - 图表参数
+   * @returns 领取历史图表结果，包含成功状态、数据和错误信息
+   */
+  static async getReceiveHistoryChartSafe(params: ReceiveHistoryChartRequest): Promise<{
+    success: boolean;
+    data?: ReceiveHistoryChartPoint[];
+    error?: string;
+  }> {
+    try {
+      const data = await this.getReceiveHistoryChart(params);
+      return {
+        success: true,
+        data,
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '获取领取历史图表失败';
+      return {
+        success: false,
+        data: [],
         error: errorMessage,
       };
     }

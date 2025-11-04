@@ -25,6 +25,14 @@
 package oauth
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"github.com/linux-do/cdk/internal/config"
+	"github.com/linux-do/cdk/internal/db"
+	"github.com/linux-do/cdk/internal/logger"
+	"github.com/linux-do/cdk/internal/utils"
+	"net/http"
 	"time"
 
 	"gorm.io/gorm"
@@ -74,4 +82,49 @@ func (u *User) SetScore(tx *gorm.DB, newScore int) error {
 
 func (u *User) RiskLevel() int8 {
 	return BaseUserScore - u.Score
+}
+
+func (u *User) GetUserBadges(ctx context.Context) (*UserBadgeResponse, error) {
+	url := fmt.Sprintf("https://linux.do/user-badges/%s.json", u.Username)
+	resp, err := utils.Request(ctx, http.MethodGet, url, nil, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("获取用户徽章失败，状态码: %d", resp.StatusCode)
+	}
+
+	var response UserBadgeResponse
+	if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return nil, fmt.Errorf("解析用户徽章响应失败: %w", err)
+	}
+	return &response, nil
+}
+
+func (u *User) CalculateUserScore(badges []Badge, badgeScores map[int]int) int {
+	var totalScore int
+	for _, badge := range badges {
+		// 从缓存中查找徽章分数
+		if score, exists := badgeScores[badge.ID]; exists {
+			totalScore += score
+		}
+	}
+	return totalScore - int(config.Config.ProjectApp.DeductionPerOffense)*int(u.ViolationCount)
+}
+
+func (u *User) UpdateUserScore(ctx context.Context, newScore int) error {
+	// 如果分数没变化，不更新
+	if int(u.Score) == newScore || (newScore > MaxUserScore && int(u.Score) == MaxUserScore) {
+		return nil
+	}
+
+	// 更新用户分数
+	if err := u.SetScore(db.DB(ctx), newScore); err != nil {
+		return fmt.Errorf("更新用户[%s]分数失败: %w", u.Username, err)
+	}
+
+	logger.InfoF(ctx, "用户[%s]徽章分数更新成功: %d -> %d", u.Username, u.Score, newScore)
+	return nil
 }

@@ -123,7 +123,7 @@ func doOAuth(ctx context.Context, code string) (*User, error) {
 				AvatarUrl:   userInfo.AvatarUrl,
 				IsActive:    userInfo.Active,
 				TrustLevel:  userInfo.TrustLevel,
-				LastLoginAt: time.Now().UTC(),
+				LastLoginAt: time.Now(),
 			}
 			tx = db.DB(ctx).Create(&user)
 			if tx.Error != nil {
@@ -157,7 +157,7 @@ func doOAuth(ctx context.Context, code string) (*User, error) {
 		user.AvatarUrl = userInfo.AvatarUrl
 		user.IsActive = userInfo.Active
 		user.TrustLevel = userInfo.TrustLevel
-		user.LastLoginAt = time.Now().UTC()
+		user.LastLoginAt = time.Now()
 		tx = db.DB(ctx).Save(&user)
 		if tx.Error != nil {
 			span.SetStatus(codes.Error, tx.Error.Error())

@@ -5,7 +5,7 @@ import {Area, AreaChart, CartesianGrid, XAxis, YAxis} from 'recharts';
 import {useIsMobile} from '@/hooks/use-mobile';
 import {ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent} from '@/components/ui/chart';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
-import {ReceiveHistoryItem} from '@/lib/services/project/types';
+import {ReceiveHistoryChartPoint} from '@/lib/services/project/types';
 import {CountingNumber} from '@/components/animate-ui/text/counting-number';
 import {motion} from 'motion/react';
 
@@ -33,14 +33,18 @@ type TimeRange = keyof typeof TIME_RANGE_CONFIG
  */
 interface DataChartProps {
   /** 领取历史数据 */
-  data: ReceiveHistoryItem[]
+  data: ReceiveHistoryChartPoint[]
+  /** 当前选择的天数 */
+  selectedDay: number
+  /** 范围变更回调 */
+  onRangeChange: (day: number) => void
 }
 
 /**
  * 统计数据卡片组件
  */
 const StatCard = ({title, value, suffix = ''}: {title: string; value: number; suffix?: string}) => {
-  const decimalPlaces = value % 1 === 0 ? 0 : 2;
+  const decimalPlaces = Number.isInteger(value) ? 0 : 1;
 
   return (
     <motion.div
@@ -66,80 +70,37 @@ const StatCard = ({title, value, suffix = ''}: {title: string; value: number; su
 /**
  * 数据图表组件
  */
-export function DataChart({data}: DataChartProps) {
+export function DataChart({data, selectedDay, onRangeChange}: DataChartProps) {
   const isMobile = useIsMobile();
   const [timeRange, setTimeRange] = React.useState<TimeRange>('7d');
+  const safeData = React.useMemo(() => data ?? [], [data]);
 
   React.useEffect(() => {
     if (isMobile) setTimeRange('7d');
   }, [isMobile]);
 
+  React.useEffect(() => {
+    if (selectedDay <= 7) {
+      setTimeRange('7d');
+    } else if (selectedDay <= 30) {
+      setTimeRange('30d');
+    } else if (selectedDay <= 90) {
+      setTimeRange('3m');
+    } else {
+      setTimeRange('6m');
+    }
+  }, [selectedDay]);
+
   /**
    * 生成图表数据，根据时间范围聚合统计
    */
   const chartData = React.useMemo(() => {
-    const config = TIME_RANGE_CONFIG[timeRange];
-    const isMonthRange = 'months' in config;
-    const today = new Date();
-    const startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-
-    const statsMap = new Map<string, number>();
-    data.forEach((item) => {
-      if (item.received_at) {
-        const date = new Date(item.received_at);
-        let key: string;
-
-        if (isMonthRange) {
-          const year = date.getFullYear();
-          const month = String(date.getMonth() + 1).padStart(2, '0');
-          key = `${year}-${month}`;
-        } else {
-          const year = date.getFullYear();
-          const month = String(date.getMonth() + 1).padStart(2, '0');
-          const day = String(date.getDate()).padStart(2, '0');
-          key = `${year}-${month}-${day}`;
-        }
-
-        statsMap.set(key, (statsMap.get(key) || 0) + 1);
-      }
-    });
-
-    const dateRange: string[] = [];
-    if (isMonthRange) {
-      for (let i = config.months - 1; i >= 0; i--) {
-        const date = new Date(startDate.getFullYear(), startDate.getMonth() - i, 1);
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        dateRange.push(`${year}-${month}`);
-      }
-    } else {
-      for (let i = config.days - 1; i >= 0; i--) {
-        const date = new Date(startDate.getTime() - i * 24 * 60 * 60 * 1000);
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        dateRange.push(`${year}-${month}-${day}`);
-      }
-    }
-
-    return dateRange.map((dateKey) => {
-      let displayDate: string;
-
-      if (isMonthRange) {
-        const month = dateKey.split('-')[1];
-        displayDate = `${month}月`;
-      } else {
-        const [, month, day] = dateKey.split('-');
-        displayDate = `${month}/${day}`;
-      }
-
-      return {
-        date: dateKey,
-        displayDate,
-        count: statsMap.get(dateKey) || 0,
-      };
-    });
-  }, [data, timeRange]);
+    return safeData.map((item) => ({
+      date: item.date,
+      displayDate: item.label,
+      count: item.count,
+    }));
+  }, [safeData]);
 
   /**
    * 计算统计数据（总计、今日、本月、日均）
@@ -152,18 +113,12 @@ export function DataChart({data}: DataChartProps) {
     let todayCount = 0;
     let thisMonthCount = 0;
 
-    data.forEach((item) => {
-      if (item.received_at) {
-        const date = new Date(item.received_at);
-        const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-        const monthStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-
-        if (dateStr === todayStr) {
-          todayCount++;
-        }
-        if (monthStr === thisMonthStr) {
-          thisMonthCount++;
-        }
+    safeData.forEach((item) => {
+      if (item.date === todayStr) {
+        todayCount += item.count;
+      }
+      if (item.date.startsWith(thisMonthStr)) {
+        thisMonthCount += item.count;
       }
     });
 
@@ -171,12 +126,12 @@ export function DataChart({data}: DataChartProps) {
     const avgDaily = currentDay > 0 ? Math.round(thisMonthCount / currentDay * 10) / 10 : 0;
 
     return {
-      total: data.length,
+      total: safeData.reduce((sum, item) => sum + item.count, 0),
       today: todayCount,
       thisMonth: thisMonthCount,
       avgDaily,
     };
-  }, [data]);
+  }, [safeData]);
 
   const containerVariants = {
     hidden: {opacity: 0, y: 20},
@@ -224,7 +179,11 @@ export function DataChart({data}: DataChartProps) {
             <div>
               <Select value={timeRange} onValueChange={(value) => {
                 if (value in TIME_RANGE_CONFIG) {
-                  setTimeRange(value as TimeRange);
+                  const nextRange = value as TimeRange;
+                  setTimeRange(nextRange);
+                  const config = TIME_RANGE_CONFIG[nextRange];
+                  const days = 'days' in config ? config.days : config.months * 30;
+                  onRangeChange(days);
                 }
               }}>
                 <SelectTrigger className="flex w-24 max-h-[32px] text-xs">

@@ -1,6 +1,6 @@
 'use client';
 
-import React, {useState, useMemo, useEffect} from 'react';
+import React from 'react';
 import Link from 'next/link';
 import {Input} from '@/components/ui/input';
 import {Button} from '@/components/ui/button';
@@ -12,12 +12,7 @@ import {EmptyState} from '@/components/common/layout/EmptyState';
 import {motion} from 'motion/react';
 import {useIsMobile} from '@/hooks/use-mobile';
 
-const ITEMS_PER_PAGE = 20;
 const MAX_PAGINATION_BUTTONS = 5;
-const SORT_DIRECTIONS = {
-  ASC: 'asc' as const,
-  DESC: 'desc' as const,
-};
 
 /**
  * 数据表格组件的Props接口
@@ -25,10 +20,19 @@ const SORT_DIRECTIONS = {
 interface DataTableProps {
   /** 领取历史数据 */
   data: ReceiveHistoryItem[];
+  /** 当前页码 */
+  currentPage: number;
+  /** 总数据条数 */
+  totalItems: number;
+  /** 每页条数 */
+  pageSize: number;
+  /** 页码变更回调 */
+  onPageChange: (page: number) => void;
+  /** 搜索词 */
+  searchTerm: string;
+  /** 搜索词变更回调 */
+  onSearchChange: (search: string) => void;
 }
-
-type SortField = keyof ReceiveHistoryItem;
-type SortDirection = typeof SORT_DIRECTIONS[keyof typeof SORT_DIRECTIONS];
 
 /**
  * 打开项目详情页
@@ -40,57 +44,19 @@ const openProjectDetail = (projectId: string): void => {
 };
 
 /**
- * 数据过滤和排序处理
- */
-const processData = (
-    data: ReceiveHistoryItem[],
-    searchTerm: string,
-    sortField: SortField,
-    sortDirection: SortDirection,
-): ReceiveHistoryItem[] => {
-  let filtered = data;
-
-  if (searchTerm) {
-    const term = searchTerm.toLowerCase();
-    filtered = data.filter((item) =>
-      item.project_name.toLowerCase().includes(term) ||
-      item.project_creator.toLowerCase().includes(term) ||
-      item.project_creator_nickname.toLowerCase().includes(term),
-    );
-  }
-
-  return filtered.sort((a, b) => {
-    let aValue: string | number | null = a[sortField];
-    let bValue: string | number | null = b[sortField];
-
-    if (sortField === 'received_at') {
-      const aTime = aValue ? new Date(aValue as string).getTime() : 0;
-      const bTime = bValue ? new Date(bValue as string).getTime() : 0;
-      aValue = aTime;
-      bValue = bTime;
-    }
-
-    if (aValue === null || aValue === undefined) return 1;
-    if (bValue === null || bValue === undefined) return -1;
-
-    return sortDirection === SORT_DIRECTIONS.ASC ?
-      (aValue < bValue ? -1 : aValue > bValue ? 1 : 0) :
-      (aValue > bValue ? -1 : aValue < bValue ? 1 : 0);
-  });
-};
-
-/**
  * 分页组件
  */
 const Pagination = ({
   currentPage,
   totalPages,
-  dataLength,
+  totalItems,
+  pageSize,
   onPageChange,
 }: {
   currentPage: number
   totalPages: number
-  dataLength: number
+  totalItems: number
+  pageSize: number
   onPageChange: (page: number) => void
 }) => {
   const generatePageNumbers = () => {
@@ -114,10 +80,10 @@ const Pagination = ({
   return (
     <div className="flex items-center justify-between px-2">
       <div className="text-xs text-gray-500">
-        {dataLength === 0 ? (
+        {totalItems === 0 ? (
           '无数据'
         ) : (
-          `第 ${((currentPage - 1) * ITEMS_PER_PAGE) + 1}-${Math.min(currentPage * ITEMS_PER_PAGE, dataLength)} 条，共 ${dataLength} 条`
+          `第 ${((currentPage - 1) * pageSize) + 1}-${Math.min(currentPage * pageSize, totalItems)} 条，共 ${totalItems} 条`
         )}
       </div>
 
@@ -126,7 +92,7 @@ const Pagination = ({
           variant="ghost"
           size="sm"
           onClick={() => onPageChange(currentPage - 1)}
-          disabled={currentPage === 1 || dataLength === 0}
+          disabled={currentPage === 1 || totalItems === 0}
           className="h-7 w-7 p-0"
         >
           <ChevronLeft className="h-3.5 w-3.5" />
@@ -180,7 +146,7 @@ const Pagination = ({
           variant="ghost"
           size="sm"
           onClick={() => onPageChange(currentPage + 1)}
-          disabled={currentPage === totalPages || dataLength === 0}
+          disabled={currentPage === totalPages || totalItems === 0}
           className="h-7 w-7 p-0"
         >
           <ChevronRight className="h-3.5 w-3.5" />
@@ -193,42 +159,10 @@ const Pagination = ({
 /**
  * 数据表格组件
  */
-export function DataTable({data}: DataTableProps) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sortField, setSortField] = useState<SortField>('received_at');
-  const [sortDirection, setSortDirection] = useState<SortDirection>(SORT_DIRECTIONS.DESC);
-  const [currentPage, setCurrentPage] = useState(1);
+export function DataTable({data, currentPage, totalItems, pageSize, onPageChange, searchTerm, onSearchChange}: DataTableProps) {
   const isMobile = useIsMobile();
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm]);
-
-  const sortedAndFilteredData = useMemo(
-      () => processData(data, searchTerm, sortField, sortDirection),
-      [data, searchTerm, sortField, sortDirection],
-  );
-
-  const totalPages = Math.ceil(sortedAndFilteredData.length / ITEMS_PER_PAGE);
-  const paginatedData = sortedAndFilteredData.slice(
-      (currentPage - 1) * ITEMS_PER_PAGE,
-      currentPage * ITEMS_PER_PAGE,
-  );
-
-  const handleSort = (field: SortField) => {
-    if (field === sortField) {
-      setSortDirection(sortDirection === SORT_DIRECTIONS.ASC ? SORT_DIRECTIONS.DESC : SORT_DIRECTIONS.ASC);
-    } else {
-      setSortField(field);
-      setSortDirection(SORT_DIRECTIONS.DESC);
-    }
-    setCurrentPage(1);
-  };
-
-  const renderSortIcon = (field: SortField) => {
-    if (field !== sortField) return null;
-    return sortDirection === SORT_DIRECTIONS.ASC ? ' ↑' : ' ↓';
-  };
+  const totalPages = Math.ceil(totalItems / pageSize);
+  const safeData = data || [];
 
   const containerVariants = {
     hidden: {opacity: 0, y: 20},
@@ -268,7 +202,7 @@ export function DataTable({data}: DataTableProps) {
           <Input
             placeholder="搜索项目名称或创建者..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => onSearchChange(e.target.value)}
             className="pl-8 w-48"
           />
         </div>
@@ -278,43 +212,15 @@ export function DataTable({data}: DataTableProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[10px]">
-                <button
-                  className="font-medium hover:text-primary transition-colors"
-                  onClick={() => handleSort('received_at')}
-                >
-                  领取时间{renderSortIcon('received_at')}
-                </button>
-              </TableHead>
-              <TableHead className="w-[120px] lg:w-[200px] xl:w-[300px]">
-                <button
-                  className="font-medium hover:text-primary transition-colors"
-                  onClick={() => handleSort('project_name')}
-                >
-                  项目名称{renderSortIcon('project_name')}
-                </button>
-              </TableHead>
-              <TableHead className="w-[120px] lg:w-[160px] xl:w-[200px]">
-                <button
-                  className="font-medium hover:text-primary transition-colors"
-                  onClick={() => handleSort('project_creator_nickname')}
-                >
-                  创建者{renderSortIcon('project_creator_nickname')}
-                </button>
-              </TableHead>
-              <TableHead className="w-[240px] lg:w-[400px] xl:w-[600px]">
-                <button
-                  className="font-medium hover:text-primary transition-colors"
-                  onClick={() => handleSort('content')}
-                >
-                  项目内容{renderSortIcon('content')}
-                </button>
-              </TableHead>
+              <TableHead className="w-[10px]">领取时间</TableHead>
+              <TableHead className="w-[120px] lg:w-[200px] xl:w-[300px]">项目名称</TableHead>
+              <TableHead className="w-[120px] lg:w-[160px] xl:w-[200px]">创建者</TableHead>
+              <TableHead className="w-[240px] lg:w-[400px] xl:w-[600px]">项目内容</TableHead>
               <TableHead className="text-right w-[60px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedData.length === 0 ? (
+            {safeData.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5}>
                   <EmptyState
@@ -325,7 +231,7 @@ export function DataTable({data}: DataTableProps) {
                 </TableCell>
               </TableRow>
             ) : (
-              paginatedData.map((item) => (
+              safeData.map((item) => (
                 <TableRow key={`${item.project_id}-${item.received_at}`}>
                   <TableCell className="text-xs text-gray-600 dark:text-gray-400">
                     {item.received_at ? formatDateTimeWithSeconds(item.received_at) : '-'}
@@ -403,8 +309,9 @@ export function DataTable({data}: DataTableProps) {
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}
-          dataLength={sortedAndFilteredData.length}
-          onPageChange={setCurrentPage}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          onPageChange={onPageChange}
         />
       </motion.div>
     </motion.div>
