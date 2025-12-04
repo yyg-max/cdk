@@ -32,7 +32,6 @@
 
 ### 状态管理和数据处理
 - **[Axios](https://axios-http.com/)** - HTTP 客户端
-- **[Zod](https://zod.dev/)** - TypeScript 优先的模式验证
 - **[React Hook Form](https://react-hook-form.com/)** - 高性能表单库
 
 ### 开发工具
