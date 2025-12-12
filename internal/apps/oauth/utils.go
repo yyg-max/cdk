@@ -28,15 +28,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"time"
-
-	"github.com/google/uuid"
-	"github.com/hibiken/asynq"
-	"github.com/linux-do/cdk/internal/logger"
-	"github.com/linux-do/cdk/internal/task"
-	"github.com/linux-do/cdk/internal/task/schedule"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -113,12 +106,24 @@ func doOAuth(ctx context.Context, code string) (*User, error) {
 		return nil, err
 	}
 
-	// save to db
+	// 处理用户信息同步逻辑
 	var user User
-	tx := db.DB(ctx).Where("username = ?", userInfo.Username).First(&user)
-	if tx.Error != nil {
-		// create user
-		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+
+	txByUsername := db.DB(ctx).Where("username = ?", userInfo.Username).First(&user)
+	if txByUsername.Error != nil {
+		txByID := db.DB(ctx).Where("id = ?", userInfo.Id).First(&user)
+		if txByID.Error == nil {
+			// ID 存在但 username 不匹配(用户改名)
+			if err = user.CheckActive(); err != nil {
+				span.SetStatus(codes.Error, err.Error())
+				return nil, err
+			}
+			user.UpdateFromOAuthInfo(&userInfo)
+			if err = db.DB(ctx).Save(&user).Error; err != nil {
+				span.SetStatus(codes.Error, err.Error())
+				return nil, err
+			}
+		} else if errors.Is(txByUsername.Error, gorm.ErrRecordNotFound) {
 			user = User{
 				ID:          userInfo.Id,
 				Username:    userInfo.Username,
@@ -128,79 +133,33 @@ func doOAuth(ctx context.Context, code string) (*User, error) {
 				TrustLevel:  userInfo.TrustLevel,
 				LastLoginAt: time.Now(),
 			}
-			tx = db.DB(ctx).Create(&user)
-			if tx.Error != nil {
-				span.SetStatus(codes.Error, tx.Error.Error())
-				return nil, tx.Error
+			if err = db.DB(ctx).Create(&user).Error; err != nil {
+				span.SetStatus(codes.Error, err.Error())
+				return nil, err
 			}
-			payload, _ := json.Marshal(map[string]interface{}{
-				"user_id": user.ID,
-			})
-
-			if _, errTask := schedule.AsynqClient.Enqueue(asynq.NewTask(task.UpdateSingleUserBadgeScoreTask, payload)); errTask != nil {
-				logger.ErrorF(ctx, "下发用户[%s]徽章分数计算任务失败: %v", user.Username, errTask)
-			} else {
-				logger.InfoF(ctx, "下发用户[%s]徽章分数计算任务成功", user.Username)
-			}
+			user.EnqueueBadgeScoreTask(ctx)
 		} else {
-			// response failed
-			span.SetStatus(codes.Error, tx.Error.Error())
-			return nil, tx.Error
+			// query failed
+			span.SetStatus(codes.Error, txByUsername.Error.Error())
+			return nil, txByUsername.Error
 		}
 	} else {
 		if user.ID != userInfo.Id {
-			err = db.DB(ctx).Transaction(func(tx *gorm.DB) error {
-				oldUsername := fmt.Sprintf("%s已注销: %s", user.Username, uuid.NewString())
-				if errUpdate := tx.Model(&user).Updates(map[string]interface{}{
-					"username":  oldUsername,
-					"is_active": false,
-				}).Error; errUpdate != nil {
-					return errUpdate
-				}
-				// create user
-				user = User{
-					ID:          userInfo.Id,
-					Username:    userInfo.Username,
-					Nickname:    userInfo.Name,
-					AvatarUrl:   userInfo.AvatarUrl,
-					IsActive:    userInfo.Active,
-					TrustLevel:  userInfo.TrustLevel,
-					LastLoginAt: time.Now(),
-				}
-				if errCreate := tx.Create(&user).Error; errCreate != nil {
-					return errCreate
-				}
-				return nil
-			})
-			if err != nil {
+			// username 相同但 ID 不同(账户注销后被新用户占用)
+			if _, err = user.MarkAsDeactivatedAndCreateNew(ctx, &userInfo); err != nil {
 				span.SetStatus(codes.Error, err.Error())
 				return nil, err
 			}
-			payload, _ := json.Marshal(map[string]interface{}{
-				"user_id": user.ID,
-			})
-			if _, errTask := schedule.AsynqClient.Enqueue(asynq.NewTask(task.UpdateSingleUserBadgeScoreTask, payload)); errTask != nil {
-				logger.ErrorF(ctx, "下发用户[%s]徽章分数计算任务失败: %v", user.Username, errTask)
-			} else {
-				logger.InfoF(ctx, "下发用户[%s]徽章分数计算任务成功", user.Username)
-			}
+			user.EnqueueBadgeScoreTask(ctx)
 		} else {
-			if !user.IsActive {
-				err = errors.New(BannedAccount)
+			if err = user.CheckActive(); err != nil {
 				span.SetStatus(codes.Error, err.Error())
 				return nil, err
 			}
-			// update user
-			user.Username = userInfo.Username
-			user.Nickname = userInfo.Name
-			user.AvatarUrl = userInfo.AvatarUrl
-			user.IsActive = userInfo.Active
-			user.TrustLevel = userInfo.TrustLevel
-			user.LastLoginAt = time.Now()
-			tx = db.DB(ctx).Save(&user)
-			if tx.Error != nil {
-				span.SetStatus(codes.Error, tx.Error.Error())
-				return nil, tx.Error
+			user.UpdateFromOAuthInfo(&userInfo)
+			if err = db.DB(ctx).Save(&user).Error; err != nil {
+				span.SetStatus(codes.Error, err.Error())
+				return nil, err
 			}
 		}
 	}
