@@ -1,9 +1,10 @@
-FROM alpine:latest
+FROM alpine:3.23
 
 # set the time zone to Beijing Time in the Eastern 8th Time Zone
+ARG TZ=Asia/Shanghai
 RUN apk add --no-cache tzdata && \
-    cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
-    echo "Asia/Shanghai" > /etc/timezone
+    cp /usr/share/zoneinfo/${TZ} /etc/localtime && \
+    echo "${TZ}" > /etc/timezone
 
 WORKDIR /app
 

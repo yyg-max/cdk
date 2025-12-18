@@ -50,21 +50,21 @@ LINUX DO CDK 是一个为 Linux Do 社区打造的内容分发工具平台，旨
 ## 🛠️ 技术栈
 
 ### 后端
-- **Go 1.24** - 主要开发语言
-- **Gin** - Web 框架
-- **GORM** - ORM 框架
-- **Redis** - 缓存和会话存储
-- **MySQL** - 主数据库
-- **OpenTelemetry** - 可观测性
-- **Swagger** - API 文档
+- **[Go 1.24](https://go.dev/doc)** - 主要开发语言
+- **[Gin](https://github.com/gin-gonic/gin)** - Web 框架
+- **[GORM](https://github.com/go-gorm/gorm)** - ORM 框架
+- **[Redis](https://github.com/redis/redis)** - 缓存和会话存储
+- **[MySQL](https://www.mysql.com)** - 主数据库
+- **[OpenTelemetry](https://opentelemetry.io)** - 可观测性
+- **[Swagger](https://github.com/swaggo/swag)** - API 文档
 
 ### 前端
-- **Next.js 15** - React 框架
-- **React 19** - UI 库
-- **TypeScript** - 类型安全
-- **Tailwind CSS 4** - 样式框架
-- **Shadcn UI** - 组件库
-- **Lucide Icons** - 图标库
+- **[Next.js 15](https://github.com/vercel/next.js)** - React 框架
+- **[React 19](https://github.com/facebook/react)** - UI 库
+- **[TypeScript](https://github.com/microsoft/TypeScript)** - 类型安全
+- **[Tailwind CSS 4](https://github.com/tailwindlabs/tailwindcss)** - 样式框架
+- **[Shadcn UI](https://github.com/shadcn-ui/ui)** - 组件库
+- **[Lucide Icons](https://github.com/lucide-icons/lucide)** - 图标库
 
 ## 📋 环境要求
 
@@ -272,3 +272,7 @@ docker run -d -p 8000:8000 linux-do-cdk
 ## ❤️ 致谢
 
 感谢所有为本项目做出贡献的开发者和 Linux Do 社区的支持！
+
+## 📈 项目趋势
+
+[![Star History Chart](https://api.star-history.com/svg?repos=linux-do/cdk&type=Date)](https://star-history.com/#linux-do/cdk&Date)
