@@ -31,8 +31,11 @@ import (
 	"io"
 	"time"
 
+	"fmt"
+
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/linux-do/cdk/internal/config"
 	"github.com/linux-do/cdk/internal/db"
 	"github.com/linux-do/cdk/internal/otel_trace"
@@ -106,24 +109,33 @@ func doOAuth(ctx context.Context, code string) (*User, error) {
 		return nil, err
 	}
 
-	// 处理用户信息同步逻辑
 	var user User
+	err = db.DB(ctx).Transaction(func(tx *gorm.DB) error {
+		var holder User
+		if conflictErr := tx.Where("username = ? AND id != ?", userInfo.Username, userInfo.Id).First(&holder).Error; conflictErr == nil {
+			// 存在冲突 -> 将占用者改名并注销
+			newParams := map[string]interface{}{
+				"username":  fmt.Sprintf("%s已注销: %s", holder.Username, uuid.NewString()),
+				"is_active": false,
+			}
+			if updateErr := tx.Model(&holder).Updates(newParams).Error; updateErr != nil {
+				return updateErr
+			}
+		}
 
-	txByUsername := db.DB(ctx).Where("username = ?", userInfo.Username).First(&user)
-	if txByUsername.Error != nil {
-		txByID := db.DB(ctx).Where("id = ?", userInfo.Id).First(&user)
-		if txByID.Error == nil {
-			// ID 存在但 username 不匹配(用户改名)
-			if err = user.CheckActive(); err != nil {
-				span.SetStatus(codes.Error, err.Error())
-				return nil, err
+		// 根据 ID 处理当前用户的 更新 或 创建
+		queryErr := tx.Where("id = ?", userInfo.Id).First(&user).Error
+		if queryErr == nil {
+			// 用户已存在 -> 更新信息
+			if activeErr := user.CheckActive(); activeErr != nil {
+				return activeErr
 			}
 			user.UpdateFromOAuthInfo(&userInfo)
-			if err = db.DB(ctx).Save(&user).Error; err != nil {
-				span.SetStatus(codes.Error, err.Error())
-				return nil, err
+			if saveErr := tx.Save(&user).Error; saveErr != nil {
+				return saveErr
 			}
-		} else if errors.Is(txByUsername.Error, gorm.ErrRecordNotFound) {
+		} else if errors.Is(queryErr, gorm.ErrRecordNotFound) {
+			// 用户不存在 -> 创建新用户
 			user = User{
 				ID:          userInfo.Id,
 				Username:    userInfo.Username,
@@ -133,35 +145,20 @@ func doOAuth(ctx context.Context, code string) (*User, error) {
 				TrustLevel:  userInfo.TrustLevel,
 				LastLoginAt: time.Now(),
 			}
-			if err = db.DB(ctx).Create(&user).Error; err != nil {
-				span.SetStatus(codes.Error, err.Error())
-				return nil, err
+			if createErr := tx.Create(&user).Error; createErr != nil {
+				return createErr
 			}
 			user.EnqueueBadgeScoreTask(ctx)
 		} else {
-			// query failed
-			span.SetStatus(codes.Error, txByUsername.Error.Error())
-			return nil, txByUsername.Error
+			return queryErr
 		}
-	} else {
-		if user.ID != userInfo.Id {
-			// username 相同但 ID 不同(账户注销后被新用户占用)
-			if _, err = user.MarkAsDeactivatedAndCreateNew(ctx, &userInfo); err != nil {
-				span.SetStatus(codes.Error, err.Error())
-				return nil, err
-			}
-			user.EnqueueBadgeScoreTask(ctx)
-		} else {
-			if err = user.CheckActive(); err != nil {
-				span.SetStatus(codes.Error, err.Error())
-				return nil, err
-			}
-			user.UpdateFromOAuthInfo(&userInfo)
-			if err = db.DB(ctx).Save(&user).Error; err != nil {
-				span.SetStatus(codes.Error, err.Error())
-				return nil, err
-			}
-		}
+		return nil
+	})
+
+	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		return nil, err
 	}
+
 	return &user, nil
 }

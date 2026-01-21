@@ -32,7 +32,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
 	"github.com/linux-do/cdk/internal/config"
 	"github.com/linux-do/cdk/internal/db"
@@ -162,35 +161,4 @@ func (u *User) EnqueueBadgeScoreTask(ctx context.Context) {
 	} else {
 		logger.InfoF(ctx, "下发用户[%s]徽章分数计算任务成功", u.Username)
 	}
-}
-
-// MarkAsDeactivatedAndCreateNew 将当前用户标记为已注销,并创建新用户
-func (u *User) MarkAsDeactivatedAndCreateNew(ctx context.Context, oauthInfo *OAuthUserInfo) (*User, error) {
-	err := db.DB(ctx).Transaction(func(tx *gorm.DB) error {
-		// 将旧用户名修改为注销状态
-		oldUsername := fmt.Sprintf("%s已注销: %s", u.Username, uuid.NewString())
-		if err := tx.Model(u).Updates(map[string]interface{}{
-			"username":  oldUsername,
-			"is_active": false,
-		}).Error; err != nil {
-			return err
-		}
-
-		// 创建新用户
-		newUser := User{
-			ID:          oauthInfo.Id,
-			Username:    oauthInfo.Username,
-			Nickname:    oauthInfo.Name,
-			AvatarUrl:   oauthInfo.AvatarUrl,
-			IsActive:    oauthInfo.Active,
-			TrustLevel:  oauthInfo.TrustLevel,
-			LastLoginAt: time.Now(),
-		}
-		if err := tx.Create(&newUser).Error; err != nil {
-			return err
-		}
-		*u = newUser
-		return nil
-	})
-	return u, err
 }
