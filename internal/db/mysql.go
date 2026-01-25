@@ -27,12 +27,16 @@ package db
 import (
 	"context"
 	"fmt"
+	"log"
+	"net"
+	"strconv"
+	"time"
+
 	"github.com/linux-do/cdk/internal/config"
+	"go.opentelemetry.io/otel/attribute"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/plugin/opentelemetry/tracing"
-	"log"
-	"time"
 )
 
 var (
@@ -46,6 +50,7 @@ func init() {
 	}
 
 	var err error
+	dbConfig := config.Config.Database
 
 	dsn := fmt.Sprintf(
 		"%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local",
@@ -61,7 +66,17 @@ func init() {
 	}
 
 	// Trace 注入
-	if err := db.Use(tracing.NewPlugin(tracing.WithoutMetrics())); err != nil {
+	if err = db.Use(
+		tracing.NewPlugin(
+			tracing.WithoutMetrics(),
+			tracing.WithAttributes(
+				attribute.String("db.instance", dbConfig.Database),
+				attribute.String("db.ip", dbConfig.Host),
+				attribute.String("server.address", net.JoinHostPort(dbConfig.Host, strconv.Itoa(dbConfig.Port))),
+				attribute.String("db.system", "mysql"),
+			),
+		),
+	); err != nil {
 		log.Fatalf("[MySQL] init trace failed: %v\n", err)
 	}
 
@@ -72,7 +87,6 @@ func init() {
 	}
 
 	// 设置连接池参数
-	dbConfig := config.Config.Database
 	sqlDB.SetMaxIdleConns(dbConfig.MaxIdleConn)
 	sqlDB.SetMaxOpenConns(dbConfig.MaxOpenConn)
 	sqlDB.SetConnMaxLifetime(time.Duration(dbConfig.ConnMaxLifetime) * time.Second)
