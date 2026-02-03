@@ -32,12 +32,11 @@ import (
 	"io"
 	"net/http"
 	"regexp"
+	"slices"
 	"strconv"
 	"time"
 
 	"github.com/linux-do/cdk/internal/config"
-
-	utils2 "gorm.io/gorm/utils"
 
 	"github.com/linux-do/cdk/internal/utils"
 
@@ -115,9 +114,15 @@ func (p *Project) GetTags(tx *gorm.DB) ([]string, error) {
 }
 
 type TopicResponse struct {
-	HighestPostNumber uint     `json:"highest_post_number"`
-	Tags              []string `json:"tags"`
-	Closed            bool     `json:"closed"`
+	HighestPostNumber uint       `json:"highest_post_number"`
+	Tags              []TopicTag `json:"tags"`
+	Closed            bool       `json:"closed"`
+}
+
+type TopicTag struct {
+	Id   int    `json:"id"`
+	Name string `json:"name"`
+	Slug string `json:"slug"`
 }
 
 func (p *Project) CreateItems(ctx context.Context, tx *gorm.DB, items []string, userName string, topicId uint64) error {
@@ -130,6 +135,7 @@ func (p *Project) CreateItems(ctx context.Context, tx *gorm.DB, items []string, 
 		headers := map[string]string{
 			"User-Api-Key": config.Config.LinuxDo.ApiKey,
 		}
+
 		// 获取话题基本信息
 		url := fmt.Sprintf("https://linux.do/t/%d.json", topicId)
 		topicResp, errRequest := utils.Request(ctx, http.MethodGet, url, nil, headers, nil)
@@ -147,7 +153,11 @@ func (p *Project) CreateItems(ctx context.Context, tx *gorm.DB, items []string, 
 			return fmt.Errorf("解析话题信息失败: %w", errDecode)
 		}
 
-		if len(response.Tags) == 0 || !utils2.Contains(response.Tags, "抽奖") {
+		hasLotteryTag := slices.ContainsFunc(response.Tags, func(tag TopicTag) bool {
+			return tag.Name == "抽奖"
+		})
+
+		if !hasLotteryTag {
 			return errors.New("话题未添加抽奖标签，无法创建抽奖项目")
 		}
 
