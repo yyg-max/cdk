@@ -25,11 +25,12 @@
 package oauth
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/linux-do/cdk/internal/db"
 	"github.com/linux-do/cdk/internal/logger"
 	"github.com/linux-do/cdk/internal/otel_trace"
-	"net/http"
 )
 
 func LoginRequired() gin.HandlerFunc {
@@ -54,7 +55,7 @@ func LoginRequired() gin.HandlerFunc {
 		}
 
 		// log
-		logger.InfoF(ctx, "[LoginRequired] %d %s", user.ID, user.Username)
+		logger.InfoF(ctx, "[LoginRequired] %s %d %s", c.ClientIP(), user.ID, user.Username)
 
 		// set user info
 		SetUserToContext(c, &user)
