@@ -162,10 +162,10 @@ function TabsContent({
         data-slot="tabs-content"
         className={cn('flex-1 outline-none', className)}
         layout
-        initial={{opacity: 0, y: -10}}
-        animate={{opacity: 1, y: 0}}
-        exit={{opacity: 0, y: 10}}
-        transition={{...transition, duration: 0.1}}
+        initial={{opacity: 0}}
+        animate={{opacity: 1}}
+        exit={{opacity: 0}}
+        transition={transition}
         {...props}
       >
         {children}
@@ -188,7 +188,7 @@ function TabsContents({
 }: TabsContentsProps) {
   const containerRef = React.useRef<HTMLDivElement | null>(null);
 
-  const [height, setHeight] = React.useState(0);
+  const [height, setHeight] = React.useState<number | 'auto'>('auto');
 
   React.useEffect(() => {
     if (!containerRef.current) return;
