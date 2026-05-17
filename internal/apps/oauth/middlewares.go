@@ -87,6 +87,12 @@ func LoginRequired() gin.HandlerFunc {
 		// set user info
 		SetUserToContext(c, &user)
 
+		if risk, ok := checkOpenAPIUserRisk(ctx, user.ID); ok {
+			if blocked := applyOpenAPIUserRisk(c, risk); blocked {
+				return
+			}
+		}
+
 		// next
 		c.Next()
 	}
