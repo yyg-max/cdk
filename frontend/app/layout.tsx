@@ -3,6 +3,7 @@ import type {Metadata} from 'next';
 import {Inter, Noto_Sans_SC} from 'next/font/google';
 import {Toaster} from '@/components/ui/sonner';
 import {ThemeProvider} from '@/components/common/layout/ThemeProvider';
+import {RiskBlockDialog} from '@/components/common/risk/risk-block-dialog';
 import './globals.css';
 
 // eslint-disable-next-line new-cap
@@ -49,6 +50,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {children}
+          <RiskBlockDialog />
           <Toaster />
         </ThemeProvider>
       </body>

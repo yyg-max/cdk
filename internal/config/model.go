@@ -27,18 +27,19 @@ package config
 import "time"
 
 type configModel struct {
-	App        appConfig        `mapstructure:"app"`
-	ProjectApp projectAppConfig `mapstructure:"projectApp"`
-	OAuth2     OAuth2Config     `mapstructure:"oauth2"`
-	Database   databaseConfig   `mapstructure:"database"`
-	Redis      redisConfig      `mapstructure:"redis"`
-	Log        logConfig        `mapstructure:"log"`
-	Schedule   scheduleConfig   `mapstructure:"schedule"`
-	Worker     workerConfig     `mapstructure:"worker"`
-	ClickHouse clickHouseConfig `mapstructure:"clickhouse"`
-	LinuxDo    linuxDoConfig    `mapstructure:"linuxdo"`
-	Otel       otelConfig       `mapstructure:"otel"`
-	Payment    PaymentConfig    `mapstructure:"payment"`
+	App         appConfig         `mapstructure:"app"`
+	ProjectApp  projectAppConfig  `mapstructure:"projectApp"`
+	OAuth2      OAuth2Config      `mapstructure:"oauth2"`
+	Database    databaseConfig    `mapstructure:"database"`
+	Redis       redisConfig       `mapstructure:"redis"`
+	Log         logConfig         `mapstructure:"log"`
+	Schedule    scheduleConfig    `mapstructure:"schedule"`
+	Worker      workerConfig      `mapstructure:"worker"`
+	ClickHouse  clickHouseConfig  `mapstructure:"clickhouse"`
+	LinuxDo     linuxDoConfig     `mapstructure:"linuxdo"`
+	OpenAPIRisk openAPIRiskConfig `mapstructure:"openapi_risk"`
+	Otel        otelConfig        `mapstructure:"otel"`
+	Payment     PaymentConfig     `mapstructure:"payment"`
 }
 
 // appConfig 应用基本配置
@@ -147,6 +148,17 @@ type workerConfig struct {
 // linuxDoConfig
 type linuxDoConfig struct {
 	ApiKey string `mapstructure:"api_key"`
+}
+
+// openAPIRiskConfig OpenAPI 用户风险配置
+type openAPIRiskConfig struct {
+	Enabled          bool     `mapstructure:"enabled"`
+	BaseURL          string   `mapstructure:"base_url"`
+	Username         string   `mapstructure:"username"`
+	Password         string   `mapstructure:"password" json:"-"`
+	CacheTTLSeconds  int      `mapstructure:"cache_ttl_seconds"`
+	PromptRiskLevels []string `mapstructure:"prompt_risk_levels"`
+	BlockRiskLevels  []string `mapstructure:"block_risk_levels"`
 }
 
 // otelConfig OpenTelemetry 配置
