@@ -18,7 +18,8 @@ function isRiskInfo(value: unknown): value is RiskInfo {
   const riskInfo = value as Partial<RiskInfo>;
   return (
     typeof riskInfo.risk_level === 'string' &&
-    Array.isArray(riskInfo.risk_labels)
+    Array.isArray(riskInfo.risk_labels) &&
+    Array.isArray(riskInfo.risks)
   );
 }
 
