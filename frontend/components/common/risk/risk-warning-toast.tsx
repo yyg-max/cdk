@@ -31,6 +31,12 @@ export function showRiskWarningToast(riskInfo: RiskInfo) {
         id: RISK_TOAST_ID,
         duration: Infinity,
         dismissible: true,
+        style: {
+          background: 'transparent',
+          border: 'none',
+          boxShadow: 'none',
+          padding: 0,
+        },
         onDismiss: () => {
           isRiskWarningDismissed = true;
         },
