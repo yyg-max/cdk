@@ -26,12 +26,13 @@ package oauth
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/linux-do/cdk/internal/db"
 	"github.com/linux-do/cdk/internal/logger"
-	"net/http"
 )
 
 type GetLoginURLResponse struct {
@@ -100,9 +101,11 @@ func Callback(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, CallbackResponse{ErrorMsg: err.Error()})
 		return
 	}
+	// log
+	LogForAudit(c.Request.Context(), user, c)
+	logger.InfoF(c.Request.Context(), "[OAuthCallback] %d %s", user.ID, user.Username)
 	// response
 	c.JSON(http.StatusOK, CallbackResponse{})
-	logger.InfoF(c.Request.Context(), "[OAuthCallback] %d %s", user.ID, user.Username)
 }
 
 type BasicUserInfo struct {
