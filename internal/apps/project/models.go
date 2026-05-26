@@ -145,7 +145,8 @@ func (p *Project) CreateItems(ctx context.Context, tx *gorm.DB, items []string, 
 
 	if p.DistributionType == DistributionTypeLottery {
 		headers := map[string]string{
-			"User-Api-Key": config.Config.LinuxDo.ApiKey,
+			"Api-Key":      config.Config.LinuxDo.ApiKey,
+			"Api-Username": config.Config.LinuxDo.ApiUsername,
 		}
 
 		// 获取话题基本信息
