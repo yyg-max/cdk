@@ -205,7 +205,7 @@ func CreateProject(c *gin.Context) {
 				return err
 			}
 			// create content
-			if err := project.CreateItems(c.Request.Context(), tx, req.ProjectItems, currentUser.Username, req.TopicId); err != nil {
+			if err := project.CreateItems(c.Request.Context(), tx, req.ProjectItems, req.TopicId); err != nil {
 				return err
 			}
 			return nil

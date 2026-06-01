@@ -29,7 +29,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"regexp"
 	"slices"
@@ -126,9 +125,15 @@ func (p *Project) GetTags(tx *gorm.DB) ([]string, error) {
 }
 
 type TopicResponse struct {
-	HighestPostNumber uint       `json:"highest_post_number"`
-	Tags              []TopicTag `json:"tags"`
-	Closed            bool       `json:"closed"`
+	UserID     uint64     `json:"user_id"`
+	Tags       []TopicTag `json:"tags"`
+	Closed     bool       `json:"closed"`
+	PostStream struct {
+		Posts []struct {
+			Username string `json:"username"`
+			Raw      string `json:"raw"`
+		} `json:"posts"`
+	} `json:"post_stream"`
 }
 
 type TopicTag struct {
@@ -137,7 +142,12 @@ type TopicTag struct {
 	Slug string `json:"slug"`
 }
 
-func (p *Project) CreateItems(ctx context.Context, tx *gorm.DB, items []string, userName string, topicId uint64) error {
+var (
+	lotteryBotWinnerSectionRegex = regexp.MustCompile(`### 以下为中奖佬友及对应楼层：\n((?s).+)`)
+	lotteryBotWinnerRegex        = regexp.MustCompile(`@(\S+)`)
+)
+
+func (p *Project) CreateItems(ctx context.Context, tx *gorm.DB, items []string, topicId uint64) error {
 	// skip create
 	if len(items) <= 0 {
 		return nil
@@ -145,11 +155,12 @@ func (p *Project) CreateItems(ctx context.Context, tx *gorm.DB, items []string, 
 
 	if p.DistributionType == DistributionTypeLottery {
 		headers := map[string]string{
-			"User-Api-Key": config.Config.LinuxDo.ApiKey,
+			"Api-Key":      config.Config.LinuxDo.ApiKey,
+			"Api-Username": config.Config.LinuxDo.ApiUsername,
 		}
 
 		// 获取话题基本信息
-		url := fmt.Sprintf("https://linux.do/t/%d.json", topicId)
+		url := fmt.Sprintf("https://linux.do/t/%d.json?username_filters=lottery_bot&include_raw=true", topicId)
 		topicResp, errRequest := utils.Request(ctx, http.MethodGet, url, nil, headers, nil)
 		if errRequest != nil {
 			return errRequest
@@ -166,7 +177,7 @@ func (p *Project) CreateItems(ctx context.Context, tx *gorm.DB, items []string, 
 		}
 
 		hasLotteryTag := slices.ContainsFunc(response.Tags, func(tag TopicTag) bool {
-			return tag.Name == "抽奖"
+			return tag.Slug == "lottery"
 		})
 
 		if !hasLotteryTag {
@@ -177,42 +188,31 @@ func (p *Project) CreateItems(ctx context.Context, tx *gorm.DB, items []string, 
 			return errors.New("抽奖还未结束，无法创建抽奖项目")
 		}
 
-		// 获取抽奖结果
-		url = fmt.Sprintf("https://linux.do/raw/%d/%d", topicId, response.HighestPostNumber)
-		resultResp, errRequest := utils.Request(ctx, http.MethodGet, url, nil, headers, nil)
-		if errRequest != nil {
-			return errRequest
-		}
-		defer resultResp.Body.Close()
-
-		if resultResp.StatusCode != http.StatusOK {
-			return fmt.Errorf("获取话题抽奖结果失败，状态码: %d", resultResp.StatusCode)
+		var content string
+		for i := len(response.PostStream.Posts) - 1; i >= 0; i-- {
+			post := response.PostStream.Posts[i]
+			if post.Username == "lottery_bot" {
+				content = post.Raw
+				break
+			}
 		}
 
-		var bodyBytes []byte
-		bodyBytes, errRead := io.ReadAll(resultResp.Body)
-		if errRead != nil {
-			return fmt.Errorf("读取中奖信息失败: %w", errRead)
-		}
-		content := string(bodyBytes)
-
-		// 提取作者和中奖用户
-		authorMatches := regexp.MustCompile(`帖子作者: (.+?)\n`).FindStringSubmatch(content)
-		if len(authorMatches) <= 1 {
-			return errors.New("未找到话题作者信息")
+		if content == "" {
+			return errors.New("未找到抽奖机器人的开奖回复")
 		}
 
-		if authorMatches[1] != userName {
+		// 校验当前创建项目的人，是不是该帖子的真实楼主
+		if response.UserID != p.CreatorID {
 			return errors.New("非话题作者，无法创建抽奖项目")
 		}
 
-		winnerSection := regexp.MustCompile(`### 以下为中奖佬友及对应楼层：\n((?s).+)`).FindStringSubmatch(content)
+		winnerSection := lotteryBotWinnerSectionRegex.FindStringSubmatch(content)
 		if len(winnerSection) < 2 {
 			return errors.New("未找到中奖用户部分")
 		}
 
 		// 提取所有中奖用户名
-		winnersMatches := regexp.MustCompile(`@(\S+)`).FindAllStringSubmatch(winnerSection[1], -1)
+		winnersMatches := lotteryBotWinnerRegex.FindAllStringSubmatch(winnerSection[1], -1)
 		if len(winnersMatches) == 0 {
 			return errors.New("未找到任何中奖用户")
 		}
@@ -329,7 +329,7 @@ func (p *Project) CreateItemsWithFilter(ctx context.Context, tx *gorm.DB, items 
 	}
 
 	// Use the original CreateItems method with filtered items
-	return p.CreateItems(ctx, tx, filteredItems, "", 0)
+	return p.CreateItems(ctx, tx, filteredItems, 0)
 }
 
 func (p *Project) GetFilteredItemsCount(ctx context.Context, tx *gorm.DB, items []string, enableFilter bool) (int64, error) {

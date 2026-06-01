@@ -108,6 +108,7 @@ worker:
 # linuxDo
 linuxDo:
   api_key: "<LINUX_DO_API_KEY>"
+  api_username: "<LINUX_DO_API_USERNAME>"
 
 # OpenAPI Risk
 openapi_risk:

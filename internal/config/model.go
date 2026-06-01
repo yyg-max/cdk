@@ -147,7 +147,8 @@ type workerConfig struct {
 
 // linuxDoConfig
 type linuxDoConfig struct {
-	ApiKey string `mapstructure:"api_key"`
+	ApiKey      string `mapstructure:"api_key"`
+	ApiUsername string `mapstructure:"api_username"`
 }
 
 // openAPIRiskConfig OpenAPI 用户风险配置
