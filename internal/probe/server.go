@@ -22,28 +22,55 @@
  * SOFTWARE.
  */
 
-package cmd
+package probe
 
 import (
+	"errors"
+	"fmt"
 	"log"
+	"net"
+	"net/http"
+	"strconv"
+	"time"
 
+	"github.com/gin-gonic/gin"
+	"github.com/linux-do/cdk/internal/apps/health"
 	"github.com/linux-do/cdk/internal/config"
-	"github.com/linux-do/cdk/internal/probe"
-	"github.com/linux-do/cdk/internal/task/schedule"
-
-	"github.com/spf13/cobra"
 )
 
-var schedulerCmd = &cobra.Command{
-	Use:   "scheduler",
-	Short: "CDK Scheduler",
-	Run: func(cmd *cobra.Command, args []string) {
-		log.Println("[Scheduler] 启动定时任务调度服务")
-		if err := probe.Start(config.Config.Schedule.Port); err != nil {
-			log.Fatalf("[Scheduler] 启动探针服务失败: %v", err)
+func Start(port int) error {
+	if port <= 0 {
+		return fmt.Errorf("invalid probe port: %d", port)
+	}
+	if config.Config.App.Env == "production" {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
+	addr := net.JoinHostPort("", strconv.Itoa(port))
+	listener, err := net.Listen("tcp", addr)
+	if err != nil {
+		return err
+	}
+
+	engine := gin.New()
+	engine.Use(gin.Recovery())
+	apiV1Router := engine.Group(config.Config.App.APIPrefix + "/v1")
+	{
+		apiV1Router.GET("/health", health.Health)
+		apiV1Router.GET("/ready", health.Ready)
+	}
+
+	server := &http.Server{
+		Handler:           engine,
+		ReadHeaderTimeout: 5 * time.Second,
+	}
+
+	go func() {
+		if errServe := server.Serve(listener); errServe != nil && !errors.Is(errServe, http.ErrServerClosed) {
+			log.Printf("[Probe] serve failed: %v\n", errServe)
 		}
-		if err := schedule.StartScheduler(); err != nil {
-			log.Fatalf("[Scheduler] 启动失败: %v", err)
-		}
-	},
+	}()
+
+	log.Printf("[Probe] listening on :%d\n", port)
+	return nil
 }

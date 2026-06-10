@@ -677,6 +677,24 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/ready": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "health"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/health.ReadyResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/tags": {
             "get": {
                 "consumes": [
@@ -809,6 +827,15 @@ const docTemplate = `{
             }
         },
         "health.HealthResponse": {
+            "type": "object",
+            "properties": {
+                "data": {},
+                "error_msg": {
+                    "type": "string"
+                }
+            }
+        },
+        "health.ReadyResponse": {
             "type": "object",
             "properties": {
                 "data": {},

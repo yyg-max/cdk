@@ -74,6 +74,12 @@ definitions:
       error_msg:
         type: string
     type: object
+  health.ReadyResponse:
+    properties:
+      data: {}
+      error_msg:
+        type: string
+    type: object
   oauth.BasicUserInfo:
     properties:
       avatar_url:
@@ -892,6 +898,17 @@ paths:
             $ref: '#/definitions/project.ListReceiveHistoryChartResponse'
       tags:
       - project
+  /api/v1/ready:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/health.ReadyResponse'
+      tags:
+      - health
   /api/v1/tags:
     get:
       consumes:

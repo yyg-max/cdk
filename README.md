@@ -131,7 +131,8 @@ pnpm dev
 
 - **前端界面**: http://localhost:3000
 - **API 文档**: http://localhost:8000/swagger/index.html
-- **健康检查**: http://localhost:8000/api/health
+- **健康检查**: http://localhost:8000/api/v1/health
+- **就绪检查**: http://localhost:8000/api/v1/ready
 
 ## ⚙️ 配置说明
 
@@ -140,6 +141,8 @@ pnpm dev
 | 配置项 | 说明 | 示例 |
 |--------|------|------|
 | `app.addr` | 后端服务监听地址 | `:8000` |
+| `worker.port` | Worker 探针端口 | `8001` |
+| `schedule.port` | Beat/Scheduler 探针端口 | `8002` |
 | `oauth2.client_id` | OAuth2 客户端 ID | `your_client_id` |
 | `database.host` | MySQL 数据库地址 | `127.0.0.1` |
 | `redis.host` | Redis 服务器地址 | `127.0.0.1` |
@@ -196,7 +199,8 @@ http://localhost:8000/swagger/index.html
 
 ### 主要 API 端点
 
-- `GET /api/health` - 健康检查
+- `GET /api/v1/health` - 健康检查
+- `GET /api/v1/ready` - 就绪检查
 - `GET /api/oauth2/login` - OAuth2 登录
 - `GET /api/projects` - 获取项目列表
 - `POST /api/projects` - 创建新项目
