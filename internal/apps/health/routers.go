@@ -25,8 +25,12 @@
 package health
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
+	"github.com/linux-do/cdk/internal/config"
+	"github.com/linux-do/cdk/internal/db"
+	"github.com/linux-do/cdk/internal/logger"
 )
 
 type HealthResponse struct {
@@ -41,4 +45,51 @@ type HealthResponse struct {
 // @Router /api/v1/health [get]
 func Health(c *gin.Context) {
 	c.JSON(http.StatusOK, HealthResponse{})
+}
+
+type ReadyResponse struct {
+	ErrorMsg string      `json:"error_msg"`
+	Data     interface{} `json:"data"`
+}
+
+// Ready godoc
+// @Tags health
+// @Produce json
+// @Success 200 {object} ReadyResponse
+// @Router /api/v1/ready [get]
+func Ready(c *gin.Context) {
+	// init
+	ctx := c.Request.Context()
+	// check mysql
+	if config.Config.Database.Enabled {
+		sqlDB, err := db.DB(ctx).DB()
+		if err != nil {
+			logger.ErrorF(c.Request.Context(), "[Ready] mysql check failed: %s", err.Error())
+			c.AbortWithStatusJSON(http.StatusInternalServerError, ReadyResponse{})
+			return
+		}
+		if err := sqlDB.PingContext(ctx); err != nil {
+			logger.ErrorF(c.Request.Context(), "[Ready] mysql check failed: %s", err.Error())
+			c.AbortWithStatusJSON(http.StatusInternalServerError, ReadyResponse{})
+			return
+		}
+	}
+	// check redis
+	if config.Config.Redis.Enabled {
+		if err := db.Redis.Ping(ctx).Err(); err != nil {
+			logger.ErrorF(c.Request.Context(), "[Ready] redis check failed: %s", err.Error())
+			c.AbortWithStatusJSON(http.StatusInternalServerError, ReadyResponse{})
+			return
+		}
+	}
+	// check clickhouse
+	if config.Config.ClickHouse.Enabled {
+		if err := db.ChConn.Ping(ctx); err != nil {
+			logger.ErrorF(c.Request.Context(), "[Ready] clickhouse check failed: %s", err.Error())
+			c.AbortWithStatusJSON(http.StatusInternalServerError, ReadyResponse{})
+			return
+		}
+	}
+	// response
+	c.JSON(http.StatusOK, ReadyResponse{})
 }

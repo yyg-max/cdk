@@ -25,8 +25,11 @@
 package cmd
 
 import (
-	"github.com/linux-do/cdk/internal/task/worker"
 	"log"
+
+	"github.com/linux-do/cdk/internal/config"
+	"github.com/linux-do/cdk/internal/probe"
+	"github.com/linux-do/cdk/internal/task/worker"
 
 	"github.com/spf13/cobra"
 )
@@ -36,8 +39,11 @@ var workerCmd = &cobra.Command{
 	Short: "CDK Worker",
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Println("[Worker] 启动任务处理服务")
+		if err := probe.Start(config.Config.Worker.Port); err != nil {
+			log.Fatalf("[Worker] 启动探针服务失败: %v", err)
+		}
 		if err := worker.StartWorker(); err != nil {
-			log.Fatalf("[工作器] 启动失败: %v", err)
+			log.Fatalf("[Worker] 启动失败: %v", err)
 		}
 	},
 }

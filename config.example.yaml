@@ -96,6 +96,7 @@ log:
 
 # Schedule
 schedule:
+  port: 8002 # beat/scheduler probe port
   user_badge_score_dispatch_interval_seconds: 1
   update_user_badges_scores_task_cron: "0 2 * * *"
   update_all_badges_task_cron: "0 1 * * *"
@@ -103,6 +104,7 @@ schedule:
 
 # Worker
 worker:
+  port: 8001 # worker probe port
   concurrency: 50
 
 # linuxDo
