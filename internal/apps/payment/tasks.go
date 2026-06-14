@@ -61,6 +61,7 @@ func HandleExpireStaleOrders(ctx context.Context, _ *asynq.Task) error {
 // expireOrder 通过 CAS 将单笔 PENDING 订单置为 FAILED，并把预占的 item 归还 Redis。
 // 使用 CAS (WHERE status=PENDING) 保证幂等：
 //   - 若 notify 回调恰好在此同时到达并推进了状态，CAS 得 0 行，安全跳过。
+// 修复：归还 item 后，如果项目之前被标记为已完成，现在有库存了，则重置 IsCompleted。
 func expireOrder(ctx context.Context, order *PaymentOrder) {
 	rows := db.DB(ctx).Model(&PaymentOrder{}).
 		Where("out_trade_no = ? AND status = ?", order.OutTradeNo, OrderStatusPending).
@@ -76,5 +77,43 @@ func expireOrder(ctx context.Context, order *PaymentOrder) {
 	// 归还预占的 item，恢复项目库存
 	db.Redis.RPush(ctx, project.ProjectItemsKey(order.ProjectID), order.ItemID)
 	logger.InfoF(ctx, "payment cleanup: returned item %d to project %s stock", order.ItemID, order.ProjectID)
+
+	// 检查项目是否被错误标记为已完成，如果是则重置
+	// 这种情况发生在：所有 item 被 LPOP 后某用户付款成功，项目被标记为 IsCompleted=true，
+	// 但随后其他未付款订单超时，item 被归还，此时应该重置 IsCompleted
+	resetProjectCompletedStatus(ctx, order.ProjectID)
+
 	logger.InfoF(ctx, "payment cleanup: order %s expired and marked as FAILED", order.OutTradeNo)
+}
+
+// resetProjectCompletedStatus 检查项目是否有库存但被标记为已完成，如果是则重置 IsCompleted
+func resetProjectCompletedStatus(ctx context.Context, projectID string) {
+	var proj project.Project
+	if err := db.DB(ctx).Where("id = ?", projectID).First(&proj).Error; err != nil {
+		logger.ErrorF(ctx, "payment cleanup: failed to load project %s: %v", projectID, err)
+		return
+	}
+
+	// 只处理已标记为完成的项目
+	if !proj.IsCompleted {
+		return
+	}
+
+	// 检查 Redis 是否有库存
+	hasStock, err := proj.HasStock(ctx)
+	if err != nil {
+		logger.ErrorF(ctx, "payment cleanup: failed to check stock for project %s: %v", projectID, err)
+		return
+	}
+
+	// 如果有库存但项目标记为已完成，则重置
+	if hasStock {
+		if err := db.DB(ctx).Model(&project.Project{}).
+			Where("id = ? AND is_completed = ?", projectID, true).
+			Update("is_completed", false).Error; err != nil {
+			logger.ErrorF(ctx, "payment cleanup: failed to reset completed status for project %s: %v", projectID, err)
+		} else {
+			logger.InfoF(ctx, "payment cleanup: reset project %s completed status (has stock after order expiration)", projectID)
+		}
+	}
 }
