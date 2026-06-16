@@ -323,8 +323,10 @@ func HandleNotify(ctx context.Context, q map[string]string) (bool, string) {
 				return false, "update order status failed"
 			}
 			db.Redis.RPush(ctx, project.ProjectItemsKey(order.ProjectID), order.ItemID)
-			// 退款重试成功后检查并重置项目完成状态
-			resetProjectCompletedStatusAfterRefund(ctx, order.ProjectID)
+			var proj project.Project
+			if err := db.DB(ctx).Where("id = ?", order.ProjectID).First(&proj).Error; err == nil {
+				proj.ResetCompletedStatusIfHasStock(ctx)
+			}
 			return true, "refund retry ok"
 		}
 		return false, "refund retry failed"
@@ -363,8 +365,10 @@ func HandleNotify(ctx context.Context, q map[string]string) (bool, string) {
 			updates["refunded_at"] = &tNow
 			// 把 item 推回 Redis 队列恢复库存
 			db.Redis.RPush(ctx, project.ProjectItemsKey(order.ProjectID), order.ItemID)
-			// 退款成功后检查并重置项目完成状态
-			resetProjectCompletedStatusAfterRefund(ctx, order.ProjectID)
+			var proj project.Project
+			if err := db.DB(ctx).Where("id = ?", order.ProjectID).First(&proj).Error; err == nil {
+				proj.ResetCompletedStatusIfHasStock(ctx)
+			}
 		} else {
 			updates["status"] = OrderStatusRefunding
 		}
@@ -398,39 +402,6 @@ func fulfillPaidOrder(ctx context.Context, order *PaymentOrder) error {
 // CallbackURLs 返回当前平台配置的回调地址,用于前端展示给用户。
 func CallbackURLs() (notifyURL, returnURL string) {
 	return callbackNotifyURL(), callbackReturnURL("")
-}
-
-// resetProjectCompletedStatusAfterRefund 退款后检查并重置项目的已完成状态
-// 这个函数复用了 tasks.go 中的逻辑，当退款成功归还 item 后调用
-func resetProjectCompletedStatusAfterRefund(ctx context.Context, projectID string) {
-	var proj project.Project
-	if err := db.DB(ctx).Where("id = ?", projectID).First(&proj).Error; err != nil {
-		logger.ErrorF(ctx, "payment refund: failed to load project %s: %v", projectID, err)
-		return
-	}
-
-	// 只处理已标记为完成的项目
-	if !proj.IsCompleted {
-		return
-	}
-
-	// 检查 Redis 是否有库存
-	hasStock, err := proj.HasStock(ctx)
-	if err != nil {
-		logger.ErrorF(ctx, "payment refund: failed to check stock for project %s: %v", projectID, err)
-		return
-	}
-
-	// 如果有库存但项目标记为已完成，则重置
-	if hasStock {
-		if err := db.DB(ctx).Model(&project.Project{}).
-			Where("id = ? AND is_completed = ?", projectID, true).
-			Update("is_completed", false).Error; err != nil {
-			logger.ErrorF(ctx, "payment refund: failed to reset completed status for project %s: %v", projectID, err)
-		} else {
-			logger.InfoF(ctx, "payment refund: reset project %s completed status (has stock after refund)", projectID)
-		}
-	}
 }
 
 // ErrOrderNotFoundSentinel 外部判断

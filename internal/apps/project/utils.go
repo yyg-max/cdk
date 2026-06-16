@@ -205,3 +205,27 @@ func validateProjectPrice(ctx context.Context, price decimal.Decimal, dt Distrib
 	}
 	return nil
 }
+
+// ResetCompletedStatusIfHasStock 检查项目是否有库存但被标记为已完成，如果是则重置 IsCompleted 状态。
+// 适用场景:
+//   - 付费订单退款成功后，item 被归还到 Redis 队列，需检查并重置项目完成状态
+//   - 付费订单超时过期后，预占的 item 被归还，需检查并重置项目完成状态
+func (p *Project) ResetCompletedStatusIfHasStock(ctx context.Context) {
+	// 只处理已标记为完成的项目
+	if !p.IsCompleted {
+		return
+	}
+
+	// 检查 Redis 是否有库存
+	hasStock, err := p.HasStock(ctx)
+	if err != nil {
+		return
+	}
+
+	// 如果有库存但项目标记为已完成，则重置
+	if hasStock {
+		db.DB(ctx).Model(&Project{}).
+			Where("id = ? AND is_completed = ?", p.ID, true).
+			Update("is_completed", false)
+	}
+}
