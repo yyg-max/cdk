@@ -325,7 +325,9 @@ func HandleNotify(ctx context.Context, q map[string]string) (bool, string) {
 			db.Redis.RPush(ctx, project.ProjectItemsKey(order.ProjectID), order.ItemID)
 			var proj project.Project
 			if err := db.DB(ctx).Where("id = ?", order.ProjectID).First(&proj).Error; err == nil {
-				proj.ResetCompletedStatusIfHasStock(ctx)
+				if err := proj.ResetCompletedStatusIfHasStock(ctx); err != nil {
+					logger.ErrorF(ctx, "payment refund retry: failed to reset completed status for project %s: %v", order.ProjectID, err)
+				}
 			}
 			return true, "refund retry ok"
 		}
@@ -367,7 +369,9 @@ func HandleNotify(ctx context.Context, q map[string]string) (bool, string) {
 			db.Redis.RPush(ctx, project.ProjectItemsKey(order.ProjectID), order.ItemID)
 			var proj project.Project
 			if err := db.DB(ctx).Where("id = ?", order.ProjectID).First(&proj).Error; err == nil {
-				proj.ResetCompletedStatusIfHasStock(ctx)
+				if err := proj.ResetCompletedStatusIfHasStock(ctx); err != nil {
+					logger.ErrorF(ctx, "payment refund: failed to reset completed status for project %s: %v", order.ProjectID, err)
+				}
 			}
 		} else {
 			updates["status"] = OrderStatusRefunding

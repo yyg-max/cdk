@@ -80,7 +80,9 @@ func expireOrder(ctx context.Context, order *PaymentOrder) {
 
 	var proj project.Project
 	if err := db.DB(ctx).Where("id = ?", order.ProjectID).First(&proj).Error; err == nil {
-		proj.ResetCompletedStatusIfHasStock(ctx)
+		if err := proj.ResetCompletedStatusIfHasStock(ctx); err != nil {
+			logger.ErrorF(ctx, "payment cleanup: failed to reset completed status for project %s: %v", order.ProjectID, err)
+		}
 	}
 
 	logger.InfoF(ctx, "payment cleanup: order %s expired and marked as FAILED", order.OutTradeNo)
