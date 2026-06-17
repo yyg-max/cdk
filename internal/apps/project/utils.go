@@ -169,6 +169,7 @@ func ListMyProjectsWithTags(ctx context.Context, creatorID uint64, offset, limit
 	}, nil
 }
 
+// maxProjectPrice 付费项目的最大单价上限
 var maxProjectPrice = decimal.RequireFromString("99999999.99")
 
 // validateProjectPrice 校验 Price 字段合法性。
