@@ -234,7 +234,7 @@ function TooltipPortal(props: TooltipPortalProps) {
 }
 
 function TooltipOverlay() {
-  const {currentTooltip, transition, globalId, referenceElRef} =
+  const {currentTooltip, transition, referenceElRef} =
     useGlobalTooltip();
 
   const [rendered, setRendered] = React.useState<{
@@ -284,18 +284,21 @@ function TooltipOverlay() {
     <AnimatePresence mode="wait">
       {rendered.data && ready && (
         <TooltipPortal>
-          <div
+          <motion.div
             ref={refs.setFloating}
             data-slot="tooltip-overlay"
             data-side={resolvedSide}
             data-align={rendered.data.align}
             data-state={rendered.open ? 'open' : 'closed'}
+            initial={false}
+            animate={{x: x!, y: y!}}
+            transition={transition}
             style={{
               position: strategy,
               top: 0,
               left: 0,
               zIndex: 50,
-              transform: `translate3d(${x!}px, ${y!}px, 0)`,
+              willChange: 'transform',
             }}
           >
             <FloatingProvider value={{context, arrowRef}}>
@@ -311,7 +314,6 @@ function TooltipOverlay() {
                   data-side={resolvedSide}
                   data-align={rendered.data.align}
                   data-state={rendered.open ? 'open' : 'closed'}
-                  layoutId={`tooltip-content-${globalId}`}
                   initial={{
                     opacity: 0,
                     scale: 0,
@@ -345,7 +347,7 @@ function TooltipOverlay() {
                 />
               </RenderedTooltipProvider>
             </FloatingProvider>
-          </div>
+          </motion.div>
         </TooltipPortal>
       )}
     </AnimatePresence>
