@@ -122,7 +122,7 @@ export function ReportButton({projectId, user, hasReported = false, variant = 'd
             如果您发现此项目存在违规内容、恶意行为或其他问题，请填写举报理由。我们会认真处理您的反馈。
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
+        <div className="grid gap-4 py-4 ml-6 mr-6">
           <div className="grid gap-2">
             <Label htmlFor="reason">举报理由</Label>
             <Textarea
