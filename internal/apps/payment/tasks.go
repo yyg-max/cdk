@@ -29,9 +29,9 @@ import (
 	"time"
 
 	"github.com/hibiken/asynq"
-	"github.com/linux-do/cdk/internal/apps/project"
 	"github.com/linux-do/cdk/internal/db"
 	"github.com/linux-do/cdk/internal/logger"
+	"gorm.io/gorm"
 )
 
 // HandleExpireStaleOrders 清理长时间未付款的 PENDING 订单。
@@ -61,20 +61,37 @@ func HandleExpireStaleOrders(ctx context.Context, _ *asynq.Task) error {
 // expireOrder 通过 CAS 将单笔 PENDING 订单置为 FAILED，并把预占的 item 归还 Redis。
 // 使用 CAS (WHERE status=PENDING) 保证幂等：
 //   - 若 notify 回调恰好在此同时到达并推进了状态，CAS 得 0 行，安全跳过。
+//
+// 修复：归还 item 后，如果项目之前被标记为已完成，现在有库存了，则重置 IsCompleted。
 func expireOrder(ctx context.Context, order *PaymentOrder) {
-	rows := db.DB(ctx).Model(&PaymentOrder{}).
-		Where("out_trade_no = ? AND status = ?", order.OutTradeNo, OrderStatusPending).
-		Update("status", OrderStatusFailed).
-		RowsAffected
+	processed := false
+	if err := db.DB(ctx).Transaction(func(tx *gorm.DB) error {
+		result := tx.Model(&PaymentOrder{}).
+			Where("out_trade_no = ? AND status = ?", order.OutTradeNo, OrderStatusPending).
+			Update("status", OrderStatusFailed)
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return nil
+		}
 
-	// 另一协程（notify 回调）已处理，跳过
-	if rows == 0 {
+		if err := returnReservedItem(ctx, tx, order.ProjectID, order.ItemID); err != nil {
+			return err
+		}
+
+		processed = true
+		return nil
+	}); err != nil {
+		logger.ErrorF(ctx, "payment cleanup: failed to expire order %s: %v", order.OutTradeNo, err)
+		return
+	}
+
+	if !processed {
 		logger.InfoF(ctx, "payment cleanup: order %s already processed, skipping", order.OutTradeNo)
 		return
 	}
 
-	// 归还预占的 item，恢复项目库存
-	db.Redis.RPush(ctx, project.ProjectItemsKey(order.ProjectID), order.ItemID)
 	logger.InfoF(ctx, "payment cleanup: returned item %d to project %s stock", order.ItemID, order.ProjectID)
 	logger.InfoF(ctx, "payment cleanup: order %s expired and marked as FAILED", order.OutTradeNo)
 }

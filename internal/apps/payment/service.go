@@ -204,7 +204,7 @@ func InitiatePayment(ctx context.Context, p *project.Project, payer *oauth.User,
 			return err
 		}
 		itemID = reservedItemID
-		logger.InfoF(ctx, "Reserved item %d for project %d and payer %d", itemID, p.ID, payer.ID)
+		logger.InfoF(ctx, "Reserved item %d for project %s and payer %d", itemID, p.ID, payer.ID)
 
 		outTradeNo := genOutTradeNo()
 		order := PaymentOrder{
@@ -315,14 +315,14 @@ func HandleNotify(ctx context.Context, q map[string]string) (bool, string) {
 		refundErr := doEpayRefund(ctx, cfg.ClientID, secret, order.TradeNo, moneyString(order.Amount))
 		if refundErr == nil {
 			tNow := time.Now()
-			if updateErr := db.DB(ctx).
-				Model(&PaymentOrder{}).
-				Where("out_trade_no = ?", outTradeNo).
-				Updates(map[string]any{"status": OrderStatusRefunded, "refunded_at": &tNow}).
-				Error; updateErr != nil {
+			processed, updateErr := markOrderRefundedAndReturnItem(ctx, &order, map[string]any{"status": OrderStatusRefunded, "refunded_at": &tNow}, OrderStatusRefunding)
+			if updateErr != nil {
+				logger.ErrorF(ctx, "payment refund retry: failed to mark order %s refunded: %v", outTradeNo, updateErr)
 				return false, "update order status failed"
 			}
-			db.Redis.RPush(ctx, project.ProjectItemsKey(order.ProjectID), order.ItemID)
+			if !processed {
+				return true, "idempotent"
+			}
 			return true, "refund retry ok"
 		}
 		return false, "refund retry failed"
@@ -359,13 +359,18 @@ func HandleNotify(ctx context.Context, q map[string]string) (bool, string) {
 			tNow := time.Now()
 			updates["status"] = OrderStatusRefunded
 			updates["refunded_at"] = &tNow
-			// 把 item 推回 Redis 队列恢复库存
-			db.Redis.RPush(ctx, project.ProjectItemsKey(order.ProjectID), order.ItemID)
+			if _, updateErr := markOrderRefundedAndReturnItem(ctx, &order, updates, OrderStatusPaid); updateErr != nil {
+				logger.ErrorF(ctx, "payment refund: failed to mark order %s refunded: %v", outTradeNo, updateErr)
+				return false, "update order status failed"
+			}
 		} else {
 			updates["status"] = OrderStatusRefunding
+			if updateErr := db.DB(ctx).Model(&PaymentOrder{}).
+				Where("out_trade_no = ? AND status = ?", outTradeNo, OrderStatusPaid).Updates(updates).Error; updateErr != nil {
+				logger.ErrorF(ctx, "payment refund: failed to mark order %s refunding: %v", outTradeNo, updateErr)
+				return false, "update order status failed"
+			}
 		}
-		db.DB(ctx).Model(&PaymentOrder{}).
-			Where("out_trade_no = ?", outTradeNo).Updates(updates)
 		// 让 epay 重试,再次进入时因状态非 PENDING 会回到 idempotent 分支
 		return false, fmt.Sprintf("fulfill failed: %v", err)
 	}

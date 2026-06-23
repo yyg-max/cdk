@@ -529,6 +529,27 @@ func (p *Project) GetReceivedItem(ctx context.Context, userID uint64) (*ProjectI
 	return item, nil
 }
 
+// ResetCompletedStatusIfHasStock 在调用方归还库存时重置项目完成状态。
+// 适用场景:
+//   - 付费订单退款成功后，item 被归还到 Redis 队列，需检查并重置项目完成状态
+//   - 付费订单超时过期后，预占的 item 被归还，需检查并重置项目完成状态
+//
+// 调用方应在归还 item 的同一个数据库事务中传入 tx；
+// 若 Redis RPush 或数据库更新失败，错误会返回给外层事务处理。
+func (p *Project) ResetCompletedStatusIfHasStock(ctx context.Context, tx *gorm.DB) error {
+	hasStock, err := p.HasStock(ctx)
+	if err != nil {
+		return err
+	}
+	if !hasStock {
+		return nil
+	}
+
+	return tx.Model(&Project{}).
+		Where("id = ? AND is_completed = ?", p.ID, true).
+		Update("is_completed", false).Error
+}
+
 type ProjectReport struct {
 	ID         uint64    `json:"id" gorm:"primaryKey,autoIncrement"`
 	ProjectID  string    `json:"project_id" gorm:"size:64;index;uniqueIndex:idx_project_reporter"`
