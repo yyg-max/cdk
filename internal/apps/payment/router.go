@@ -127,7 +127,17 @@ type PendingPaymentResponseData struct {
 	Amount     string `json:"amount,omitempty"`
 }
 
-// GetPendingPayment GET 只返回当前用户已有且未过期的待支付订单，不重新占用库存或刷新有效期。
+// GetPendingPayment
+// @Tags payment
+// @Summary 获取当前用户的待支付订单
+// @Description 只返回指定项目下当前用户已有且未过期的待支付订单，不重新占用库存或刷新有效期
+// @Produce json
+// @Param id path string true "项目ID"
+// @Success 200 {object} Response{data=PendingPaymentResponseData}
+// @Failure 400 {object} Response
+// @Failure 404 {object} project.ProjectResponse
+// @Failure 500 {object} Response
+// @Router /api/v1/projects/{id}/pending-payment [get]
 func GetPendingPayment(c *gin.Context) {
 	ctx := c.Request.Context()
 	currentUser, _ := oauth.GetUserFromContext(c)
