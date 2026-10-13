@@ -28,6 +28,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/linux-do/cdk/internal/config"
 	"github.com/linux-do/cdk/internal/db"
 	"github.com/linux-do/cdk/internal/otel_trace"
 )
@@ -61,6 +62,11 @@ func LoginRequired() gin.HandlerFunc {
 		tx := db.DB(ctx).Where("id = ? AND is_active = ?", userId, true).First(&user)
 		if tx.Error != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error_msg": tx.Error.Error(), "data": nil})
+			return
+		}
+
+		if !config.Config.App.IsUserAllowed(user.Username) {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error_msg": UserNotWhitelisted, "data": nil})
 			return
 		}
 
