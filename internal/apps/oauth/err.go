@@ -25,7 +25,8 @@
 package oauth
 
 const (
-	UnAuthorized  = "未登录"
-	InvalidState  = "非法登录请求"
-	BannedAccount = "账号已被封禁"
+	UnAuthorized       = "未登录"
+	InvalidState       = "非法登录请求"
+	BannedAccount      = "账号已被封禁"
+	UserNotWhitelisted = "用户不在白名单中"
 )

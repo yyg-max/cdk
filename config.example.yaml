@@ -13,6 +13,7 @@ app:
   session_secure: false
   session_http_only: false
   api_prefix: "/api"
+  user_whitelist: [] # 允许访问的 LINUX DO 用户名，必须完全一致（区分大小写）；未配置或为空时不限制，例如 ["alice", "bob"]
 
 # projectApp
 projectApp:
