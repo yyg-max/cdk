@@ -74,6 +74,11 @@ func StartScheduler() error {
 			return
 		}
 
+		// 定时预缓存仪表板统计数据
+		if _, err = scheduler.Register(config.Config.Schedule.UpdateDashboardStatsCron, asynq.NewTask(task.UpdateDashboardStatsTask, nil)); err != nil {
+			return
+		}
+
 		// 启动调度器
 		err = scheduler.Run()
 	})

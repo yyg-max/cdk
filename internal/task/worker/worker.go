@@ -27,6 +27,7 @@ package worker
 import (
 	"context"
 	"github.com/hibiken/asynq"
+	"github.com/linux-do/cdk/internal/apps/dashboard"
 	"github.com/linux-do/cdk/internal/apps/oauth"
 	"github.com/linux-do/cdk/internal/apps/payment"
 	"github.com/linux-do/cdk/internal/config"
@@ -46,6 +47,15 @@ func StartWorker() error {
 	if exists == 0 {
 		_, errTask := schedule.AsynqClient.Enqueue(asynq.NewTask(task.UpdateAllBadgesTask, nil))
 		if errTask != nil {
+			return errTask
+		}
+	}
+
+	// 预热仪表板统计缓存：首次启动或 Redis 清空后立即预缓存，避免接口空窗
+	if ready, err := dashboard.StatsCacheReady(context.Background()); err != nil {
+		return err
+	} else if !ready {
+		if _, errTask := schedule.AsynqClient.Enqueue(asynq.NewTask(task.UpdateDashboardStatsTask, nil)); errTask != nil {
 			return errTask
 		}
 	}
@@ -71,6 +81,7 @@ func StartWorker() error {
 	mux.HandleFunc(task.UpdateUserBadgeScoresTask, oauth.HandleUpdateUserBadgeScores)
 	mux.HandleFunc(task.UpdateSingleUserBadgeScoreTask, oauth.HandleUpdateSingleUserBadgeScore)
 	mux.HandleFunc(task.ExpireStalePaymentOrdersTask, payment.HandleExpireStaleOrders)
+	mux.HandleFunc(task.UpdateDashboardStatsTask, dashboard.HandleUpdateDashboardStats)
 	// 启动服务器
 	return asynqServer.Run(mux)
 }
