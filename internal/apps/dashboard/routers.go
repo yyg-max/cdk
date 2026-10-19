@@ -26,7 +26,6 @@ package dashboard
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -36,6 +35,10 @@ type DashboardDataResponse struct {
 	Data     interface{} `json:"data"`
 }
 
+type GetAllStatsRequest struct {
+	Days int `json:"days" form:"days" binding:"oneof=7 15 30"`
+}
+
 // GetAllStats
 // @Tags Dashboard
 // @Param days query int false "request query"
@@ -43,12 +46,13 @@ type DashboardDataResponse struct {
 // @Success 200 {object} DashboardDataResponse
 // @Router /api/v1/dashboard/stats/all [get]
 func GetAllStats(c *gin.Context) {
-	daysStr := c.DefaultQuery("days", "14")
-	days, err := strconv.Atoi(daysStr)
-	if err != nil || days <= 0 || days > 30 {
-		days = 14
+	req := &GetAllStatsRequest{Days: 7}
+	if err := c.ShouldBindQuery(req); err != nil {
+		c.JSON(http.StatusBadRequest, DashboardDataResponse{ErrorMsg: err.Error()})
+		return
 	}
-	data, err := GetAllDashboardData(c.Request.Context(), days)
+
+	data, err := GetAllDashboardData(c.Request.Context(), req.Days)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, DashboardDataResponse{ErrorMsg: err.Error()})

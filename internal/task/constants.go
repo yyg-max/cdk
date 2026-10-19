@@ -30,4 +30,6 @@ const (
 	UpdateSingleUserBadgeScoreTask = "user:badge:update_single_score_task"
 
 	ExpireStalePaymentOrdersTask = "payment:expire_stale_orders"
+
+	UpdateDashboardStatsTask = "dashboard:update_stats_task"
 )

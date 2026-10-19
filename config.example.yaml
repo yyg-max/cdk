@@ -102,6 +102,7 @@ schedule:
   update_user_badges_scores_task_cron: "0 2 * * *"
   update_all_badges_task_cron: "0 1 * * *"
   expire_stale_payment_orders_cron: "*/1 * * * *"  # 扫描超时未付款订单的频率
+  update_dashboard_stats_cron: "*/10 * * * *"  # 预缓存仪表板统计数据(7/15/30天)到Redis的频率
 
 # Worker
 worker:

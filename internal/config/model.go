@@ -150,6 +150,7 @@ type scheduleConfig struct {
 	UpdateUserBadgeScoresTaskCron         string `mapstructure:"update_user_badges_scores_task_cron"`
 	UpdateAllBadgesTaskCron               string `mapstructure:"update_all_badges_task_cron"`
 	ExpireStalePaymentOrdersCron          string `mapstructure:"expire_stale_payment_orders_cron"`
+	UpdateDashboardStatsCron              string `mapstructure:"update_dashboard_stats_cron"`
 }
 
 // workerConfig 工作配置

@@ -27,10 +27,10 @@ package dashboard
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"time"
+	"errors"
 
 	"github.com/linux-do/cdk/internal/db"
+	"github.com/redis/go-redis/v9"
 )
 
 // DashboardData 仪表板数据结构
@@ -48,32 +48,20 @@ type DashboardData struct {
 
 // GetAllDashboardData get all data for dashboard
 func GetAllDashboardData(ctx context.Context, days int) (*map[string]interface{}, error) {
-	// 构造缓存键名
-	cacheKey := fmt.Sprintf("dashboard:data:%d", days)
+	cacheKey := dashboardCacheKey(days)
 
-	// 尝试从Redis获取缓存
-	cachedData, redisErr := db.Redis.Get(ctx, cacheKey).Result()
-	if redisErr == nil && cachedData != "" {
-		// 缓存命中，解析JSON
-		var result map[string]interface{}
-		if err := json.Unmarshal([]byte(cachedData), &result); err == nil {
-			return &result, nil
+	cachedData, err := db.Redis.Get(ctx, cacheKey).Result()
+	if err != nil {
+		if errors.Is(err, redis.Nil) {
+			return &map[string]interface{}{}, nil
 		}
-	}
-
-	// 调用存储过程获取仪表板数据
-	query := "CALL get_dashboard_data(?,10)"
-
-	var rawResult map[string]interface{}
-	if err := db.DB(ctx).Raw(query, days).Scan(&rawResult).Error; err != nil {
 		return nil, err
 	}
 
-	// 将结果存入Redis并设置过期时间
-	if jsonData, err := json.Marshal(rawResult); err == nil {
-		// 设置5分钟过期时间
-		db.Redis.Set(ctx, cacheKey, string(jsonData), 5*time.Minute)
+	var result map[string]interface{}
+	if err := json.Unmarshal([]byte(cachedData), &result); err != nil {
+		return nil, err
 	}
 
-	return &rawResult, nil
+	return &result, nil
 }
